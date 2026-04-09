@@ -1,22 +1,45 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
-  User,
   Plus,
   Pencil,
   Trash2,
   Check,
-  X,
   Sparkles,
 } from 'lucide-react'
 import { useKidStore, Kid } from '@/stores/kid-store'
 import { useThemeStore, ThemeMode } from '@/stores/theme-store'
-import { Card, CardContent, Button, Input, Avatar, Modal } from '@/components/ui'
-import { ThemeSwitcher } from '@/components/themes/ThemeSwitcher'
+import { Card, CardContent, Button, Input, Modal } from '@/components/ui'
 import { PointsDisplay, StreakCounter, LevelBadge, AchievementBadge } from '@/components/gamification'
+import { useFetch, apiPost, apiPatch, apiDelete } from '@/hooks/useApi'
 import { cn } from '@/lib/utils'
+
+interface ServerKid {
+  id: string
+  name: string
+  age: number
+  avatarId: string
+  themeMode: 'GIRL' | 'BOY' | 'NEUTRAL'
+  primaryColor: string
+  secondaryColor: string
+  points: number
+  totalPoints: number
+  streakDays: number
+  level: number
+  experience: number
+}
+
+interface BadgeData {
+  id: string
+  name: string
+  description: string
+  icon: string
+  category: string
+  earned: boolean
+  earnedAt: string | null
+}
 
 const avatarOptions = [
   { id: 'unicorn', emoji: '🦄' },
@@ -33,19 +56,20 @@ const avatarOptions = [
   { id: 'star', emoji: '⭐' },
 ]
 
-const sampleBadges = [
-  { id: '1', name: 'First Chore', description: 'Complete your first chore', icon: 'star', earned: true, earnedAt: new Date() },
-  { id: '2', name: '7-Day Streak', description: 'Complete chores 7 days in a row', icon: 'flame', earned: true, earnedAt: new Date() },
-  { id: '3', name: 'Super Helper', description: 'Complete 50 chores', icon: 'trophy', earned: false },
-  { id: '4', name: 'Early Bird', description: 'Complete morning routine 5 times', icon: 'zap', earned: false },
+const themeOptions: { mode: ThemeMode; label: string; colors: [string, string] }[] = [
+  { mode: 'GIRL', label: 'Pink', colors: ['#ec4899', '#a855f7'] },
+  { mode: 'BOY', label: 'Blue', colors: ['#3b82f6', '#22c55e'] },
+  { mode: 'NEUTRAL', label: 'Purple', colors: ['#6366f1', '#8b5cf6'] },
 ]
 
 export default function ProfilePage() {
-  const { currentKid, kids, setCurrentKid, addKid, updateKid, removeKid } = useKidStore()
+  const { currentKid, setCurrentKid, syncFromServer } = useKidStore()
   const { setMode, setCustomColors } = useThemeStore()
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [editingKid, setEditingKid] = useState<Kid | null>(null)
+  const [deletingKid, setDeletingKid] = useState<Kid | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -56,59 +80,88 @@ export default function ProfilePage() {
     secondaryColor: '#8b5cf6',
   })
 
-  const handleCreateKid = () => {
+  const { data: serverKids, isLoading, mutate } = useFetch<ServerKid[]>('/api/kids')
+  const { data: badges } = useFetch<BadgeData[]>(
+    currentKid ? `/api/badges?kidId=${currentKid.id}` : null
+  )
+
+  // Sync server kids to local store
+  useEffect(() => {
+    if (serverKids) {
+      syncFromServer(serverKids)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKids])
+
+  const handleCreateKid = async () => {
     if (!formData.name || !formData.age) return
 
-    const newKid: Kid = {
-      id: crypto.randomUUID(),
-      name: formData.name,
-      age: parseInt(formData.age),
-      avatarId: formData.avatarId,
-      themeMode: formData.themeMode,
-      primaryColor: formData.primaryColor,
-      secondaryColor: formData.secondaryColor,
-      points: 0,
-      totalPoints: 0,
-      streakDays: 0,
-      level: 1,
-      experience: 0,
-    }
+    try {
+      const newKid = await apiPost<ServerKid>('/api/kids', {
+        name: formData.name,
+        age: parseInt(formData.age),
+        avatarId: formData.avatarId,
+        themeMode: formData.themeMode,
+        primaryColor: formData.primaryColor,
+        secondaryColor: formData.secondaryColor,
+      })
 
-    addKid(newKid)
-    setCurrentKid(newKid)
-    setMode(newKid.themeMode)
-    setCustomColors(newKid.primaryColor, newKid.secondaryColor)
-    setIsCreateModalOpen(false)
-    resetForm()
+      const kid: Kid = {
+        ...newKid,
+        experience: newKid.experience || 0,
+      }
+
+      setCurrentKid(kid)
+      setMode(kid.themeMode)
+      setCustomColors(kid.primaryColor, kid.secondaryColor)
+      setIsCreateModalOpen(false)
+      resetForm()
+      mutate()
+    } catch (err) {
+      console.error('Failed to create kid:', err)
+    }
   }
 
-  const handleEditKid = () => {
+  const handleEditKid = async () => {
     if (!editingKid || !formData.name || !formData.age) return
 
-    const updates = {
-      name: formData.name,
-      age: parseInt(formData.age),
-      avatarId: formData.avatarId,
-      themeMode: formData.themeMode,
-      primaryColor: formData.primaryColor,
-      secondaryColor: formData.secondaryColor,
+    try {
+      const updated = await apiPatch<ServerKid>(`/api/kids/${editingKid.id}`, {
+        name: formData.name,
+        age: parseInt(formData.age),
+        avatarId: formData.avatarId,
+        themeMode: formData.themeMode,
+        primaryColor: formData.primaryColor,
+        secondaryColor: formData.secondaryColor,
+      })
+
+      if (currentKid?.id === editingKid.id) {
+        setMode(updated.themeMode)
+        setCustomColors(updated.primaryColor, updated.secondaryColor)
+      }
+
+      setIsEditModalOpen(false)
+      setEditingKid(null)
+      resetForm()
+      mutate()
+    } catch (err) {
+      console.error('Failed to update kid:', err)
     }
-
-    updateKid(editingKid.id, updates)
-
-    if (currentKid?.id === editingKid.id) {
-      setMode(formData.themeMode)
-      setCustomColors(formData.primaryColor, formData.secondaryColor)
-    }
-
-    setIsEditModalOpen(false)
-    setEditingKid(null)
-    resetForm()
   }
 
-  const handleDeleteKid = (kid: Kid) => {
-    if (confirm(`Are you sure you want to remove ${kid.name}?`)) {
-      removeKid(kid.id)
+  const handleDeleteKid = async () => {
+    if (!deletingKid) return
+
+    try {
+      await apiDelete(`/api/kids/${deletingKid.id}`)
+      if (currentKid?.id === deletingKid.id) {
+        setCurrentKid(null)
+      }
+      setIsDeleteModalOpen(false)
+      setDeletingKid(null)
+      mutate()
+    } catch (err) {
+      console.error('Failed to delete kid:', err)
     }
   }
 
@@ -131,6 +184,11 @@ export default function ProfilePage() {
     setIsEditModalOpen(true)
   }
 
+  const openDeleteModal = (kid: Kid) => {
+    setDeletingKid(kid)
+    setIsDeleteModalOpen(true)
+  }
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -144,6 +202,30 @@ export default function ProfilePage() {
 
   const getAvatarEmoji = (avatarId: string) => {
     return avatarOptions.find((a) => a.id === avatarId)?.emoji || '⭐'
+  }
+
+  const handleThemeSelect = (option: typeof themeOptions[number]) => {
+    setFormData({
+      ...formData,
+      themeMode: option.mode,
+      primaryColor: option.colors[0],
+      secondaryColor: option.colors[1],
+    })
+  }
+
+  const kids = useKidStore((s) => s.kids)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <Sparkles className="w-12 h-12 text-[var(--color-primary)]" />
+        </motion.div>
+      </div>
+    )
   }
 
   return (
@@ -196,7 +278,7 @@ export default function ProfilePage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeleteKid(kid)
+                        openDeleteModal(kid)
                       }}
                       className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                     >
@@ -253,7 +335,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Current Kid's Badges */}
-      {currentKid && (
+      {currentKid && badges && badges.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -263,14 +345,14 @@ export default function ProfilePage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold mb-6">{currentKid.name}&apos;s Badges</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {sampleBadges.map((badge) => (
+                {badges.map((badge) => (
                   <AchievementBadge
                     key={badge.id}
                     name={badge.name}
                     description={badge.description}
                     icon={badge.icon}
                     earned={badge.earned}
-                    earnedAt={badge.earnedAt}
+                    earnedAt={badge.earnedAt ? new Date(badge.earnedAt) : undefined}
                     size="md"
                   />
                 ))}
@@ -291,75 +373,19 @@ export default function ProfilePage() {
         description="Set up a new ChoreChamp!"
         size="lg"
       >
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Name"
-              placeholder="Kid's name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <Input
-              label="Age"
-              type="number"
-              placeholder="Age"
-              min={1}
-              max={18}
-              value={formData.age}
-              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose Avatar
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {avatarOptions.map((avatar) => (
-                <button
-                  key={avatar.id}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, avatarId: avatar.id })}
-                  className={cn(
-                    'w-12 h-12 rounded-xl text-2xl flex items-center justify-center transition-all',
-                    formData.avatarId === avatar.id
-                      ? 'bg-[var(--color-primary)] scale-110 shadow-lg'
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  )}
-                >
-                  {avatar.emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose Theme
-            </label>
-            <ThemeSwitcher showColorPicker />
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                setIsCreateModalOpen(false)
-                resetForm()
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleCreateKid}
-              disabled={!formData.name || !formData.age}
-            >
-              Create Profile
-            </Button>
-          </div>
-        </div>
+        <KidForm
+          formData={formData}
+          setFormData={setFormData}
+          avatarOptions={avatarOptions}
+          themeOptions={themeOptions}
+          onThemeSelect={handleThemeSelect}
+          onSubmit={handleCreateKid}
+          onCancel={() => {
+            setIsCreateModalOpen(false)
+            resetForm()
+          }}
+          submitLabel="Create Profile"
+        />
       </Modal>
 
       {/* Edit Kid Modal */}
@@ -374,77 +400,165 @@ export default function ProfilePage() {
         description="Update ChoreChamp settings"
         size="lg"
       >
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Name"
-              placeholder="Kid's name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-            <Input
-              label="Age"
-              type="number"
-              placeholder="Age"
-              min={1}
-              max={18}
-              value={formData.age}
-              onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-            />
-          </div>
+        <KidForm
+          formData={formData}
+          setFormData={setFormData}
+          avatarOptions={avatarOptions}
+          themeOptions={themeOptions}
+          onThemeSelect={handleThemeSelect}
+          onSubmit={handleEditKid}
+          onCancel={() => {
+            setIsEditModalOpen(false)
+            setEditingKid(null)
+            resetForm()
+          }}
+          submitLabel="Save Changes"
+        />
+      </Modal>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose Avatar
-            </label>
-            <div className="grid grid-cols-6 gap-2">
-              {avatarOptions.map((avatar) => (
-                <button
-                  key={avatar.id}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, avatarId: avatar.id })}
-                  className={cn(
-                    'w-12 h-12 rounded-xl text-2xl flex items-center justify-center transition-all',
-                    formData.avatarId === avatar.id
-                      ? 'bg-[var(--color-primary)] scale-110 shadow-lg'
-                      : 'bg-gray-100 hover:bg-gray-200'
-                  )}
-                >
-                  {avatar.emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Choose Theme
-            </label>
-            <ThemeSwitcher showColorPicker />
-          </div>
-
-          <div className="flex gap-4 pt-4">
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false)
+          setDeletingKid(null)
+        }}
+        title="Remove Profile?"
+        size="sm"
+      >
+        <div className="text-center">
+          <p className="text-gray-500 mb-6">
+            Are you sure you want to remove <span className="font-bold">{deletingKid?.name}</span>?
+            This will delete all their chores, badges, and rewards. This action cannot be undone.
+          </p>
+          <div className="flex gap-4">
             <Button
               variant="outline"
               className="flex-1"
               onClick={() => {
-                setIsEditModalOpen(false)
-                setEditingKid(null)
-                resetForm()
+                setIsDeleteModalOpen(false)
+                setDeletingKid(null)
               }}
             >
               Cancel
             </Button>
             <Button
-              className="flex-1"
-              onClick={handleEditKid}
-              disabled={!formData.name || !formData.age}
+              className="flex-1 bg-red-500 hover:bg-red-600"
+              onClick={handleDeleteKid}
             >
-              Save Changes
+              Delete
             </Button>
           </div>
         </div>
       </Modal>
+    </div>
+  )
+}
+
+// Extracted form component to avoid duplication
+function KidForm({
+  formData,
+  setFormData,
+  avatarOptions,
+  themeOptions,
+  onThemeSelect,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: {
+  formData: { name: string; age: string; avatarId: string; themeMode: ThemeMode; primaryColor: string; secondaryColor: string }
+  setFormData: (data: typeof formData) => void
+  avatarOptions: { id: string; emoji: string }[]
+  themeOptions: { mode: ThemeMode; label: string; colors: [string, string] }[]
+  onThemeSelect: (option: { mode: ThemeMode; label: string; colors: [string, string] }) => void
+  onSubmit: () => void
+  onCancel: () => void
+  submitLabel: string
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          label="Name"
+          placeholder="Kid's name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        />
+        <Input
+          label="Age"
+          type="number"
+          placeholder="Age"
+          min={1}
+          max={18}
+          value={formData.age}
+          onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Choose Avatar
+        </label>
+        <div className="grid grid-cols-6 gap-2">
+          {avatarOptions.map((avatar) => (
+            <button
+              key={avatar.id}
+              type="button"
+              onClick={() => setFormData({ ...formData, avatarId: avatar.id })}
+              className={cn(
+                'w-12 h-12 rounded-xl text-2xl flex items-center justify-center transition-all',
+                formData.avatarId === avatar.id
+                  ? 'bg-[var(--color-primary)] scale-110 shadow-lg'
+                  : 'bg-gray-100 hover:bg-gray-200'
+              )}
+            >
+              {avatar.emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Choose Theme
+        </label>
+        <div className="flex gap-3">
+          {themeOptions.map((option) => (
+            <button
+              key={option.mode}
+              type="button"
+              onClick={() => onThemeSelect(option)}
+              className={cn(
+                'flex-1 p-4 rounded-xl border-2 transition-all text-center',
+                formData.themeMode === option.mode
+                  ? 'border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/20'
+                  : 'border-gray-200 hover:border-gray-300'
+              )}
+            >
+              <div
+                className="w-10 h-10 rounded-full mx-auto mb-2"
+                style={{
+                  background: `linear-gradient(135deg, ${option.colors[0]}, ${option.colors[1]})`,
+                }}
+              />
+              <span className="text-sm font-medium">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-4 pt-4">
+        <Button variant="outline" className="flex-1" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button
+          className="flex-1"
+          onClick={onSubmit}
+          disabled={!formData.name || !formData.age}
+        >
+          {submitLabel}
+        </Button>
+      </div>
     </div>
   )
 }

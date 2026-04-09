@@ -3,81 +3,85 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Gift,
   Plus,
   Star,
-  ShoppingCart,
   Check,
   Sparkles,
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Badge, Modal, Input } from '@/components/ui'
 import { PointsDisplay } from '@/components/gamification'
+import { Confetti } from '@/components/Confetti'
+import { useFetch, apiPost } from '@/hooks/useApi'
 import { cn } from '@/lib/utils'
 
 interface Reward {
   id: string
   title: string
-  description?: string
+  description: string | null
   cost: number
   icon: string
   category: string
+  _count: { redemptions: number }
 }
 
-const rewardIcons = ['🎮', '📱', '🍦', '🎬', '🛍️', '🎨', '📚', '🎵', '⚽', '🎁']
-
-// Mock data
-const initialRewards: Reward[] = [
-  { id: '1', title: '30 min Screen Time', description: 'Extra screen time for games or videos', cost: 50, icon: '🎮', category: 'Screen Time' },
-  { id: '2', title: 'Ice Cream Trip', description: 'Visit to the ice cream shop', cost: 100, icon: '🍦', category: 'Treats' },
-  { id: '3', title: 'Movie Night Pick', description: 'Choose the family movie', cost: 75, icon: '🎬', category: 'Activities' },
-  { id: '4', title: 'Stay Up Late (30 min)', description: 'Extra 30 minutes before bedtime', cost: 60, icon: '🌙', category: 'Privileges' },
-  { id: '5', title: 'Skip One Chore', description: 'Get a free pass on one chore', cost: 80, icon: '🎫', category: 'Privileges' },
-  { id: '6', title: 'Small Toy/Book', description: 'Pick a small toy or book (up to $10)', cost: 200, icon: '🎁', category: 'Prizes' },
-]
+const rewardIcons = ['🎮', '📱', '🍦', '🎬', '🛍️', '🎨', '📚', '🎵', '⚽', '🎁', '🌙', '🎫']
 
 export default function RewardsPage() {
   const { currentKid, updateKid } = useKidStore()
-  const [rewards, setRewards] = useState<Reward[]>(initialRewards)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   const [newReward, setNewReward] = useState({
     title: '',
     description: '',
     cost: 50,
     icon: '🎁',
+    category: 'General',
   })
 
-  const handleRedeemReward = (reward: Reward) => {
+  const { data: rewards, isLoading, mutate } = useFetch<Reward[]>(
+    currentKid ? '/api/rewards' : null
+  )
+
+  const handleRedeemReward = async (reward: Reward) => {
     if (!currentKid || currentKid.points < reward.cost) return
 
-    // Deduct points
-    updateKid(currentKid.id, { points: currentKid.points - reward.cost })
+    try {
+      const result = await apiPost<{
+        kid: { points: number }
+        pointsSpent: number
+      }>(`/api/rewards/${reward.id}/redeem`, { kidId: currentKid.id })
 
-    // Show success
-    setShowSuccess(true)
-    setTimeout(() => {
-      setShowSuccess(false)
-      setSelectedReward(null)
-    }, 2000)
+      updateKid(currentKid.id, { points: result.kid.points })
+
+      setShowSuccess(true)
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 100)
+
+      setTimeout(() => {
+        setShowSuccess(false)
+        setSelectedReward(null)
+      }, 2000)
+
+      mutate()
+    } catch (err) {
+      console.error('Failed to redeem reward:', err)
+    }
   }
 
-  const handleAddReward = () => {
+  const handleAddReward = async () => {
     if (!newReward.title) return
 
-    const reward: Reward = {
-      id: Date.now().toString(),
-      title: newReward.title,
-      description: newReward.description,
-      cost: newReward.cost,
-      icon: newReward.icon,
-      category: 'Custom',
+    try {
+      await apiPost('/api/rewards', newReward)
+      setIsAddModalOpen(false)
+      setNewReward({ title: '', description: '', cost: 50, icon: '🎁', category: 'General' })
+      mutate()
+    } catch (err) {
+      console.error('Failed to add reward:', err)
     }
-
-    setRewards((prev) => [...prev, reward])
-    setIsAddModalOpen(false)
-    setNewReward({ title: '', description: '', cost: 50, icon: '🎁' })
   }
 
   if (!currentKid) {
@@ -96,8 +100,23 @@ export default function RewardsPage() {
     )
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <Sparkles className="w-12 h-12 text-[var(--color-primary)]" />
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
+      <Confetti isActive={showConfetti} />
+
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -125,66 +144,74 @@ export default function RewardsPage() {
       </motion.div>
 
       {/* Rewards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {rewards.map((reward, index) => {
-          const canAfford = currentKid.points >= reward.cost
+      {rewards && rewards.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {rewards.map((reward, index) => {
+            const canAfford = currentKid.points >= reward.cost
 
-          return (
-            <motion.div
-              key={reward.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card
-                className={cn(
-                  'h-full transition-all',
-                  !canAfford && 'opacity-60'
-                )}
-                hoverable={canAfford}
+            return (
+              <motion.div
+                key={reward.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
               >
-                <CardContent className="p-6 flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-4">
-                    <div
-                      className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
-                      style={{
-                        background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary))`,
-                      }}
-                    >
-                      {reward.icon}
+                <Card
+                  className={cn('h-full transition-all', !canAfford && 'opacity-60')}
+                  hoverable={canAfford}
+                >
+                  <CardContent className="p-6 flex flex-col h-full">
+                    <div className="flex items-start justify-between mb-4">
+                      <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
+                        style={{
+                          background: `linear-gradient(135deg, var(--color-primary), var(--color-secondary))`,
+                        }}
+                      >
+                        {reward.icon}
+                      </div>
+                      <Badge variant={canAfford ? 'primary' : 'info'}>
+                        {reward.category}
+                      </Badge>
                     </div>
-                    <Badge variant={canAfford ? 'primary' : 'info'}>
-                      {reward.category}
-                    </Badge>
-                  </div>
 
-                  <h3 className="text-lg font-bold">{reward.title}</h3>
-                  {reward.description && (
-                    <p className="text-gray-500 text-sm mt-1">{reward.description}</p>
-                  )}
+                    <h3 className="text-lg font-bold">{reward.title}</h3>
+                    {reward.description && (
+                      <p className="text-gray-500 text-sm mt-1">{reward.description}</p>
+                    )}
 
-                  <div className="flex-1" />
+                    <div className="flex-1" />
 
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                    <div className="flex items-center gap-1 text-amber-600 font-bold">
-                      <Star className="w-5 h-5 fill-amber-500" />
-                      {reward.cost}
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                      <div className="flex items-center gap-1 text-amber-600 font-bold">
+                        <Star className="w-5 h-5 fill-amber-500" />
+                        {reward.cost}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={canAfford ? 'primary' : 'outline'}
+                        disabled={!canAfford}
+                        onClick={() => setSelectedReward(reward)}
+                      >
+                        {canAfford ? 'Redeem' : `Need ${reward.cost - currentKid.points} more`}
+                      </Button>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={canAfford ? 'primary' : 'outline'}
-                      disabled={!canAfford}
-                      onClick={() => setSelectedReward(reward)}
-                    >
-                      {canAfford ? 'Redeem' : `Need ${reward.cost - currentKid.points} more`}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )
-        })}
-      </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🎁</div>
+          <h3 className="text-xl font-semibold">No Rewards Yet</h3>
+          <p className="text-gray-500 mt-1">Add some rewards for completing chores!</p>
+          <Button className="mt-4" onClick={() => setIsAddModalOpen(true)}>
+            Add First Reward
+          </Button>
+        </div>
+      )}
 
       {/* Redeem Confirmation Modal */}
       <Modal
@@ -269,6 +296,13 @@ export default function RewardsPage() {
             placeholder="Describe the reward"
             value={newReward.description}
             onChange={(e) => setNewReward({ ...newReward, description: e.target.value })}
+          />
+
+          <Input
+            label="Category"
+            placeholder="e.g., Screen Time, Treats, Activities"
+            value={newReward.category}
+            onChange={(e) => setNewReward({ ...newReward, category: e.target.value })}
           />
 
           <div>
