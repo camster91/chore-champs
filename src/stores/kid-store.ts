@@ -26,6 +26,7 @@ interface KidState {
   updateKid: (kidId: string, updates: Partial<Kid>) => void
   removeKid: (kidId: string) => void
   addPoints: (amount: number) => void
+  syncFromServer: (kids: Kid[]) => void
 }
 
 export const useKidStore = create<KidState>()(
@@ -80,6 +81,31 @@ export const useKidStore = create<KidState>()(
               : k
           ),
         })
+      },
+
+      // Sync local store with server data, preserving current kid selection
+      syncFromServer: (serverKids) => {
+        const state = get()
+        const kids: Kid[] = serverKids.map((sk) => ({
+          id: sk.id,
+          name: sk.name,
+          age: sk.age,
+          avatarId: sk.avatarId,
+          themeMode: sk.themeMode,
+          primaryColor: sk.primaryColor,
+          secondaryColor: sk.secondaryColor,
+          points: sk.points,
+          totalPoints: sk.totalPoints,
+          streakDays: sk.streakDays,
+          level: sk.level,
+          experience: sk.experience,
+        }))
+
+        const currentKid = state.currentKid
+          ? kids.find((k) => k.id === state.currentKid!.id) || null
+          : null
+
+        set({ kids, currentKid })
       },
     }),
     {

@@ -1,100 +1,165 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
   CheckCircle,
   Clock,
   Star,
-  Filter,
-  Calendar,
   Sparkles,
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Badge, Modal, Input } from '@/components/ui'
 import { PointsEarned } from '@/components/gamification'
+import { Confetti } from '@/components/Confetti'
+import { LevelUpModal } from '@/components/LevelUpModal'
+import { BadgeUnlockToast } from '@/components/BadgeUnlockToast'
+import { useFetch, apiPost } from '@/hooks/useApi'
 import { cn } from '@/lib/utils'
 
-interface Chore {
+interface Assignment {
   id: string
-  title: string
-  description?: string
-  points: number
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
-  completed: boolean
-  dueTime?: string
+  status: string
+  pointsEarned: number | null
+  dueDate: string
+  chore: {
+    id: string
+    title: string
+    description: string | null
+    icon: string
+    difficulty: string
+    basePoints: number
+    timeOfDay: string
+  }
+}
+
+interface NewBadge {
+  name: string
   icon: string
+  description: string
 }
 
 const difficultyColors = {
-  EASY: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200' },
-  MEDIUM: { bg: 'bg-amber-100', text: 'text-amber-600', border: 'border-amber-200' },
-  HARD: { bg: 'bg-red-100', text: 'text-red-600', border: 'border-red-200' },
+  EASY: { bg: 'bg-green-100', text: 'text-green-600' },
+  MEDIUM: { bg: 'bg-amber-100', text: 'text-amber-600' },
+  HARD: { bg: 'bg-red-100', text: 'text-red-600' },
 }
 
-const choreIcons = ['🧹', '🛏️', '🍽️', '🐕', '📚', '🧺', '🗑️', '🌱', '🧼', '🎒']
-
-// Mock data - replace with real data from API
-const initialChores: Chore[] = [
-  { id: '1', title: 'Make my bed', points: 10, difficulty: 'EASY', completed: true, dueTime: '7:00 AM', icon: '🛏️' },
-  { id: '2', title: 'Brush teeth (morning)', points: 5, difficulty: 'EASY', completed: true, dueTime: '7:30 AM', icon: '🪥' },
-  { id: '3', title: 'Feed the dog', points: 15, difficulty: 'EASY', completed: false, dueTime: '8:00 AM', icon: '🐕' },
-  { id: '4', title: 'Clean my room', points: 30, difficulty: 'HARD', completed: false, icon: '🧹' },
-  { id: '5', title: 'Do homework', points: 20, difficulty: 'MEDIUM', completed: false, dueTime: '4:00 PM', icon: '📚' },
-  { id: '6', title: 'Set the table', points: 10, difficulty: 'EASY', completed: false, dueTime: '6:00 PM', icon: '🍽️' },
-  { id: '7', title: 'Take out trash', points: 15, difficulty: 'MEDIUM', completed: false, icon: '🗑️' },
-]
+const choreIcons = ['🧹', '🛏️', '🍽️', '🐕', '📚', '🧺', '🗑️', '🌱', '🧼', '🎒', '🪥', '🧸']
 
 export default function ChoresPage() {
-  const { currentKid, addPoints } = useKidStore()
-  const [chores, setChores] = useState<Chore[]>(initialChores)
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const { currentKid, updateKid } = useKidStore()
+  const [filter, setFilter] = useState<'all' | 'PENDING' | 'COMPLETED'>('all')
   const [showPointsEarned, setShowPointsEarned] = useState<number | null>(null)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
+  const [newBadges, setNewBadges] = useState<NewBadge[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [selectedChoreToAssign, setSelectedChoreToAssign] = useState('')
   const [newChore, setNewChore] = useState({
     title: '',
-    points: 10,
+    basePoints: 10,
     difficulty: 'EASY' as 'EASY' | 'MEDIUM' | 'HARD',
     icon: '⭐',
+    timeOfDay: 'ANYTIME',
   })
 
-  const filteredChores = chores.filter((chore) => {
-    if (filter === 'pending') return !chore.completed
-    if (filter === 'completed') return chore.completed
+  const { data: assignments, isLoading, mutate } = useFetch<Assignment[]>(
+    currentKid ? `/api/chores?kidId=${currentKid.id}` : null
+  )
+
+  interface FamilyChore {
+    id: string
+    title: string
+    icon: string
+    difficulty: string
+    basePoints: number
+  }
+
+  const { data: familyChores } = useFetch<FamilyChore[]>(
+    currentKid ? '/api/chores' : null
+  )
+
+  const filteredAssignments = (assignments || []).filter((a) => {
+    if (filter === 'PENDING') return a.status === 'PENDING'
+    if (filter === 'COMPLETED') return a.status === 'COMPLETED'
     return true
   })
 
-  const handleCompleteChore = (choreId: string) => {
-    const chore = chores.find((c) => c.id === choreId)
-    if (!chore || chore.completed) return
+  const handleCompleteChore = async (assignmentId: string) => {
+    try {
+      const result = await apiPost<{
+        pointsEarned: number
+        kid: { points: number; totalPoints: number; level: number; streakDays: number; experience: number }
+        leveledUp: boolean
+        newLevel: number | null
+        newBadges: NewBadge[]
+      }>(`/api/assignments/${assignmentId}/complete`)
 
-    setChores((prev) =>
-      prev.map((c) => (c.id === choreId ? { ...c, completed: true } : c))
-    )
+      // Show points animation
+      setShowPointsEarned(result.pointsEarned)
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 100)
 
-    // Show points animation
-    setShowPointsEarned(chore.points)
+      // Update local store with server response
+      if (currentKid) {
+        updateKid(currentKid.id, {
+          points: result.kid.points,
+          totalPoints: result.kid.totalPoints,
+          level: result.kid.level,
+          streakDays: result.kid.streakDays,
+          experience: result.kid.experience,
+        })
+      }
 
-    // Add points to kid's total
-    addPoints(chore.points)
+      if (result.leveledUp && result.newLevel) {
+        setLevelUpLevel(result.newLevel)
+      }
+
+      if (result.newBadges?.length > 0) {
+        setNewBadges(result.newBadges)
+        setTimeout(() => setNewBadges([]), 5000)
+      }
+
+      mutate()
+    } catch (err) {
+      console.error('Failed to complete chore:', err)
+    }
   }
 
-  const handleAddChore = () => {
-    if (!newChore.title) return
+  const handleAddChore = async () => {
+    if (!newChore.title || !currentKid) return
 
-    const chore: Chore = {
-      id: Date.now().toString(),
-      title: newChore.title,
-      points: newChore.points,
-      difficulty: newChore.difficulty,
-      completed: false,
-      icon: newChore.icon,
+    try {
+      await apiPost('/api/chores', {
+        ...newChore,
+        assignToKids: [currentKid.id],
+      })
+      setIsAddModalOpen(false)
+      setNewChore({ title: '', basePoints: 10, difficulty: 'EASY', icon: '⭐', timeOfDay: 'ANYTIME' })
+      mutate()
+    } catch (err) {
+      console.error('Failed to add chore:', err)
     }
+  }
 
-    setChores((prev) => [...prev, chore])
-    setIsAddModalOpen(false)
-    setNewChore({ title: '', points: 10, difficulty: 'EASY', icon: '⭐' })
+  const handleAssignChore = async () => {
+    if (!selectedChoreToAssign || !currentKid) return
+
+    try {
+      await apiPost('/api/chores/assign', {
+        choreId: selectedChoreToAssign,
+        kidIds: [currentKid.id],
+      })
+      setIsAssignModalOpen(false)
+      setSelectedChoreToAssign('')
+      mutate()
+    } catch (err) {
+      console.error('Failed to assign chore:', err)
+    }
   }
 
   if (!currentKid) {
@@ -109,15 +174,39 @@ export default function ChoresPage() {
         </motion.div>
         <h1 className="text-2xl font-bold mb-2">No Profile Selected</h1>
         <p className="text-gray-500 mb-6">Select a kid profile to view chores</p>
+        <Link href="/profile">
+          <Button>Go to Profiles</Button>
+        </Link>
       </div>
     )
   }
 
-  const pendingCount = chores.filter((c) => !c.completed).length
-  const completedCount = chores.filter((c) => c.completed).length
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+        >
+          <Sparkles className="w-12 h-12 text-[var(--color-primary)]" />
+        </motion.div>
+      </div>
+    )
+  }
+
+  const pendingCount = (assignments || []).filter((a) => a.status === 'PENDING').length
+  const completedCount = (assignments || []).filter((a) => a.status === 'COMPLETED').length
 
   return (
     <div className="space-y-8">
+      <Confetti isActive={showConfetti} />
+      <LevelUpModal
+        isOpen={!!levelUpLevel}
+        level={levelUpLevel || 0}
+        onClose={() => setLevelUpLevel(null)}
+      />
+      <BadgeUnlockToast badges={newBadges} onDismiss={() => setNewBadges([])} />
+
       {/* Points earned animation */}
       <AnimatePresence>
         {showPointsEarned && (
@@ -137,23 +226,37 @@ export default function ChoresPage() {
         <div>
           <h1 className="text-3xl font-bold">{currentKid.name}&apos;s Chores</h1>
           <p className="text-gray-500 mt-1">
-            {pendingCount} chores left today
+            {pendingCount > 0
+              ? `${pendingCount} chore${pendingCount !== 1 ? 's' : ''} left today`
+              : assignments && assignments.length > 0
+              ? 'All done for today!'
+              : 'No chores assigned yet'}
           </p>
         </div>
-        <Button
-          leftIcon={<Plus className="w-5 h-5" />}
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          Add Chore
-        </Button>
+        <div className="flex gap-2">
+          {familyChores && familyChores.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setIsAssignModalOpen(true)}
+            >
+              Assign Existing
+            </Button>
+          )}
+          <Button
+            leftIcon={<Plus className="w-5 h-5" />}
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            New Chore
+          </Button>
+        </div>
       </motion.div>
 
       {/* Filter Tabs */}
       <div className="flex gap-2">
         {[
-          { key: 'all', label: 'All', count: chores.length },
-          { key: 'pending', label: 'To Do', count: pendingCount },
-          { key: 'completed', label: 'Done', count: completedCount },
+          { key: 'all', label: 'All', count: (assignments || []).length },
+          { key: 'PENDING', label: 'To Do', count: pendingCount },
+          { key: 'COMPLETED', label: 'Done', count: completedCount },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -172,102 +275,101 @@ export default function ChoresPage() {
 
       {/* Chores Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredChores.map((chore, index) => (
-          <motion.div
-            key={chore.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card
-              className={cn(
-                'transition-all',
-                chore.completed && 'opacity-60'
-              )}
-              hoverable={!chore.completed}
+        {filteredAssignments.map((assignment, index) => {
+          const completed = assignment.status === 'COMPLETED'
+          const difficulty = assignment.chore.difficulty as keyof typeof difficultyColors
+          const colors = difficultyColors[difficulty] || difficultyColors.EASY
+
+          return (
+            <motion.div
+              key={assignment.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
             >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  {/* Checkbox */}
-                  <motion.button
-                    onClick={() => handleCompleteChore(chore.id)}
-                    disabled={chore.completed}
-                    className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                      chore.completed
-                        ? 'bg-green-500'
-                        : 'border-2 border-gray-300 hover:border-[var(--color-primary)]'
-                    )}
-                    whileHover={!chore.completed ? { scale: 1.1 } : {}}
-                    whileTap={!chore.completed ? { scale: 0.9 } : {}}
-                  >
-                    {chore.completed ? (
-                      <CheckCircle className="w-6 h-6 text-white" />
-                    ) : (
-                      <span className="text-xl">{chore.icon}</span>
-                    )}
-                  </motion.button>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3
-                        className={cn(
-                          'font-semibold',
-                          chore.completed && 'line-through text-gray-400'
-                        )}
-                      >
-                        {chore.title}
-                      </h3>
-                      <Badge
-                        className={cn(
-                          difficultyColors[chore.difficulty].bg,
-                          difficultyColors[chore.difficulty].text
-                        )}
-                        size="sm"
-                      >
-                        {chore.difficulty}
-                      </Badge>
-                    </div>
-
-                    <div className="flex items-center gap-4 mt-2">
-                      {chore.dueTime && (
-                        <div className="flex items-center gap-1 text-sm text-gray-500">
-                          <Clock className="w-4 h-4" />
-                          {chore.dueTime}
-                        </div>
+              <Card
+                className={cn('transition-all', completed && 'opacity-60')}
+                hoverable={!completed}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <motion.button
+                      onClick={() => !completed && handleCompleteChore(assignment.id)}
+                      disabled={completed}
+                      className={cn(
+                        'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                        completed
+                          ? 'bg-green-500'
+                          : 'border-2 border-gray-300 hover:border-[var(--color-primary)] cursor-pointer'
                       )}
-                      <div className="flex items-center gap-1 text-sm font-semibold text-amber-600">
-                        <Star className="w-4 h-4" />
-                        +{chore.points}
+                      whileHover={!completed ? { scale: 1.1 } : {}}
+                      whileTap={!completed ? { scale: 0.9 } : {}}
+                    >
+                      {completed ? (
+                        <CheckCircle className="w-6 h-6 text-white" />
+                      ) : (
+                        <span className="text-xl">{assignment.chore.icon}</span>
+                      )}
+                    </motion.button>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3
+                          className={cn(
+                            'font-semibold',
+                            completed && 'line-through text-gray-400'
+                          )}
+                        >
+                          {assignment.chore.title}
+                        </h3>
+                        <Badge className={cn(colors.bg, colors.text)} size="sm">
+                          {difficulty}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center gap-4 mt-2">
+                        {assignment.chore.timeOfDay !== 'ANYTIME' && (
+                          <div className="flex items-center gap-1 text-sm text-gray-500">
+                            <Clock className="w-4 h-4" />
+                            {assignment.chore.timeOfDay.charAt(0) + assignment.chore.timeOfDay.slice(1).toLowerCase()}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 text-sm font-semibold text-amber-600">
+                          <Star className="w-4 h-4" />
+                          +{assignment.chore.basePoints}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        })}
       </div>
 
-      {filteredChores.length === 0 && (
+      {filteredAssignments.length === 0 && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           className="text-center py-12"
         >
           <div className="text-6xl mb-4">
-            {filter === 'completed' ? '🎯' : '🎉'}
+            {filter === 'COMPLETED' ? '&#x1F3AF;' : '&#x1F389;'}
           </div>
           <h3 className="text-xl font-semibold">
-            {filter === 'completed'
+            {filter === 'COMPLETED'
               ? 'No completed chores yet'
-              : 'All done for today!'}
+              : filter === 'PENDING'
+              ? 'All done for today!'
+              : 'No chores yet'}
           </h3>
           <p className="text-gray-500 mt-1">
-            {filter === 'completed'
+            {filter === 'COMPLETED'
               ? 'Complete some chores to see them here'
-              : 'Great job, ChoreChamp!'}
+              : filter === 'PENDING'
+              ? 'Great job, ChoreChamp!'
+              : 'Add a chore to get started!'}
           </p>
         </motion.div>
       )}
@@ -334,15 +436,37 @@ export default function ChoresPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Points: {newChore.points}
+              Time of Day
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {['ANYTIME', 'MORNING', 'AFTERNOON', 'EVENING'].map((time) => (
+                <button
+                  key={time}
+                  onClick={() => setNewChore({ ...newChore, timeOfDay: time })}
+                  className={cn(
+                    'px-4 py-2 rounded-xl font-medium transition-all text-sm',
+                    newChore.timeOfDay === time
+                      ? 'bg-[var(--color-primary)] text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  )}
+                >
+                  {time.charAt(0) + time.slice(1).toLowerCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Points: {newChore.basePoints}
             </label>
             <input
               type="range"
               min={5}
               max={50}
               step={5}
-              value={newChore.points}
-              onChange={(e) => setNewChore({ ...newChore, points: parseInt(e.target.value) })}
+              value={newChore.basePoints}
+              onChange={(e) => setNewChore({ ...newChore, basePoints: parseInt(e.target.value) })}
               className="w-full"
             />
             <div className="flex justify-between text-sm text-gray-400">
@@ -365,6 +489,67 @@ export default function ChoresPage() {
               disabled={!newChore.title}
             >
               Add Chore
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Assign Existing Chore Modal */}
+      <Modal
+        isOpen={isAssignModalOpen}
+        onClose={() => {
+          setIsAssignModalOpen(false)
+          setSelectedChoreToAssign('')
+        }}
+        title="Assign Existing Chore"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-500 text-sm">
+            Pick a chore to assign to {currentKid?.name} for today:
+          </p>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {(familyChores || []).map((chore) => (
+              <button
+                key={chore.id}
+                onClick={() => setSelectedChoreToAssign(chore.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all',
+                  selectedChoreToAssign === chore.id
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}
+              >
+                <span className="text-xl">{chore.icon}</span>
+                <div className="flex-1">
+                  <p className="font-medium">{chore.title}</p>
+                  <p className="text-xs text-gray-500">
+                    {chore.difficulty} | +{chore.basePoints} pts
+                  </p>
+                </div>
+                {selectedChoreToAssign === chore.id && (
+                  <CheckCircle className="w-5 h-5 text-[var(--color-primary)]" />
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-4 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setIsAssignModalOpen(false)
+                setSelectedChoreToAssign('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleAssignChore}
+              disabled={!selectedChoreToAssign}
+            >
+              Assign
             </Button>
           </div>
         </div>

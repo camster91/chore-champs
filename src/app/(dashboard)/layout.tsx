@@ -27,7 +27,8 @@ const navItems = [
   { href: '/dashboard', icon: Home, label: 'Home' },
   { href: '/chores', icon: CheckSquare, label: 'Chores' },
   { href: '/rewards', icon: Gift, label: 'Rewards' },
-  { href: '/profile', icon: User, label: 'Profile' },
+  { href: '/profile', icon: User, label: 'Profiles' },
+  { href: '/settings', icon: Settings, label: 'Settings' },
 ]
 
 export default function DashboardLayout({
@@ -163,16 +164,7 @@ export default function DashboardLayout({
         </nav>
 
         {/* Bottom actions */}
-        <div className="p-4 border-t space-y-2">
-          <Link href="/settings">
-            <motion.div
-              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100 text-gray-600"
-              whileHover={{ x: 4 }}
-            >
-              <Settings className="w-5 h-5" />
-              <span className="font-medium">Settings</span>
-            </motion.div>
-          </Link>
+        <div className="p-4 border-t">
           <button
             onClick={() => signOut({ callbackUrl: '/' })}
             className="w-full"

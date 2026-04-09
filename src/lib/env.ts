@@ -18,7 +18,7 @@ export function validateEnv() {
   if (missingVars.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missingVars.join(', ')}. ` +
-      `Please check your .env file or Vercel environment settings.`
+      `Please check your .env file or environment settings.`
     )
   }
 }

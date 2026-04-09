@@ -42,7 +42,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <motion.div
-        className="w-full max-w-md"
+        className="w-full max-w-md relative"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
       >

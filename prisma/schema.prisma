@@ -1,73 +1,101 @@
-// Kids Chore App - Database Schema
-// Learn more: https://pris.ly/d/prisma-schema
+// ChoreChamps - Database Schema
+// https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
-  previewFeatures = []
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// ============== ENUMS (SIMULATED FOR SQLITE) ==============
-// enum ThemeMode { GIRL, BOY, NEUTRAL }
-// enum Difficulty { EASY, MEDIUM, HARD }
-// enum RecurringType { DAILY, WEEKLY, MONTHLY, WEEKDAYS, WEEKENDS }
-// enum TimeOfDay { MORNING, AFTERNOON, EVENING, ANYTIME }
-// enum ChoreStatus { PENDING, COMPLETED, SKIPPED }
+// ============== ENUMS ==============
+
+enum ThemeMode {
+  GIRL
+  BOY
+  NEUTRAL
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum RecurringType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  WEEKDAYS
+  WEEKENDS
+}
+
+enum TimeOfDay {
+  MORNING
+  AFTERNOON
+  EVENING
+  ANYTIME
+}
+
+enum ChoreStatus {
+  PENDING
+  COMPLETED
+  SKIPPED
+}
 
 // ============== MODELS ==============
 
 model Parent {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  password      String
-  name          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  family        Family?
+  family Family?
 }
 
 model Family {
-  id            String   @id @default(cuid())
-  name          String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  parentId      String   @unique
-  parent        Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parentId String @unique
+  parent   Parent @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
-  kids          Kid[]
-  chores        Chore[]
-  rewards       Reward[]
-  badges        BadgeDefinition[]
+  kids    Kid[]
+  chores  Chore[]
+  rewards Reward[]
+  badges  BadgeDefinition[]
+  habits  Habit[]
 }
 
 model Kid {
-  id            String    @id @default(cuid())
-  name          String
-  age           Int
-  avatarId      String    @default("default")
-  themeMode     String    @default("NEUTRAL")
-  primaryColor  String    @default("#6366f1")
-  secondaryColor String   @default("#8b5cf6")
+  id             String    @id @default(cuid())
+  name           String
+  age            Int
+  avatarId       String    @default("default")
+  themeMode      ThemeMode @default(NEUTRAL)
+  primaryColor   String    @default("#6366f1")
+  secondaryColor String    @default("#8b5cf6")
 
   // Gamification stats
-  points        Int       @default(0)
-  totalPoints   Int       @default(0)
-  streakDays    Int       @default(0)
-  lastActiveAt  DateTime?
-  level         Int       @default(1)
-  experience    Int       @default(0)
+  points       Int       @default(0)
+  totalPoints  Int       @default(0)
+  streakDays   Int       @default(0)
+  lastActiveAt DateTime?
+  level        Int       @default(1)
+  experience   Int       @default(0)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  familyId      String
-  family        Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   choreAssignments ChoreAssignment[]
   habitLogs        HabitLog[]
@@ -79,74 +107,82 @@ model Kid {
 }
 
 model Chore {
-  id            String        @id @default(cuid())
-  title         String
-  description   String?
-  icon          String        @default("star")
-  difficulty    String        @default("EASY")
-  basePoints    Int           @default(10)
-  recurring     String?
-  isActive      Boolean       @default(true)
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  icon        String        @default("star")
+  difficulty  Difficulty    @default(EASY)
+  basePoints  Int           @default(10)
+  recurring   RecurringType?
+  timeOfDay   TimeOfDay     @default(ANYTIME)
+  isActive    Boolean       @default(true)
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  familyId      String
-  family        Family        @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  assignments   ChoreAssignment[]
+  assignments ChoreAssignment[]
 
   @@index([familyId])
 }
 
 model ChoreAssignment {
-  id            String      @id @default(cuid())
-  dueDate       DateTime
-  status        String      @default("PENDING")
-  completedAt   DateTime?
-  pointsEarned  Int?
-  notes         String?
+  id           String      @id @default(cuid())
+  dueDate      DateTime
+  status       ChoreStatus @default(PENDING)
+  completedAt  DateTime?
+  pointsEarned Int?
+  notes        String?
+  bonusPoints  Int         @default(0)
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  choreId       String
-  chore         Chore       @relation(fields: [choreId], references: [id], onDelete: Cascade)
+  choreId String
+  chore   Chore @relation(fields: [choreId], references: [id], onDelete: Cascade)
 
-  kidId         String
-  kid           Kid         @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   Kid @relation(fields: [kidId], references: [id], onDelete: Cascade)
 
   @@index([kidId])
   @@index([choreId])
   @@index([dueDate])
+  @@index([status])
 }
 
 model Habit {
-  id            String    @id @default(cuid())
-  title         String
-  description   String?
-  icon          String    @default("check")
-  timeOfDay     String    @default("ANYTIME")
-  isActive      Boolean   @default(true)
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  icon        String    @default("check")
+  timeOfDay   TimeOfDay @default(ANYTIME)
+  isActive    Boolean   @default(true)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  logs          HabitLog[]
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+
+  logs HabitLog[]
+
+  @@index([familyId])
 }
 
 model HabitLog {
-  id            String   @id @default(cuid())
-  date          DateTime
-  completed     Boolean  @default(false)
+  id        String   @id @default(cuid())
+  date      DateTime
+  completed Boolean  @default(false)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  habitId       String
-  habit         Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId String
+  habit   Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
-  kidId         String
-  kid           Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   Kid @relation(fields: [kidId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, kidId, date])
   @@index([kidId])
@@ -154,99 +190,100 @@ model HabitLog {
 }
 
 model Reward {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  cost          Int
-  icon          String   @default("gift")
-  isActive      Boolean  @default(true)
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  cost        Int
+  icon        String  @default("gift")
+  category    String  @default("General")
+  isActive    Boolean @default(true)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  familyId      String
-  family        Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  redemptions   RedeemedReward[]
+  redemptions RedeemedReward[]
 
   @@index([familyId])
 }
 
 model RedeemedReward {
-  id            String   @id @default(cuid())
-  pointsSpent   Int
-  redeemedAt    DateTime @default(now())
-  fulfilled     Boolean  @default(false)
-  fulfilledAt   DateTime?
+  id          String    @id @default(cuid())
+  pointsSpent Int
+  redeemedAt  DateTime  @default(now())
+  fulfilled   Boolean   @default(false)
+  fulfilledAt DateTime?
 
-  rewardId      String
-  reward        Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  rewardId String
+  reward   Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
 
-  kidId         String
-  kid           Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   Kid @relation(fields: [kidId], references: [id], onDelete: Cascade)
 
   @@index([kidId])
 }
 
 model BadgeDefinition {
-  id            String   @id @default(cuid())
-  name          String
-  description   String
-  icon          String
-  requirement   String   // JSON string defining unlock criteria
-  category      String   @default("general")
+  id          String @id @default(cuid())
+  name        String
+  description String
+  icon        String
+  requirement String // JSON string defining unlock criteria
+  category    String @default("general")
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  familyId      String?
-  family        Family?  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  familyId String?
+  family   Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
-  earnedBy      EarnedBadge[]
+  earnedBy EarnedBadge[]
 
   @@index([familyId])
 }
 
 model EarnedBadge {
-  id            String   @id @default(cuid())
-  earnedAt      DateTime @default(now())
+  id       String   @id @default(cuid())
+  earnedAt DateTime @default(now())
 
-  badgeId       String
-  badge         BadgeDefinition @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badgeId String
+  badge   BadgeDefinition @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
-  kidId         String
-  kid           Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   Kid @relation(fields: [kidId], references: [id], onDelete: Cascade)
 
   @@unique([badgeId, kidId])
   @@index([kidId])
 }
 
 model PlannerItem {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  startTime     DateTime?
-  endTime       DateTime?
-  date          DateTime
-  isCompleted   Boolean  @default(false)
-  color         String?
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime?
+  endTime     DateTime?
+  date        DateTime
+  isCompleted Boolean   @default(false)
+  color       String?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  kidId         String
-  kid           Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  kidId String
+  kid   Kid @relation(fields: [kidId], references: [id], onDelete: Cascade)
 
   @@index([kidId])
   @@index([date])
 }
 
 model AvatarItem {
-  id            String   @id @default(cuid())
-  name          String
-  category      String   // "base", "outfit", "accessory", "background"
-  imageUrl      String
-  unlockCost    Int      @default(0)
-  themeMode     String?
+  id         String @id @default(cuid())
+  name       String
+  category   String // "base", "outfit", "accessory", "background"
+  imageUrl   String
+  unlockCost Int    @default(0)
+  themeMode  ThemeMode?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 }

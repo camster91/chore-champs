@@ -5,26 +5,32 @@ A gamified chore tracker for kids. "ChoreChamps". Built with Next.js.
 
 ## Stack
 - Next.js (App Router)
-- Prisma + PostgreSQL (migrated from Supabase on 2026-03-17)
+- Prisma + PostgreSQL
 - NextAuth for session management
 - Tailwind
+- Zustand for client state
+- Framer Motion for animations
 
 ## Database
-- Host: postgresql://kids_chore:KidsChore2024!@10.0.1.10:5432/kids_chore_db
-- kids-chore-postgres container on VPS coolify network
+- PostgreSQL via Prisma ORM
+- Connection configured via DATABASE_URL environment variable
+- See .env.example for required env vars
 
 ## Auth
-- Migrated from Supabase to credentials-based NextAuth
-- Login: cameron@ashbi.ca / Ashbi2026!
-- Child accounts linked to parent family
+- Credentials-based NextAuth (email + password)
+- Parent accounts with linked family and child profiles
+- JWT session strategy
 
 ## Deployment
 - Target: chores.ashbi.ca
-- Need to add to Coolify — not yet deployed as of 2026-03-17
+- Docker + Coolify
+- See docker-compose.yml for local development
 
 ## Seed
-- prisma/seed.js creates: parent (cameron@ashbi.ca), 2 children, 5 chores
+- `npx prisma db seed` runs prisma/seed.js
+- Creates: parent account, 2 children, sample chores and rewards
 
 ## DO NOT
 - Do not revert to Supabase — fully migrated to self-hosted Postgres
-- Do not change DATABASE_URL
+- Do not commit credentials or secrets to the repository
+- Do not change the database provider from PostgreSQL
