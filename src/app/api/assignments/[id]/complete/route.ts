@@ -72,6 +72,13 @@ export async function POST(
     }),
   ])
 
+  // Check for new badge unlocks
+  const newBadges = await checkAndAwardBadges(updatedKid.id, {
+    totalPoints: newTotalPoints,
+    streakDays: newStreakDays,
+    level: newLevel,
+  })
+
   return NextResponse.json({
     assignment: updatedAssignment,
     kid: updatedKid,
@@ -79,5 +86,45 @@ export async function POST(
     leveledUp,
     newLevel: leveledUp ? newLevel : null,
     streakDays: newStreakDays,
+    newBadges,
   })
+}
+
+async function checkAndAwardBadges(
+  kidId: string,
+  stats: { totalPoints: number; streakDays: number; level: number }
+) {
+  const badges = await prisma.badgeDefinition.findMany()
+  const earnedBadges = await prisma.earnedBadge.findMany({
+    where: { kidId },
+    select: { badgeId: true },
+  })
+  const earnedIds = new Set(earnedBadges.map((b) => b.badgeId))
+
+  const newBadges: { name: string; icon: string; description: string }[] = []
+
+  for (const badge of badges) {
+    if (earnedIds.has(badge.id)) continue
+
+    let criteria: { type: string; value: number }
+    try {
+      criteria = JSON.parse(badge.requirement)
+    } catch {
+      continue
+    }
+
+    let earned = false
+    if (criteria.type === 'streak' && stats.streakDays >= criteria.value) earned = true
+    if (criteria.type === 'level' && stats.level >= criteria.value) earned = true
+    if (criteria.type === 'points' && stats.totalPoints >= criteria.value) earned = true
+
+    if (earned) {
+      await prisma.earnedBadge.create({
+        data: { badgeId: badge.id, kidId },
+      })
+      newBadges.push({ name: badge.name, icon: badge.icon, description: badge.description })
+    }
+  }
+
+  return newBadges
 }

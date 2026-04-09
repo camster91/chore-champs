@@ -82,10 +82,25 @@ export default function DashboardPage() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
   const [newBadges, setNewBadges] = useState<NewBadge[]>([])
+  const [dailyGenerated, setDailyGenerated] = useState(false)
 
   const { data, isLoading, mutate } = useFetch<DashboardData>(
     currentKid ? `/api/dashboard?kidId=${currentKid.id}` : null
   )
+
+  // Auto-generate daily assignments from recurring chores on first load
+  useEffect(() => {
+    if (currentKid && !dailyGenerated) {
+      setDailyGenerated(true)
+      fetch('/api/chores/generate-daily', { method: 'POST' })
+        .then((res) => res.json())
+        .then((result) => {
+          if (result.created > 0) mutate()
+        })
+        .catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentKid?.id])
 
   // Sync server data back to local store
   useEffect(() => {

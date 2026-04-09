@@ -57,6 +57,8 @@ export default function ChoresPage() {
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
   const [newBadges, setNewBadges] = useState<NewBadge[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false)
+  const [selectedChoreToAssign, setSelectedChoreToAssign] = useState('')
   const [newChore, setNewChore] = useState({
     title: '',
     basePoints: 10,
@@ -69,7 +71,15 @@ export default function ChoresPage() {
     currentKid ? `/api/chores?kidId=${currentKid.id}` : null
   )
 
-  const { data: familyChores } = useFetch<Array<{ id: string; title: string }>>(
+  interface FamilyChore {
+    id: string
+    title: string
+    icon: string
+    difficulty: string
+    basePoints: number
+  }
+
+  const { data: familyChores } = useFetch<FamilyChore[]>(
     currentKid ? '/api/chores' : null
   )
 
@@ -133,6 +143,22 @@ export default function ChoresPage() {
       mutate()
     } catch (err) {
       console.error('Failed to add chore:', err)
+    }
+  }
+
+  const handleAssignChore = async () => {
+    if (!selectedChoreToAssign || !currentKid) return
+
+    try {
+      await apiPost('/api/chores/assign', {
+        choreId: selectedChoreToAssign,
+        kidIds: [currentKid.id],
+      })
+      setIsAssignModalOpen(false)
+      setSelectedChoreToAssign('')
+      mutate()
+    } catch (err) {
+      console.error('Failed to assign chore:', err)
     }
   }
 
@@ -207,12 +233,22 @@ export default function ChoresPage() {
               : 'No chores assigned yet'}
           </p>
         </div>
-        <Button
-          leftIcon={<Plus className="w-5 h-5" />}
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          Add Chore
-        </Button>
+        <div className="flex gap-2">
+          {familyChores && familyChores.length > 0 && (
+            <Button
+              variant="outline"
+              onClick={() => setIsAssignModalOpen(true)}
+            >
+              Assign Existing
+            </Button>
+          )}
+          <Button
+            leftIcon={<Plus className="w-5 h-5" />}
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            New Chore
+          </Button>
+        </div>
       </motion.div>
 
       {/* Filter Tabs */}
@@ -453,6 +489,67 @@ export default function ChoresPage() {
               disabled={!newChore.title}
             >
               Add Chore
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Assign Existing Chore Modal */}
+      <Modal
+        isOpen={isAssignModalOpen}
+        onClose={() => {
+          setIsAssignModalOpen(false)
+          setSelectedChoreToAssign('')
+        }}
+        title="Assign Existing Chore"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-500 text-sm">
+            Pick a chore to assign to {currentKid?.name} for today:
+          </p>
+          <div className="space-y-2 max-h-80 overflow-y-auto">
+            {(familyChores || []).map((chore) => (
+              <button
+                key={chore.id}
+                onClick={() => setSelectedChoreToAssign(chore.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all',
+                  selectedChoreToAssign === chore.id
+                    ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                    : 'border-gray-200 hover:border-gray-300'
+                )}
+              >
+                <span className="text-xl">{chore.icon}</span>
+                <div className="flex-1">
+                  <p className="font-medium">{chore.title}</p>
+                  <p className="text-xs text-gray-500">
+                    {chore.difficulty} | +{chore.basePoints} pts
+                  </p>
+                </div>
+                {selectedChoreToAssign === chore.id && (
+                  <CheckCircle className="w-5 h-5 text-[var(--color-primary)]" />
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-4 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setIsAssignModalOpen(false)
+                setSelectedChoreToAssign('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleAssignChore}
+              disabled={!selectedChoreToAssign}
+            >
+              Assign
             </Button>
           </div>
         </div>
