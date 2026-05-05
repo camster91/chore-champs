@@ -18,40 +18,63 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[AUTH] authorize() called')
+        console.log('[AUTH] Credentials received:', {
+          email: credentials?.email,
+          hasPassword: !!credentials?.password
+        })
+        
         try {
           if (!credentials?.email || !credentials?.password) {
-            console.error('Auth error: Missing email or password')
+            console.error('[AUTH] Missing credentials')
             return null
           }
 
+          console.log('[AUTH] Looking up user in database...')
           const parent = await prisma.parent.findUnique({
             where: { email: credentials.email },
             include: { family: true },
           })
+          
+          console.log('[AUTH] User lookup result:', parent ? {
+            id: parent.id,
+            email: parent.email,
+            hasPassword: !!parent.password,
+            passwordLength: parent.password?.length
+          } : 'null')
 
           if (!parent) {
-            console.log('Auth: User not found')
+            console.log('[AUTH] User not found in database')
             return null
           }
 
+          console.log('[AUTH] Comparing passwords...')
+          console.log('[AUTH] Input:', credentials.password)
+          console.log('[AUTH] Stored hash:', parent.password.substring(0, 20) + '...')
+          
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             parent.password
           )
+          
+          console.log('[AUTH] Password validation result:', isPasswordValid)
 
           if (!isPasswordValid) {
-            console.log('Auth: Invalid password')
+            console.log('[AUTH] Password mismatch')
             return null
           }
 
-          return {
+          const user = {
             id: parent.id,
             email: parent.email,
             name: parent.name,
             familyId: parent.family?.id,
           }
+          
+          console.log('[AUTH] Success! Returning user:', user)
+          return user
         } catch (error) {
-          console.error('Auth error in authorize:', error)
+          console.error('[AUTH] Exception in authorize:', error)
           return null
         }
       },
@@ -59,6 +82,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      console.log('[AUTH] jwt() callback - user:', !!user, 'token:', !!token)
       if (user) {
         token.id = user.id
         token.familyId = user.familyId
@@ -66,6 +90,7 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
+      console.log('[AUTH] session() callback - token:', !!token)
       if (session.user) {
         session.user.id = token.id as string
         session.user.familyId = token.familyId
@@ -80,33 +105,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
   },
-  debug: process.env.NODE_ENV === 'development',
-}
-
-export const NEXTAUTH_COOKIE_NAME = '__Host-next-auth.session-token'
-
-// Parse our custom session token format
-export function parseCustomSessionToken(token: string): any | null {
-  try {
-    // Our token is base64url encoded JSON
-    const decoded = Buffer.from(token, 'base64url').toString()
-    const data = JSON.parse(decoded)
-    
-    // Validate required fields
-    if (!data.id || !data.email) {
-      return null
-    }
-    
-    return {
-      user: {
-        id: data.id,
-        email: data.email,
-        name: data.name,
-        familyId: data.familyId,
-      },
-      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    }
-  } catch {
-    return null
-  }
+  debug: true,
 }
