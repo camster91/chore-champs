@@ -26,6 +26,12 @@ RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
+
+# Add v3.19 repos for libssl1.1 (Prisma requirement)
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/main" >> /etc/apk/repositories && \
+    echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/community" >> /etc/apk/repositories && \
+    apk add --no-cache libssl1.1
+
 WORKDIR /app
 
 ENV NODE_ENV production
