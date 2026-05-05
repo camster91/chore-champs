@@ -18,6 +18,7 @@ import { TimeOfDay } from '@prisma/client'
 import { useAudio } from '@/lib/audio-context'
 import { trackEvent, EVENTS } from '@/lib/telemetry'
 import useSWR, { mutate } from 'swr'
+import Link from 'next/link'
 
 interface UIHabit {
   id: string
@@ -80,61 +81,32 @@ export default function HabitsPage() {
     }
   }, [dbHabits, currentKid])
 
-  const handleToggleHabit = async (habit: UIHabit) => {
-    if (!currentKid) return
-    if (habit.completed) return
-
-    try {
-      const isQuantitative = habit.targetCount > 1
-      const newCount = habit.currentCount + 1
-      const isNowCompleted = newCount >= habit.targetCount
-
-      // Optimistic state
-      setHabits(prev => 
-        prev.map(h => h.id === habit.id ? { 
-          ...h, 
-          completed: isNowCompleted, 
-          currentCount: newCount 
-        } : h)
-      )
-
-      await logHabit(habit.id, currentKid.id, !isQuantitative)
-      mutate(`habits-${currentKid.id}`) // Sync background
-      
-      play('pop')
-
-      trackEvent(EVENTS.HABIT_LOGGED, {
-        habitTitle: habit.title,
-        points: isNowCompleted ? habit.points : 0,
-        count: newCount,
-        targetCount: habit.targetCount,
-        isCompleted: isNowCompleted,
-      })
-
-      if (isNowCompleted) {
-        play('tada')
-        setShowPointsEarned(habit.points)
-        updateKidInStore(currentKid.id, {
-          points: currentKid.points + habit.points,
-          totalPoints: currentKid.totalPoints + habit.points,
-          experience: currentKid.experience + habit.points
-        })
-      }
-    } catch (error) {
-      console.error('Failed to log habit:', error)
-      mutate(`habits-${currentKid.id}`) // Rollback from server
-    }
+  if (!currentKid) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <Sparkles className="w-16 h-16 text-gray-300 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Select a Profile</h2>
+        <p className="text-gray-500 mb-6">Choose a kid to track their habits.</p>
+        <Link href="/profile">
+          <Button size="lg">Go to Profiles</Button>
+        </Link>
+      </div>
+    )
   }
 
-  const handleAddHabit = async () => {
-    if (!newHabit.title || !currentKid) return
-
+  const handleCreateHabit = async () => {
+    if (!newHabit.title) return
     setIsSubmitting(true)
     try {
-      await createHabit(newHabit)
+      await createHabit({
+        ...newHabit,
+        points: newHabit.points,
+        targetCount: newHabit.targetCount,
+      })
       mutate(`habits-${currentKid.id}`)
       setIsAddModalOpen(false)
       setNewHabit({ title: '', description: '', icon: '🧘', timeOfDay: 'ANYTIME', points: 5, targetCount: 1, unit: '' })
+      play('pop')
     } catch (error) {
       console.error('Failed to create habit:', error)
     } finally {
@@ -142,187 +114,107 @@ export default function HabitsPage() {
     }
   }
 
-  const isLoading = habitsLoading || (currentKid && habits.length === 0 && !dbHabits)
+  const handleLogHabit = async (habit: UIHabit) => {
+    if (habit.completed && habit.targetCount === 1) return
+
+    try {
+      const result = await logHabit(habit.id, currentKid.id, !habit.completed)
+      
+      if (result.completed) {
+        play('tada')
+        setShowPointsEarned(habit.points)
+        setTimeout(() => setShowPointsEarned(null), 2000)
+      } else {
+        play('pop')
+      }
+
+      mutate(`habits-${currentKid.id}`)
+      
+      trackEvent(EVENTS.HABIT_LOGGED, {
+        habitTitle: habit.title,
+        completed: result.completed,
+      })
+    } catch (error) {
+      console.error('Failed to log habit:', error)
+    }
+  }
 
   return (
     <div className="space-y-8">
-      {/* Points earned animation */}
       <AnimatePresence>
         {showPointsEarned && (
-          <PointsEarned
-            amount={showPointsEarned}
-            onComplete={() => setShowPointsEarned(null)}
-          />
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50">
+            <PointsEarned points={showPointsEarned} />
+          </div>
         )}
       </AnimatePresence>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-      >
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Daily Habits</h1>
-          <p className="text-gray-500 mt-1">Small steps every day lead to big results!</p>
+          <h1 className="text-3xl font-bold">{currentKid.name}&apos;s Habits</h1>
+          <p className="text-gray-500 mt-1">Build daily streaks and grow stronger!</p>
         </div>
-        <Button
-          leftIcon={<Plus className="w-5 h-5" />}
-          onClick={() => setIsAddModalOpen(true)}
-        >
-          Add Habit
-        </Button>
-      </motion.div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {habits.map((habit, index) => (
-          <motion.div
-            key={habit.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-          >
-            <Card
-              className={cn(
-                'transition-all cursor-pointer',
-                habit.completed && 'bg-green-50/50 border-green-100'
-              )}
-              onClick={() => handleToggleHabit(habit)}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-3xl">{habit.icon}</div>
-                  <div className={cn(
-                    'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors',
-                    habit.completed 
-                      ? 'bg-green-500 border-green-500' 
-                      : 'border-gray-200'
-                  )}>
-                    {habit.completed && <CheckCircle2 className="w-5 h-5 text-white" />}
-                  </div>
-                </div>
-                <h3 className={cn(
-                  'text-lg font-bold',
-                  habit.completed && 'text-green-700'
-                )}>
-                  {habit.title}
-                </h3>
-                {habit.description && (
-                  <p className="text-gray-500 text-sm mt-1">{habit.description}</p>
-                )}
-
-                {habit.targetCount > 1 && (
-                  <div className="mt-4 space-y-2">
-                    <div className="flex justify-between text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      <span>Progress</span>
-                      <span>{habit.currentCount} / {habit.targetCount} {habit.unit}</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(habit.currentCount / habit.targetCount) * 100}%` }}
-                        className="h-full bg-[var(--color-primary)]"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4 flex items-center justify-between">
-                  <Badge variant="info" size="sm" className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {habit.timeOfDay}
-                  </Badge>
-                  <div className="flex items-center gap-1 text-sm font-bold text-amber-600">
-                    <Sparkles className="w-4 h-4" />
-                    +{habit.points}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+        <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>New Habit</Button>
       </div>
 
-      <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add New Habit"
-        size="md"
-      >
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {habitsLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i} className="animate-pulse h-32 bg-gray-50" />
+          ))
+        ) : habits.length > 0 ? (
+          habits.map((habit, index) => (
+            <motion.div key={habit.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.05 }} onClick={() => handleLogHabit(habit)}>
+              <Card className={cn('cursor-pointer transition-all hover:shadow-md border-2', habit.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100 hover:border-[var(--color-primary)]')}>
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="text-3xl">{habit.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className={cn('font-bold truncate', habit.completed && 'text-gray-400')}>{habit.title}</h3>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{habit.timeOfDay}</span>
+                        {habit.targetCount > 1 && <span>• {habit.currentCount}/{habit.targetCount} {habit.unit}</span>}
+                      </div>
+                    </div>
+                    <div className={cn('w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2', habit.completed ? 'bg-green-500 border-green-500 text-white' : 'border-gray-200')}>
+                      {habit.completed ? <CheckCircle2 className="w-6 h-6" /> : <div className="text-xs font-bold text-gray-400">+{habit.points}</div>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))
+        ) : (
+          <div className="col-span-full py-12 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
+            <Sparkles className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-xl font-bold">Start a New Habit</h3>
+            <p className="text-gray-500 mb-6">Habits help you earn points even faster!</p>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>Create Habit</Button>
+          </div>
+        )}
+      </div>
+
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Build New Habit">
+        <div className="space-y-4">
+          <Input label="Habit Name" placeholder="e.g. Read for 20 mins" value={newHabit.title} onChange={e => setNewHabit({ ...newHabit, title: e.target.value })} />
+          <div className="flex flex-wrap gap-2 py-2">
+            {habitIcons.map(icon => (
+              <button key={icon} onClick={() => setNewHabit({ ...newHabit, icon })} className={cn('w-12 h-12 text-2xl flex items-center justify-center rounded-xl border-2 transition-all', newHabit.icon === icon ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-gray-100 hover:border-gray-200')}>
+                {icon}
+              </button>
+            ))}
+          </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Habit Name"
-              placeholder="e.g. Drink Water"
-              value={newHabit.title}
-              onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
-              className="col-span-2"
-            />
-            <Input
-              label="Points"
-              type="number"
-              value={newHabit.points}
-              onChange={(e) => setNewHabit({ ...newHabit, points: parseInt(e.target.value) })}
-            />
-            <Input
-              label="Target Count"
-              type="number"
-              value={newHabit.targetCount}
-              onChange={(e) => setNewHabit({ ...newHabit, targetCount: parseInt(e.target.value) })}
-            />
-            <Input
-              label="Unit (Optional)"
-              placeholder="e.g. glasses, mins"
-              value={newHabit.unit}
-              onChange={(e) => setNewHabit({ ...newHabit, unit: e.target.value })}
-              className="col-span-2"
-            />
-          </div>
-          <Input
-            label="Description"
-            placeholder="Why is this habit important?"
-            value={newHabit.description}
-            onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
-          />
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
-            <div className="flex flex-wrap gap-2">
-              {habitIcons.map(icon => (
-                <button
-                  key={icon}
-                  onClick={() => setNewHabit({ ...newHabit, icon })}
-                  className={cn(
-                    'w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all',
-                    newHabit.icon === icon ? 'bg-[var(--color-primary)] scale-110' : 'bg-gray-100 hover:bg-gray-200'
-                  )}
-                >
-                  {icon}
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Time of Day</label>
+              <select className="w-full p-3 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-[var(--color-primary)]" value={newHabit.timeOfDay} onChange={e => setNewHabit({ ...newHabit, timeOfDay: e.target.value as TimeOfDay })}>
+                {timeOfDayOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
             </div>
+            <Input label="Points" type="number" value={newHabit.points} onChange={e => setNewHabit({ ...newHabit, points: parseInt(e.target.value) })} />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Time of Day</label>
-            <div className="flex flex-wrap gap-2">
-              {timeOfDayOptions.map(time => (
-                <button
-                  key={time}
-                  onClick={() => setNewHabit({ ...newHabit, timeOfDay: time })}
-                  className={cn(
-                    'px-4 py-2 rounded-xl text-sm font-medium transition-all',
-                    newHabit.timeOfDay === time ? 'bg-[var(--color-primary)] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  )}
-                >
-                  {time}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-4 pt-4">
-            <Button variant="outline" className="flex-1" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
-            <Button className="flex-1" onClick={handleAddHabit} disabled={!newHabit.title || isSubmitting}>
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Habit'}
-            </Button>
-          </div>
+          <Button className="w-full mt-4" onClick={handleCreateHabit} disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Start Habit'}</Button>
         </div>
       </Modal>
     </div>
