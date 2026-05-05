@@ -135,13 +135,13 @@ export default function RewardsPage() {
                     <div className="p-6 flex-1">
                       <div className="flex justify-between items-start mb-4">
                         <div className="text-4xl">{reward.icon}</div>
-                        <Badge variant={canAfford ? 'primary' : 'outline'} size="lg">{reward.cost} pts</Badge>
+                        <Badge variant={canAfford ? 'primary' : 'secondary'} size="lg">{reward.cost} pts</Badge>
                       </div>
                       <h3 className="text-xl font-bold mb-2">{reward.title}</h3>
                       {reward.description && <p className="text-gray-500 text-sm">{reward.description}</p>}
                     </div>
                     <div className="p-4 bg-gray-50 border-t mt-auto">
-                      <Button className="w-full" variant={canAfford ? 'primary' : 'outline'} disabled={!canAfford} onClick={() => handleRedeemReward(reward)} leftIcon={canAfford ? <Star className="w-4 h-4" /> : <Lock className="w-4 h-4" />}>
+                      <Button className="w-full" variant={canAfford ? 'primary' : 'secondary'} disabled={!canAfford} onClick={() => handleRedeemReward(reward)} leftIcon={canAfford ? <Star className="w-4 h-4" /> : <Lock className="w-4 h-4" />}>
                         {canAfford ? 'Redeem Now' : 'Keep Earning!'}
                       </Button>
                     </div>
