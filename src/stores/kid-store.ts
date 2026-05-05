@@ -85,7 +85,7 @@ export const useKidStore = create<KidState>()(
         })
       },
 
-      // Sync local store with server data, preserving current kid selection
+      // Sync local store with server data, auto-selecting first kid if none selected
       syncFromServer: (serverKids) => {
         const state = get()
         const kids: Kid[] = serverKids.map((sk) => ({
@@ -105,9 +105,20 @@ export const useKidStore = create<KidState>()(
           experience: sk.experience,
         }))
 
-        const currentKid = state.currentKid
-          ? kids.find((k) => k.id === state.currentKid!.id) || null
-          : null
+        // Auto-select first kid if currentKid is null and kids exist
+        let currentKid = state.currentKid
+        if (!currentKid && kids.length > 0) {
+          currentKid = kids[0]
+        } else if (currentKid) {
+          // Verify currentKid still exists, otherwise select first
+          const exists = kids.find((k) => k.id === currentKid!.id)
+          if (!exists) {
+            currentKid = kids[0] || null
+          } else {
+            // Update with fresh server data
+            currentKid = kids.find((k) => k.id === currentKid!.id) || null
+          }
+        }
 
         set({ kids, currentKid })
       },
