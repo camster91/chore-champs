@@ -144,7 +144,7 @@ export default function HabitsPage() {
       <AnimatePresence>
         {showPointsEarned && (
           <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50">
-            <PointsEarned points={showPointsEarned} />
+            <PointsEarned amount={showPointsEarned} />
           </div>
         )}
       </AnimatePresence>
