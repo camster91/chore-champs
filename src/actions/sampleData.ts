@@ -36,11 +36,10 @@ const SAMPLE_REWARDS = [
 ]
 
 const SAMPLE_HABITS = [
-  { title: 'Drink Water', description: 'Drink 8 glasses of water today', frequency: 'DAILY' as const, icon: '💧' },
-  { title: 'Exercise', description: '30 minutes of physical activity', frequency: 'DAILY' as const, icon: '🏃' },
-  { title: 'Practice Gratitude', description: 'Write down 3 things you are thankful for', frequency: 'DAILY' as const, icon: '🙏' },
-  { title: 'No Complaining', description: 'Go all day without complaining', frequency: 'DAILY' as const, icon: '😊' },
-  { title: 'Read Before Bed', description: 'Read for at least 10 minutes', frequency: 'DAILY' as const, icon: '📖' },
+  { title: 'Drink Water', description: 'Drink 8 glasses of water', icon: '💧', points: 5 },
+  { title: 'Exercise', description: '30 minutes of physical activity', icon: '🏃', points: 10 },
+  { title: 'Practice Gratitude', description: 'Write down 3 things you are thankful for', icon: '🙏', points: 5 },
+  { title: 'Read Before Bed', description: 'Read for at least 10 minutes', icon: '📖', points: 5 },
 ]
 
 export async function addSampleData() {
@@ -72,30 +71,35 @@ export async function addSampleData() {
     )
   )
 
-  // Add sample chores
+  // Add sample chores with assignments
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  await Promise.all(
-    SAMPLE_CHORES.map(chore =>
-      prisma.chore.create({
-        data: {
-          ...chore,
-          familyId,
-          recurring: chore.title.includes('Brush') || chore.title.includes('Read') ? 'DAILY' : null,
-          timeOfDay: 'ANYTIME',
-          isActive: true,
-          assignments: {
-            create: kids.map(kid => ({
-              kidId: kid.id,
-              dueDate: today,
-              status: 'PENDING'
-            }))
-          }
-        }
-      })
-    )
-  )
+  for (const chore of SAMPLE_CHORES) {
+    const newChore = await prisma.chore.create({
+      data: {
+        title: chore.title,
+        description: chore.description,
+        basePoints: chore.basePoints,
+        icon: chore.icon,
+        difficulty: chore.difficulty,
+        familyId,
+        recurring: chore.title.includes('Brush') || chore.title.includes('Read') ? 'DAILY' : null,
+        timeOfDay: 'ANYTIME',
+        isActive: true,
+      }
+    })
+
+    // Create assignments for each kid
+    await prisma.choreAssignment.createMany({
+      data: kids.map(kid => ({
+        choreId: newChore.id,
+        kidId: kid.id,
+        dueDate: today,
+        status: 'PENDING'
+      }))
+    })
+  }
 
   // Add sample rewards
   await Promise.all(
@@ -112,21 +116,12 @@ export async function addSampleData() {
 
   // Add sample habits
   await Promise.all(
-    SAMPLE_HABITS.map((habit, index) =>
+    SAMPLE_HABITS.map(habit =>
       prisma.habit.create({
         data: {
           ...habit,
           familyId,
           isActive: true,
-          streakDays: Math.floor(Math.random() * 5),
-          lastLoggedAt: new Date(),
-          assignments: {
-            create: kids.map(kid => ({
-              kidId: kid.id,
-              completed: index < 2,
-              loggedAt: index < 2 ? new Date() : null,
-            }))
-          }
         }
       })
     )
@@ -152,7 +147,7 @@ export async function addSampleData() {
   revalidatePath('/profile')
 
   return { 
-    message: 'Sample data added successfully!', 
+    message: 'Sample data added! Explore with 3 kids, 10 chores, and 8 rewards.', 
     added: true,
     kidsCount: kids.length,
     choresCount: SAMPLE_CHORES.length,
