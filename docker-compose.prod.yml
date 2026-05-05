@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  app:
+    image: kids-chore-app-fixed:latest
+    container_name: kids-chore-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://chorechamps:KidsChore2024!@kids-chore-postgres:5432/chorechamps
+      - NEXTAUTH_SECRET=kids-chore-app-secret-key-production
+      - NEXTAUTH_URL=https://kidschore.ashbi.ca
+      - NODE_ENV=production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.kids-chore.rule=Host(`kidschore.ashbi.ca`)"
+      - "traefik.http.routers.kids-chore.tls=true"
+      - "traefik.http.routers.kids-chore.tls.certresolver=letsencrypt"
+      - "traefik.http.services.kids-chore.loadbalancer.server.port=3000"
+    networks:
+      - coolify
+    depends_on:
+      - kids-chore-postgres
+
+  kids-chore-postgres:
+    image: postgres:15-alpine
+    container_name: kids-chore-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=chorechamps
+      - POSTGRES_PASSWORD=KidsChore2024!
+      - POSTGRES_DB=chorechamps
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
+
+volumes:
+  postgres_data:
