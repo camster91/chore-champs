@@ -21,8 +21,7 @@ export default withAuth(
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/register') ||
           pathname.startsWith('/api/health') ||
-          pathname.startsWith('/api/test-auth') ||
-          pathname.startsWith('/api/debug-login')
+          pathname.startsWith('/api/test-auth')
         ) {
           return true
         }
