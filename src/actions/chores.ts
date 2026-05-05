@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
-import { checkAndAwardBadges } from './gamification'
 import { Difficulty, RecurringType, TimeOfDay } from '@prisma/client'
 import { processGamification } from '@/lib/gamification'
 
@@ -143,15 +142,15 @@ export async function completeChore(assignmentId: string) {
   ])
 
   // Update streaks, gems, and check for badges
-  const gamificationResult = await processGamification(assignment.kidId, pointsToAward, session.user.familyId)
+  const result = await processGamification(assignment.kidId, pointsToAward, session.user.familyId)
 
   revalidatePath('/chores')
   revalidatePath('/dashboard')
   revalidatePath('/profile')
 
   return {
-    leveledUp: gamificationResult.leveledUp,
-    newLevel: gamificationResult.level,
+    leveledUp: result?.leveledUp || false,
+    newLevel: result?.level || null,
     pointsEarned: pointsToAward,
   }
 }
