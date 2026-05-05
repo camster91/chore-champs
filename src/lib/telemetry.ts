@@ -14,8 +14,11 @@ export const identifyUser = (userId: string, properties?: Record<string, any>) =
 
 export const EVENTS = {
   CHORE_COMPLETED: 'chore_completed',
+  CHORE_CREATED: 'chore_created',
   HABIT_LOGGED: 'habit_logged',
+  HABIT_CREATED: 'habit_created',
   REWARD_REDEEMED: 'reward_redeemed',
+  REWARD_CREATED: 'reward_created',
   LEVEL_UP: 'level_up',
   ITEM_UNLOCKED: 'item_unlocked',
   GOAL_CREATED: 'family_goal_created',
