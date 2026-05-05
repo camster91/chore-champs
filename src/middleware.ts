@@ -2,7 +2,14 @@ import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 
 export default withAuth(
-  function middleware() {
+  function middleware(req) {
+    const pathname = req.nextUrl.pathname
+    
+    // If authenticated and trying to access auth pages, redirect to dashboard
+    if (pathname === '/login' || pathname === '/signup') {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
+    }
+    
     return NextResponse.next()
   },
   {
@@ -10,7 +17,7 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
 
-        // Public routes
+        // Public routes - no auth required
         const publicRoutes = ['/', '/login', '/signup']
         if (publicRoutes.includes(pathname)) {
           return true
@@ -26,6 +33,7 @@ export default withAuth(
           return true
         }
 
+        // Require authentication for everything else
         return !!token
       },
     },

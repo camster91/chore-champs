@@ -3,8 +3,16 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 
+// Validate required env vars at startup
+const requiredEnvVars = ['NEXTAUTH_SECRET', 'NEXTAUTH_URL']
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`ERROR: ${envVar} environment variable is not set`)
+  }
+}
+
 if (!process.env.NEXTAUTH_SECRET) {
-  console.error('NEXTAUTH_SECRET is not set. Authentication will fail.')
+  throw new Error('NEXTAUTH_SECRET is required for authentication to work')
 }
 
 export const authOptions: NextAuthOptions = {
@@ -67,11 +75,12 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
     newUser: '/signup',
+    error: '/login',
   },
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  // Use consistent __Secure- prefix for all cookies
   cookies: {
     sessionToken: {
       name: `__Secure-next-auth.session-token`,

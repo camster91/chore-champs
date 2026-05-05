@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -11,9 +11,6 @@ import {
   ArrowRight,
   Sparkles,
   Loader2,
-  Zap,
-  Flame,
-  Crown,
   Target,
   Plus,
 } from 'lucide-react'
@@ -41,25 +38,31 @@ export default function DashboardPage() {
   const { currentKid, updateKid: updateKidInStore } = useKidStore()
   const { play } = useAudio()
   
+  // Refs to prevent stale closures
+  const currentKidRef = useRef(currentKid)
+  useEffect(() => { currentKidRef.current = currentKid }, [currentKid])
+  
   // SWR for Chores
   const { data: dbChores, isLoading: choresLoading } = useSWR(
-    currentKid ? `chores-${currentKid?.id}` : null,
+    currentKid ? `chores-${currentKid.id}` : null,
     () => getChores(),
-    { refreshInterval: 30000 } // Poll every 30s
+    { refreshInterval: 30000, revalidateOnFocus: true }
   )
 
   // SWR for Family Goals
   const { data: familyGoals, isLoading: goalsLoading } = useSWR(
     'family-goals',
     () => getFamilyGoals(),
-    { refreshInterval: 60000 } // Poll every 1m
+    { refreshInterval: 60000, revalidateOnFocus: true }
   )
 
   const [todaysChores, setTodaysChores] = useState<DashboardChore[]>([])
   const [showConfetti, setShowConfetti] = useState(false)
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
-  const [isGoalModalOpen, setIsAddGoalModalOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
+  const [isSubmittingGoal, setIsSubmittingGoal] = useState(false)
+  const [completingChoreId, setCompletingChoreId] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [newGoal, setNewGoal] = useState({ title: '', description: '', targetPoints: 1000, reward: '' })
 
   useEffect(() => {
@@ -91,13 +94,21 @@ export default function DashboardPage() {
     )
   }
 
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => setErrorMessage(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [errorMessage])
+
   const handleCreateGoal = async () => {
     if (!newGoal.title || !newGoal.targetPoints) return
-    setIsSubmitting(true)
+    setIsSubmittingGoal(true)
     try {
       await createFamilyGoal(newGoal)
-      mutate('family-goals') // Refresh goals
-      setIsAddGoalModalOpen(false)
+      mutate('family-goals')
+      setIsGoalModalOpen(false)
       
       trackEvent(EVENTS.GOAL_CREATED, {
         title: newGoal.title,
@@ -105,28 +116,29 @@ export default function DashboardPage() {
       })
 
       setNewGoal({ title: '', description: '', targetPoints: 1000, reward: '' })
+      play('pop')
     } catch (error) {
       console.error('Failed to create goal:', error)
+      setErrorMessage('Failed to create goal. Please try again.')
     } finally {
-      setIsSubmitting(false)
+      setIsSubmittingGoal(false)
     }
   }
 
-  const handleCompleteChore = async (chore: DashboardChore) => {
-    if (chore.completed || !currentKid) return
+  const handleCompleteChore = useCallback(async (chore: DashboardChore) => {
+    const kid = currentKidRef.current
+    if (!kid || chore.completed || completingChoreId) return
 
     // Optimistic UI Update
-    const previousChores = [...todaysChores]
-    const previousKid = { ...currentKid }
+    setTodaysChores(prev => prev.map(c => 
+      c.choreId === chore.choreId ? { ...c, completed: true } : c
+    ))
+    setCompletingChoreId(chore.choreId)
 
-    setTodaysChores((prev) =>
-      prev.map((c) => (c.choreId === chore.choreId ? { ...c, completed: true } : c))
-    )
-
-    updateKidInStore(currentKid.id, {
-      points: currentKid.points + chore.points,
-      totalPoints: currentKid.totalPoints + chore.points,
-      experience: currentKid.experience + chore.points
+    updateKidInStore(kid.id, {
+      points: kid.points + chore.points,
+      totalPoints: kid.totalPoints + chore.points,
+      experience: kid.experience + chore.points
     })
 
     play('pop')
@@ -136,48 +148,73 @@ export default function DashboardPage() {
     trackEvent(EVENTS.CHORE_COMPLETED, {
       choreTitle: chore.title,
       points: chore.points,
-      kidId: currentKid.id,
+      kidId: kid.id,
     })
 
     try {
       let assignmentId = chore.id
       if (assignmentId === chore.choreId) {
-        const newAssignment = await assignChore(chore.choreId, currentKid.id, new Date())
+        const newAssignment = await assignChore(chore.choreId, kid.id, new Date())
         assignmentId = newAssignment.id
       }
 
       await completeChore(assignmentId)
-      mutate(`chores-${currentKid.id}`) // Sync background
+      
+      // Re-fetch fresh data
+      mutate(`chores-${kid.id}`)
       mutate('family-goals')
       play('tada')
 
       // Check if leveled up
-      const newLevel = calculateLevel(currentKid.totalPoints + chore.points)
-      if (newLevel > currentKid.level) {
+      const newLevel = calculateLevel(kid.totalPoints + chore.points)
+      if (newLevel > kid.level) {
         setLevelUpLevel(newLevel)
         play('levelUp')
         trackEvent(EVENTS.LEVEL_UP, {
           level: newLevel,
-          kidId: currentKid.id,
+          kidId: kid.id,
         })
       }
     } catch (error) {
       console.error('Failed to complete chore:', error)
-      setTodaysChores(previousChores)
-      updateKidInStore(currentKid.id, previousKid)
+      // Rollback optimistic update
+      setTodaysChores(prev => prev.map(c => 
+        c.choreId === chore.choreId ? { ...c, completed: false } : c
+      ))
+      updateKidInStore(kid.id, {
+        points: kid.points,
+        totalPoints: kid.totalPoints,
+        experience: kid.experience
+      })
+      setErrorMessage('Failed to complete chore. Please try again.')
+    } finally {
+      setCompletingChoreId(null)
     }
-  }
-
-  const isLoading = choresLoading || (currentKid && todaysChores.length === 0 && !dbChores)
+  }, [completingChoreId, updateKidInStore, play])
 
   const completedCount = todaysChores.filter((c) => c.completed).length
   const totalPointsEarned = todaysChores.reduce((sum, c) => (c.completed ? sum + c.points : sum), 0)
   const possiblePoints = todaysChores.reduce((sum, c) => sum + c.points, 0)
+  const isLoading = choresLoading || (currentKid && todaysChores.length === 0 && !dbChores)
 
   return (
     <div className="space-y-8">
       <Confetti isActive={showConfetti} />
       <LevelUpModal isOpen={!!levelUpLevel} level={levelUpLevel || 0} onClose={() => setLevelUpLevel(null)} />
+
+      {/* Error Toast */}
+      <AnimatePresence>
+        {errorMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg"
+          >
+            {errorMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -225,13 +262,33 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-[var(--color-primary)]" /><h2 className="text-xl font-bold">Today&apos;s Chores</h2></div>
                 <Link href="/chores"><Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>View All</Button></Link>
               </div>
-              {todaysChores.length > 0 ? (
+              {isLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+                  ))}
+                </div>
+              ) : todaysChores.length > 0 ? (
                 <div className="space-y-3">
                   {todaysChores.map((chore, index) => (
-                    <motion.div key={chore.choreId} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.05 }} onClick={() => handleCompleteChore(chore)}
-                      className={cn('flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer', chore.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-[var(--color-primary)]')}>
+                    <motion.div 
+                      key={chore.choreId} 
+                      initial={{ opacity: 0, x: -20 }} 
+                      animate={{ opacity: 1, x: 0 }} 
+                      transition={{ delay: index * 0.05 }} 
+                      onClick={() => handleCompleteChore(chore)}
+                      className={cn(
+                        'flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer',
+                        chore.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-[var(--color-primary)]',
+                        completingChoreId === chore.choreId && 'opacity-50 pointer-events-none'
+                      )}
+                    >
                       <div className={cn('w-8 h-8 rounded-full flex items-center justify-center', chore.completed ? 'bg-green-500' : 'border-2 border-gray-300')}>
-                        {chore.completed && <CheckCircle className="w-5 h-5 text-white" />}
+                        {completingChoreId === chore.choreId ? (
+                          <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                        ) : chore.completed ? (
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        ) : null}
                       </div>
                       <span className={cn('flex-1 font-medium', chore.completed && 'line-through text-gray-400')}>{chore.title}</span>
                       <Badge variant={chore.completed ? 'success' : 'primary'}>+{chore.points}</Badge>
@@ -248,20 +305,37 @@ export default function DashboardPage() {
         <div className="space-y-8">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold flex items-center gap-2"><Target className="w-5 h-5" /> Family Goals</h2>
-            <Button size="sm" variant="outline" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsAddGoalModalOpen(true)}>Add</Button>
+            <Button size="sm" variant="outline" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsGoalModalOpen(true)}>Add</Button>
           </div>
-          <FamilyGoals goals={familyGoals || []} />
+          {goalsLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
+            </div>
+          ) : (
+            <FamilyGoals goals={familyGoals || []} />
+          )}
         </div>
       </div>
 
-      <Modal isOpen={isGoalModalOpen} onClose={() => setIsAddGoalModalOpen(false)} title="New Family Quest">
+      <Modal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} title="New Family Quest">
         <div className="space-y-4">
           <Input label="Goal Title" placeholder="e.g. Summer Vacation" value={newGoal.title} onChange={e => setNewGoal({ ...newGoal, title: e.target.value })} />
           <Input label="Target Points (Family Total)" type="number" value={newGoal.targetPoints} onChange={e => setNewGoal({ ...newGoal, targetPoints: parseInt(e.target.value) })} />
           <Input label="Reward" placeholder="e.g. Trip to the Zoo" value={newGoal.reward} onChange={e => setNewGoal({ ...newGoal, reward: e.target.value })} />
-          <Button className="w-full mt-4" onClick={handleCreateGoal} disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Launch Quest'}</Button>
+          <Button 
+            className="w-full mt-4" 
+            onClick={handleCreateGoal} 
+            disabled={isSubmittingGoal || !newGoal.title}
+          >
+            {isSubmittingGoal ? 'Creating...' : 'Launch Quest'}
+          </Button>
         </div>
       </Modal>
     </div>
   )
+}
+
+import { AnimatePresence } from 'framer-motion'
+  const { AnimatePresence: AP } = require('framer-motion')
+  return <AP>{children}</AP>
 }
