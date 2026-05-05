@@ -8,48 +8,47 @@ datasource db {
 }
 
 model Family {
-  id          String   @id @default(cuid())
-  name        String
-  ownerId     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String   @unique
+  parent    Parent   @relation(fields: [parentId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
-  parents     Parent[]
   kids        Kid[]
   chores      Chore[]
   rewards     Reward[]
   habits      Habit[]
   familyGoals FamilyGoal[]
-  invites     FamilyInvite[]
+  badges      BadgeDefinition[]
 }
 
 model Parent {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  name           String
-  password       String
-  familyId       String?
-  family         Family?   @relation(fields: [familyId], references: [id])
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
-  notifications  Notification[]
-  subscriptions  PushSubscription[]
-  createdInvites FamilyInvite[] @relation("InviteCreator")
+  family        Family?
+  notifications Notification[]
+  subscriptions PushSubscription[]
+  invites       FamilyInvite[]
 }
 
 model Kid {
-  id             String     @id @default(cuid())
+  id             String   @id @default(cuid())
   name           String
   age            Int
-  avatarId       String     @default("default")
+  avatarId       String   @default("default")
   familyId       String
-  family         Family     @relation(fields: [familyId], references: [id])
-  themeMode      String     @default("NEUTRAL")
-  primaryColor   String     @default("#6366f1")
-  secondaryColor String     @default("#8b5cf6")
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  family         Family   @relation(fields: [familyId], references: [id])
+  themeMode      String   @default("NEUTRAL")
+  primaryColor   String   @default("#6366f1")
+  secondaryColor String   @default("#8b5cf6")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   
   choreAssignments ChoreAssignment[]
   habitLogs       HabitLog[]
@@ -156,6 +155,29 @@ model FamilyGoal {
   updatedAt    DateTime @updatedAt
 }
 
+// System badges (not family-specific)
+model BadgeDefinition {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String
+  requirement String   // JSON: { type: 'streak'|'level'|'points', value: number }
+  familyId    String?  // null = global badge
+  family      Family?  @relation(fields: [familyId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model EarnedBadge {
+  id        String   @id @default(cuid())
+  badgeId   String
+  badge     BadgeDefinition @relation(fields: [badgeId], references: [id])
+  kidId     String
+  kid       Kid      @relation(fields: [kidId], references: [id])
+  earnedAt  DateTime @default(now())
+  
+  @@unique([badgeId, kidId])
+}
+
 // Family invites with magic links
 model FamilyInvite {
   id          String    @id @default(cuid())
@@ -168,7 +190,7 @@ model FamilyInvite {
   acceptedAt  DateTime?
   createdAt   DateTime  @default(now())
   createdById String?
-  createdBy   Parent?   @relation("InviteCreator", fields: [createdById], references: [id])
+  createdBy   Parent?   @relation(fields: [createdById], references: [id])
 
   @@index([email])
   @@index([token])
