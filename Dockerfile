@@ -24,12 +24,6 @@ RUN npm run build
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
-
-# Add v3.19 repos for libssl1.1 (Prisma requirement)
-RUN echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/main" >> /etc/apk/repositories && \
-    echo "http://dl-cdn.alpinelinux.org/alpine/v3.19/community" >> /etc/apk/repositories && \
-    apk add --no-cache libssl1.1
-
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -50,6 +44,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy ALL node_modules (not just @prisma and .prisma)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Copy startup script
+COPY --from=builder --chown=root:root entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 USER nextjs
 
 EXPOSE 3000
@@ -57,5 +55,5 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-# server.js is created by next build from the standalone output
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "server.js"]
