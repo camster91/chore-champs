@@ -44,8 +44,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy ALL node_modules (not just @prisma and .prisma)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Copy startup script
-COPY --from=builder --chown=root:root entrypoint.sh /entrypoint.sh
+# Copy startup script (from context, not builder)
+COPY --chown=root:root entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 USER nextjs
