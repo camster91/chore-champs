@@ -30,11 +30,10 @@ interface UIChore {
   description?: string
   points: number
   completed: boolean
-  assignedDate: string
 }
 
 export default function ChoresPage() {
-  const { currentKid, updateKid: updateKidInStore } = useKidStore()
+  const { currentKid } = useKidStore()
   const { play } = useAudio()
 
   const { data: dbChores, isLoading: choresLoading } = useSWR(
@@ -65,7 +64,6 @@ export default function ChoresPage() {
           description: chore.description || '',
           points: chore.basePoints,
           completed: assignment?.status === 'COMPLETED',
-          assignedDate: assignment?.dueDate.toISOString() || new Date().toISOString(),
         }
       })
       setChores(mappedChores)
@@ -89,11 +87,13 @@ export default function ChoresPage() {
     if (!newChore.title) return
     setIsSubmitting(true)
     try {
-      const chore = await createChore({
+      await createChore({
         title: newChore.title,
         description: newChore.description,
         basePoints: newChore.points,
-        assignToKids: [currentKid.id]
+        assignToKids: [currentKid.id],
+        icon: 'star',
+        difficulty: 'EASY'
       })
       
       mutate(`chores-${currentKid.id}`)
@@ -114,10 +114,6 @@ export default function ChoresPage() {
 
   const handleCompleteChore = async (chore: UIChore) => {
     if (chore.completed) return
-
-    // Optimistic Update
-    const prevChores = [...chores]
-    setChores(prev => prev.map(c => c.id === chore.id ? { ...c, completed: true } : c))
 
     try {
       let assignmentId = chore.id
@@ -147,7 +143,6 @@ export default function ChoresPage() {
       })
     } catch (error) {
       console.error('Failed to complete chore:', error)
-      setChores(prevChores)
     }
   }
 
