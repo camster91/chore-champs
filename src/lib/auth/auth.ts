@@ -3,16 +3,22 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 
-// Validate required env vars at startup
-const requiredEnvVars = ['NEXTAUTH_SECRET', 'NEXTAUTH_URL']
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`ERROR: ${envVar} environment variable is not set`)
+// Validate required env vars at startup (only in production)
+function validateEnvVars() {
+  const required = ['NEXTAUTH_SECRET', 'NEXTAUTH_URL']
+  for (const envVar of required) {
+    if (!process.env[envVar]) {
+      console.error(`ERROR: ${envVar} environment variable is not set`)
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(`${envVar} is required for authentication to work`)
+      }
+    }
   }
 }
 
-if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error('NEXTAUTH_SECRET is required for authentication to work')
+// Only validate in runtime, not at build time
+if (typeof window === 'undefined') {
+  validateEnvVars()
 }
 
 export const authOptions: NextAuthOptions = {
