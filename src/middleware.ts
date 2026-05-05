@@ -4,9 +4,10 @@ import { NextResponse } from 'next/server'
 export default withAuth(
   function middleware(req) {
     const pathname = req.nextUrl.pathname
+    const token = req.nextauth.token
     
     // If authenticated and trying to access auth pages, redirect to dashboard
-    if (pathname === '/login' || pathname === '/signup') {
+    if (token && (pathname === '/login' || pathname === '/signup')) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
     
