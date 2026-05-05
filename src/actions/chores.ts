@@ -6,6 +6,7 @@ import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { Difficulty, RecurringType, TimeOfDay } from '@prisma/client'
 import { processGamification } from '@/lib/gamification'
+import { calculateLevel } from '@/lib/utils'
 
 export async function getChores() {
   const session = await getServerSession(authOptions)
@@ -120,8 +121,12 @@ export async function completeChore(assignmentId: string) {
   }
 
   const pointsToAward = assignment.chore.basePoints + assignment.bonusPoints
+  const oldLevel = assignment.kid.level
+  const newTotalPoints = assignment.kid.totalPoints + pointsToAward
+  const newLevel = calculateLevel(newTotalPoints)
+  const leveledUp = newLevel > oldLevel
 
-  const [updatedAssignment, updatedKid] = await prisma.$transaction([
+  await prisma.$transaction([
     prisma.choreAssignment.update({
       where: { id: assignmentId },
       data: {
@@ -137,20 +142,21 @@ export async function completeChore(assignmentId: string) {
         totalPoints: { increment: pointsToAward },
         experience: { increment: pointsToAward },
         lastActiveAt: new Date(),
+        level: newLevel,
       },
     }),
   ])
 
-  // Update streaks, gems, and check for badges
-  const result = await processGamification(assignment.kidId, pointsToAward, session.user.familyId)
+  // Update streaks, gems, and family goals
+  await processGamification(assignment.kidId, pointsToAward, session.user.familyId)
 
   revalidatePath('/chores')
   revalidatePath('/dashboard')
   revalidatePath('/profile')
 
   return {
-    leveledUp: result?.leveledUp || false,
-    newLevel: result?.level || null,
+    leveledUp,
+    newLevel: leveledUp ? newLevel : null,
     pointsEarned: pointsToAward,
   }
 }
