@@ -24,7 +24,7 @@ import Link from 'next/link'
 interface UIReward {
   id: string
   title: string
-  description?: string
+  description?: string | null
   cost: number
   icon: string
   category: string
