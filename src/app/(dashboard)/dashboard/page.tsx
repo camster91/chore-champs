@@ -1,398 +1,301 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Trophy, Star, CheckCircle, Clock, Loader2, Sparkles, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
-import {
-  CheckCircle,
-  Clock,
-  Star,
-  ArrowRight,
-  Sparkles,
-  Loader2,
-  Target,
-  Plus,
-} from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Badge, Progress, Modal, Input } from '@/components/ui'
-import { PointsDisplay, StreakCounter, LevelBadge, GemDisplay, FamilyGoals } from '@/components/gamification'
-import { getChores, completeChore, assignChore } from '@/actions/chores'
-import { getFamilyGoals, createFamilyGoal } from '@/actions/goals'
-import { getKids } from '@/actions/kids'
+import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
-import { LevelUpModal } from '@/components/LevelUpModal'
-import { SetupWizard } from '@/components/SetupWizard'
-import { cn, getLevelProgress, getExperienceForNextLevel, calculateLevel } from '@/lib/utils'
-import { useAudio } from '@/lib/audio-context'
-import { trackEvent, EVENTS } from '@/lib/telemetry'
-import useSWR, { mutate } from 'swr'
+import { cn } from '@/lib/utils'
+import { getKids, createKid } from '@/actions/kids'
+import { getChores, completeChore, assignChore } from '@/actions/chores'
+import { addSampleData } from '@/actions/sampleData'
 
-interface DashboardChore {
-  id: string
-  choreId: string
-  title: string
-  points: number
-  completed: boolean
-}
-
-function DashboardContent() {
-  const { currentKid, updateKid: updateKidInStore, setKids, setCurrentKid } = useKidStore()
-  const { play } = useAudio()
-  
-  const [showSetup, setShowSetup] = useState(false)
-  const [isInitialized, setIsInitialized] = useState(false)
-  
-  // Refs to prevent stale closures
-  const currentKidRef = useRef(currentKid)
-  useEffect(() => { currentKidRef.current = currentKid }, [currentKid])
-  
-  // Check if user has any kids on mount
-  useEffect(() => {
-    async function checkKids() {
-      try {
-        const kids = await getKids()
-        if (kids.length === 0) {
-          setShowSetup(true)
-        }
-        setIsInitialized(true)
-      } catch (error) {
-        console.error('Failed to check kids:', error)
-        setIsInitialized(true)
-      }
-    }
-    checkKids()
-  }, [])
-  
-  // SWR for Chores
-  const { data: dbChores, isLoading: choresLoading } = useSWR(
-    currentKid ? `chores-${currentKid.id}` : null,
-    () => getChores(),
-    { refreshInterval: 30000, revalidateOnFocus: true }
-  )
-
-  // SWR for Family Goals
-  const { data: familyGoals, isLoading: goalsLoading } = useSWR(
-    'family-goals',
-    () => getFamilyGoals(),
-    { refreshInterval: 60000, revalidateOnFocus: true }
-  )
-
-  const [todaysChores, setTodaysChores] = useState<DashboardChore[]>([])
+export default function DashboardPage() {
+  const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
+  const [chores, setChores] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
-  const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false)
-  const [isSubmittingGoal, setIsSubmittingGoal] = useState(false)
-  const [completingChoreId, setCompletingChoreId] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [newGoal, setNewGoal] = useState({ title: '', description: '', targetPoints: 1000, reward: '' })
+  const [newKid, setNewKid] = useState({ name: '', age: '' })
+  const [loadingKids, setLoadingKids] = useState(false)
 
   useEffect(() => {
-    if (dbChores && currentKid) {
-      const mappedChores: DashboardChore[] = dbChores.map(chore => {
-        const assignment = chore.assignments.find(a => a.kidId === currentKid.id)
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      const kidsData = await getKids()
+      setKids(kidsData as any[])
+      if (kidsData.length > 0 && !currentKid) {
+        setCurrentKid(kidsData[0] as any)
+      }
+    } catch (e) {
+      console.error('Failed to load data:', e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (currentKid) {
+      loadChores()
+    }
+  }, [currentKid])
+
+  const loadChores = async () => {
+    if (!currentKid) return
+    try {
+      const dbChores = await getChores()
+      if (!dbChores) return
+      
+      const mapped = dbChores.map((chore: any) => {
+        const assignment = chore.assignments?.find((a: any) => a.kidId === currentKid?.id)
         return {
           id: assignment?.id || chore.id,
           choreId: chore.id,
           title: chore.title,
-          points: chore.basePoints,
+          description: chore.description,
+          points: chore.basePoints || 5,
           completed: assignment?.status === 'COMPLETED',
+          icon: chore.icon || '📋'
         }
       })
-      setTodaysChores(mappedChores)
-    }
-  }, [dbChores, currentKid])
-
-  // Show setup wizard if no kids
-  if (showSetup && isInitialized) {
-    return (
-      <SetupWizard 
-        onComplete={() => {
-          setShowSetup(false)
-          // Refresh kids data
-          getKids().then(kids => {
-            setKids(kids)
-            if (kids.length > 0) {
-              setCurrentKid(kids[0])
-            }
-          })
-        }} 
-      />
-    )
-  }
-
-  if (!currentKid) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <Sparkles className="w-16 h-16 text-gray-300 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Welcome to ChoreChamps!</h2>
-        <p className="text-gray-500 mb-6">Select a profile to start your adventure.</p>
-        <Link href="/profile">
-          <Button size="lg">Go to Profiles</Button>
-        </Link>
-      </div>
-    )
-  }
-
-  // Clear error after 5 seconds
-  useEffect(() => {
-    if (errorMessage) {
-      const timer = setTimeout(() => setErrorMessage(null), 5000)
-      return () => clearTimeout(timer)
-    }
-  }, [errorMessage])
-
-  const handleCreateGoal = async () => {
-    if (!newGoal.title || !newGoal.targetPoints) return
-    setIsSubmittingGoal(true)
-    try {
-      await createFamilyGoal(newGoal)
-      mutate('family-goals')
-      setIsGoalModalOpen(false)
-      
-      trackEvent(EVENTS.GOAL_CREATED, {
-        title: newGoal.title,
-        targetPoints: newGoal.targetPoints,
-      })
-
-      setNewGoal({ title: '', description: '', targetPoints: 1000, reward: '' })
-      play('pop')
-    } catch (error) {
-      console.error('Failed to create goal:', error)
-      setErrorMessage('Failed to create goal. Please try again.')
-    } finally {
-      setIsSubmittingGoal(false)
+      setChores(mapped)
+    } catch (e) {
+      console.error('Failed to load chores:', e)
     }
   }
 
-  const handleCompleteChore = useCallback(async (chore: DashboardChore) => {
-    const kid = currentKidRef.current
-    if (!kid || chore.completed || completingChoreId) return
-
-    // Optimistic UI Update
-    setTodaysChores(prev => prev.map(c => 
-      c.choreId === chore.choreId ? { ...c, completed: true } : c
-    ))
-    setCompletingChoreId(chore.choreId)
-
-    updateKidInStore(kid.id, {
-      points: kid.points + chore.points,
-      totalPoints: kid.totalPoints + chore.points,
-      experience: kid.experience + chore.points
-    })
-
-    play('pop')
-    setShowConfetti(true)
-    setTimeout(() => setShowConfetti(false), 2000)
-
-    trackEvent(EVENTS.CHORE_COMPLETED, {
-      choreTitle: chore.title,
-      points: chore.points,
-      kidId: kid.id,
-    })
-
+  const handleCompleteChore = async (chore: any) => {
+    if (chore.completed) return
     try {
       let assignmentId = chore.id
       if (assignmentId === chore.choreId) {
-        const newAssignment = await assignChore(chore.choreId, kid.id, new Date())
+        const newAssignment = await assignChore(chore.choreId, currentKid!.id, new Date())
         assignmentId = newAssignment.id
       }
-
-      await completeChore(assignmentId)
-      
-      // Re-fetch fresh data
-      mutate(`chores-${kid.id}`)
-      mutate('family-goals')
-      play('tada')
-
-      // Check if leveled up
-      const newLevel = calculateLevel(kid.totalPoints + chore.points)
-      if (newLevel > kid.level) {
-        setLevelUpLevel(newLevel)
-        play('levelUp')
-        trackEvent(EVENTS.LEVEL_UP, {
-          level: newLevel,
-          kidId: kid.id,
-        })
-      }
-    } catch (error) {
-      console.error('Failed to complete chore:', error)
-      // Rollback optimistic update
-      setTodaysChores(prev => prev.map(c => 
-        c.choreId === chore.choreId ? { ...c, completed: false } : c
-      ))
-      updateKidInStore(kid.id, {
-        points: kid.points,
-        totalPoints: kid.totalPoints,
-        experience: kid.experience
-      })
-      setErrorMessage('Failed to complete chore. Please try again.')
-    } finally {
-      setCompletingChoreId(null)
+      await completeChore(assignmentId, chore.points, currentKid!.id)
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 2000)
+      loadChores()
+    } catch (e) {
+      console.error('Failed to complete chore:', e)
     }
-  }, [completingChoreId, updateKidInStore, play])
+  }
 
-  const completedCount = todaysChores.filter((c) => c.completed).length
-  const totalPointsEarned = todaysChores.reduce((sum, c) => (c.completed ? sum + c.points : sum), 0)
-  const possiblePoints = todaysChores.reduce((sum, c) => sum + c.points, 0)
-  const isLoading = choresLoading || (currentKid && todaysChores.length === 0 && !dbChores)
+  const handleAddKid = async () => {
+    if (!newKid.name || !newKid.age) return
+    setLoadingKids(true)
+    try {
+      await createKid({ name: newKid.name, age: parseInt(newKid.age) })
+      setIsAddKidModalOpen(false)
+      setNewKid({ name: '', age: '' })
+      loadData()
+    } catch (e) {
+      console.error('Failed to add kid:', e)
+    } finally {
+      setLoadingKids(false)
+    }
+  }
+
+  const handleAddSampleData = async () => {
+    try {
+      await addSampleData()
+      loadData()
+      loadChores()
+    } catch (e) {
+      console.error('Failed to add sample data:', e)
+    }
+  }
+
+  const completedChores = chores.filter(c => c.completed).length
+  const pendingChores = chores.filter(c => !c.completed)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      </div>
+    )
+  }
+
+  if (!kids || kids.length === 0) {
+    return (
+      <div className="space-y-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-16"
+        >
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-12 h-12 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold mb-4">Welcome to ChoreChamps!</h1>
+          <p className="text-gray-500 mb-8 max-w-md mx-auto">
+            Start by adding your first child or explore with sample data.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={() => setIsAddKidModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>
+              Add Your First Kid
+            </Button>
+            <Button variant="outline" onClick={handleAddSampleData}>
+              Add Sample Data
+            </Button>
+          </div>
+        </motion.div>
+
+        <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title="Add a Child">
+          <div className="space-y-4">
+            <Input label="Name" value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder="Enter name" />
+            <Input label="Age" type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder="Enter age" />
+            <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
+              {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Child'}
+            </Button>
+          </div>
+        </Modal>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-8">
-      <Confetti isActive={showConfetti} />
-      <LevelUpModal isOpen={!!levelUpLevel} level={levelUpLevel || 0} onClose={() => setLevelUpLevel(null)} />
+    <div className="space-y-6">
+      {showConfetti && <Confetti isActive={showConfetti} />}
 
-      {/* Error Toast */}
-      <AnimatePresence>
-        {errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg"
+      {/* Kid Selector */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {kids.map((kid: any) => (
+          <button
+            key={kid.id}
+            onClick={() => setCurrentKid(kid)}
+            className={cn(
+              'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all',
+              kid.id === currentKid?.id 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            )}
           >
-            {errorMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Hey, {currentKid.name}! <span className="inline-block animate-wiggle">👋</span></h1>
-          <p className="text-gray-500 mt-1">Ready to conquer some chores today?</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow"><StreakCounter days={currentKid.streakDays} size="md" /></div>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow min-w-[120px]"><PointsDisplay points={currentKid.points} size="md" /></div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow min-w-[120px]"><GemDisplay gems={currentKid.gems} size="md" /></div>
-          </div>
-        </div>
-      </motion.div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-6">
-              <div className="flex justify-between items-center">
-                <div><p className="text-sm text-gray-500">Progress</p><p className="text-3xl font-bold">{completedCount}/{todaysChores.length}</p></div>
-                <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center"><CheckCircle className="w-7 h-7 text-green-500" /></div>
-              </div>
-              <Progress value={completedCount} max={todaysChores.length || 1} className="mt-4" />
-            </Card>
-            <Card className="p-6">
-              <div className="flex justify-between items-center">
-                <div><p className="text-sm text-gray-500">Day Goal</p><p className="text-3xl font-bold">{totalPointsEarned}</p></div>
-                <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center"><Star className="w-7 h-7 text-amber-500" /></div>
-              </div>
-              <Progress value={totalPointsEarned} max={possiblePoints || 1} className="mt-4" />
-            </Card>
-            <Card className="p-6">
-              <div className="flex justify-between items-center">
-                <div><p className="text-sm text-gray-500">Level</p><p className="text-3xl font-bold">Lv.{currentKid.level}</p></div>
-                <LevelBadge level={currentKid.level} experience={currentKid.experience} experienceToNext={getExperienceForNextLevel(currentKid.level)} size="md" showProgress={false} />
-              </div>
-              <Progress value={getLevelProgress(currentKid.experience)} max={100} label="XP to next level" className="mt-4" />
-            </Card>
-          </div>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2"><Clock className="w-5 h-5 text-[var(--color-primary)]" /><h2 className="text-xl font-bold">Today&apos;s Chores</h2></div>
-                <Link href="/chores"><Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>View All</Button></Link>
-              </div>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
-                  ))}
-                </div>
-              ) : todaysChores.length > 0 ? (
-                <div className="space-y-3">
-                  {todaysChores.map((chore, index) => (
-                    <motion.div 
-                      key={chore.choreId} 
-                      initial={{ opacity: 0, x: -20 }} 
-                      animate={{ opacity: 1, x: 0 }} 
-                      transition={{ delay: index * 0.05 }} 
-                      onClick={() => handleCompleteChore(chore)}
-                      className={cn(
-                        'flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer',
-                        chore.completed ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200 hover:border-[var(--color-primary)]',
-                        completingChoreId === chore.choreId && 'opacity-50 pointer-events-none'
-                      )}
-                    >
-                      <div className={cn('w-8 h-8 rounded-full flex items-center justify-center', chore.completed ? 'bg-green-500' : 'border-2 border-gray-300')}>
-                        {completingChoreId === chore.choreId ? (
-                          <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-                        ) : chore.completed ? (
-                          <CheckCircle className="w-5 h-5 text-white" />
-                        ) : null}
-                      </div>
-                      <span className={cn('flex-1 font-medium', chore.completed && 'line-through text-gray-400')}>{chore.title}</span>
-                      <Badge variant={chore.completed ? 'success' : 'primary'}>+{chore.points}</Badge>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="w-10 h-10 text-gray-300" />
-                  </div>
-                  <p className="text-gray-500 italic mb-4">No chores assigned for today!</p>
-                  <Link href="/chores">
-                    <Button variant="outline" leftIcon={<Plus className="w-4 h-4" />}>
-                      Add Your First Chore
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2"><Target className="w-5 h-5" /> Family Goals</h2>
-            <Button size="sm" variant="outline" leftIcon={<Plus className="w-4 h-4" />} onClick={() => setIsGoalModalOpen(true)}>Add</Button>
-          </div>
-          {goalsLoading ? (
-            <div className="space-y-4">
-              {[1, 2].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />)}
-            </div>
-          ) : (
-            <FamilyGoals goals={familyGoals || []} />
-          )}
-        </div>
+            <span className="text-xl">{kid.avatarId || '👧'}</span>
+            <span className="font-medium">{kid.name}</span>
+          </button>
+        ))}
+        <button onClick={() => setIsAddKidModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">
+          <Plus className="w-4 h-4" /> Add Kid
+        </button>
       </div>
 
-      <Modal isOpen={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} title="New Family Quest">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="bg-gradient-to-br from-amber-400 to-orange-500 text-white">
+          <CardContent className="p-4 text-center">
+            <Trophy className="w-8 h-8 mx-auto mb-2 opacity-80" />
+            <p className="text-3xl font-bold">{completedChores}</p>
+            <p className="text-sm opacity-80">Completed</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-green-400 to-emerald-500 text-white">
+          <CardContent className="p-4 text-center">
+            <Star className="w-8 h-8 mx-auto mb-2 opacity-80" />
+            <p className="text-3xl font-bold">{chores.reduce((sum, c) => sum + (c.completed ? c.points : 0), 0)}</p>
+            <p className="text-sm opacity-80">Points</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+          <CardContent className="p-4 text-center">
+            <Clock className="w-8 h-8 mx-auto mb-2 opacity-80" />
+            <p className="text-3xl font-bold">{pendingChores.length}</p>
+            <p className="text-sm opacity-80">To Do</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Today's Chores */}
+      <div>
+        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-yellow-500" />
+          Today&apos;s Chores
+        </h2>
+        
+        {chores.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+              <p className="text-gray-500">No chores yet!</p>
+              <Button variant="outline" className="mt-4" onClick={handleAddSampleData}>Add Sample Data</Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {chores.map(chore => (
+              <motion.div
+                key={chore.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className={cn(
+                  'flex items-center justify-between p-4 rounded-xl bg-white shadow-sm border-2 transition-all',
+                  chore.completed ? 'border-green-200 bg-green-50' : 'border-gray-100 hover:border-purple-200 cursor-pointer',
+                  chore.completed && 'opacity-60'
+                )}
+                onClick={() => handleCompleteChore(chore)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={cn('w-12 h-12 rounded-full flex items-center justify-center text-2xl', chore.completed ? 'bg-green-100' : 'bg-purple-100')}>
+                    {chore.icon}
+                  </div>
+                  <div>
+                    <h3 className={cn('font-semibold', chore.completed && 'line-through')}>{chore.title}</h3>
+                    {chore.description && <p className="text-sm text-gray-500">{chore.description}</p>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={cn('px-3 py-1 rounded-full text-sm font-semibold', chore.completed ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>
+                    {chore.points} pts
+                  </span>
+                  {chore.completed ? (
+                    <CheckCircle className="w-6 h-6 text-green-500" />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full border-2 border-gray-300" />
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Links */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { href: '/chores', label: 'All Chores', icon: '📋' },
+          { href: '/rewards', label: 'Rewards', icon: '🎁' },
+          { href: '/habits', label: 'Habits', icon: '✨' },
+          { href: '/avatar-shop', label: 'Avatar Shop', icon: '👕' },
+        ].map(link => (
+          <Link key={link.href} href={link.href}>
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardContent className="p-4 text-center">
+                <span className="text-3xl">{link.icon}</span>
+                <p className="mt-2 font-medium">{link.label}</p>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </div>
+
+      {/* Add Kid Modal */}
+      <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title="Add a Child">
         <div className="space-y-4">
-          <Input label="Goal Title" placeholder="e.g. Summer Vacation" value={newGoal.title} onChange={e => setNewGoal({ ...newGoal, title: e.target.value })} />
-          <Input label="Target Points (Family Total)" type="number" value={newGoal.targetPoints} onChange={e => setNewGoal({ ...newGoal, targetPoints: parseInt(e.target.value) })} />
-          <Input label="Reward" placeholder="e.g. Trip to the Zoo" value={newGoal.reward} onChange={e => setNewGoal({ ...newGoal, reward: e.target.value })} />
-          <Button 
-            className="w-full mt-4" 
-            onClick={handleCreateGoal} 
-            disabled={isSubmittingGoal || !newGoal.title}
-          >
-            {isSubmittingGoal ? 'Creating...' : 'Launch Quest'}
+          <Input label="Name" value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder="Enter name" />
+          <Input label="Age" type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder="Enter age" />
+          <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
+            {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Child'}
           </Button>
         </div>
       </Modal>
     </div>
-  )
-}
-
-// Wrap in Suspense for useSearchParams
-export default function DashboardPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
   )
 }

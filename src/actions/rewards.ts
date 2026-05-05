@@ -8,17 +8,12 @@ import { revalidatePath } from 'next/cache'
 export async function getRewards() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    return []
   }
 
   return await prisma.reward.findMany({
-    where: {
-      familyId: session.user.familyId,
-      isActive: true,
-    },
-    orderBy: {
-      cost: 'asc',
-    },
+    where: { familyId: session.user.familyId },
+    orderBy: { cost: 'asc' }
   })
 }
 
@@ -26,7 +21,8 @@ export async function createReward(data: {
   title: string
   description?: string
   cost: number
-  icon: string
+  icon?: string
+  category?: string
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
@@ -35,13 +31,16 @@ export async function createReward(data: {
 
   const reward = await prisma.reward.create({
     data: {
-      ...data,
+      title: data.title,
+      description: data.description,
+      cost: data.cost,
+      icon: data.icon || '🎁',
+      category: data.category,
       familyId: session.user.familyId,
-    },
+    }
   })
 
   revalidatePath('/rewards')
-  revalidatePath('/dashboard')
   return reward
 }
 
@@ -52,96 +51,52 @@ export async function redeemReward(rewardId: string, kidId: string) {
   }
 
   const reward = await prisma.reward.findUnique({
-    where: { id: rewardId },
+    where: { id: rewardId }
   })
 
-  if (!reward || reward.familyId !== session.user.familyId) {
-    throw new Error('Reward not found or unauthorized')
+  if (!reward) {
+    throw new Error('Reward not found')
   }
 
   const kid = await prisma.kid.findFirst({
     where: { id: kidId, familyId: session.user.familyId },
+    include: { 
+      choreAssignments: { 
+        where: { status: 'COMPLETED' },
+        include: { chore: true }
+      } 
+    }
   })
 
   if (!kid) {
-    throw new Error('Kid not found or unauthorized')
+    throw new Error('Kid not found')
   }
 
-  if (kid.points < reward.cost) {
+  const totalPoints = kid.choreAssignments.reduce((sum, a) => sum + (a.chore?.basePoints || 5), 0)
+
+  if (totalPoints < reward.cost) {
     throw new Error('Insufficient points')
   }
 
-  // Update points and create redemption record in a transaction
-  const [redemption] = await prisma.$transaction([
-    prisma.redeemedReward.create({
-      data: {
-        rewardId,
-        kidId,
-        pointsSpent: reward.cost,
-        fulfilled: false,
-      },
-    }),
-    prisma.kid.update({
-      where: { id: kidId },
-      data: {
-        points: { decrement: reward.cost },
-      },
-    }),
-  ])
+  const redemption = await prisma.redemption.create({
+    data: {
+      rewardId,
+      kidId,
+      points: reward.cost
+    }
+  })
 
   revalidatePath('/rewards')
   revalidatePath('/dashboard')
-  revalidatePath('/profile')
-  
   return redemption
 }
 
-export async function getRedemptions() {
+export async function deleteReward(rewardId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
   }
 
-  return await prisma.redeemedReward.findMany({
-    where: {
-      reward: {
-        familyId: session.user.familyId,
-      },
-    },
-    include: {
-      reward: true,
-      kid: true,
-    },
-    orderBy: {
-      redeemedAt: 'desc',
-    },
-  })
-}
-
-export async function fulfillReward(redemptionId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
-  }
-
-  const redemption = await prisma.redeemedReward.findUnique({
-    where: { id: redemptionId },
-    include: { reward: true },
-  })
-
-  if (!redemption || redemption.reward.familyId !== session.user.familyId) {
-    throw new Error('Redemption not found or unauthorized')
-  }
-
-  const updated = await prisma.redeemedReward.update({
-    where: { id: redemptionId },
-    data: {
-      fulfilled: true,
-      fulfilledAt: new Date(),
-    },
-  })
-
+  await prisma.reward.delete({ where: { id: rewardId } })
   revalidatePath('/rewards')
-  revalidatePath('/dashboard')
-  return updated
 }

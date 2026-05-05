@@ -1,184 +1,156 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Plus,
-  Gift,
-  Star,
-  Sparkles,
-  Lock,
-  Check,
-} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { Plus, Gift, Loader2, CheckCircle } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Badge, Modal, Input } from '@/components/ui'
-import { PointsDisplay } from '@/components/gamification'
-import { Confetti } from '@/components/Confetti'
+import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { getRewards, createReward, redeemReward } from '@/actions/rewards'
-import { useAudio } from '@/lib/audio-context'
-import { trackEvent, EVENTS } from '@/lib/telemetry'
-import useSWR, { mutate } from 'swr'
-import Link from 'next/link'
 
 interface UIReward {
   id: string
   title: string
-  description?: string | null
+  description: string | null
   cost: number
-  icon: string
-  category: string
+  icon: string | null
+  category: string | null
 }
 
-const rewardIcons = ['🎮', '🍦', '📺', '🧸', '🍕', '📖', '🏃', '💤', '🎁', '🎬']
+const rewardIcons = ['🎁', '🎮', '🍦', '🎬', '📚', '🛍️', '🎯', '⭐']
 
 export default function RewardsPage() {
-  const { currentKid, addPoints } = useKidStore()
-  const { play } = useAudio()
-
-  const { data: dbRewards, isLoading: rewardsLoading } = useSWR(
-    'rewards',
-    () => getRewards(),
-    { refreshInterval: 60000 }
-  )
-
+  const { currentKid } = useKidStore()
+  const [rewards, setRewards] = useState<UIReward[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [newReward, setNewReward] = useState({
-    title: '',
-    description: '',
-    cost: 50,
-    icon: '🎁',
-    category: 'General'
-  })
+  const [newReward, setNewReward] = useState({ title: '', description: '', cost: 50, icon: '🎁', category: 'General' })
 
-  if (!currentKid) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <Sparkles className="w-16 h-16 text-gray-300 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Select a Profile</h2>
-        <p className="text-gray-500 mb-6">Choose a kid to see available rewards.</p>
-        <Link href="/profile">
-          <Button size="lg">Go to Profiles</Button>
-        </Link>
-      </div>
-    )
+  useEffect(() => {
+    loadRewards()
+  }, [])
+
+  const loadRewards = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getRewards()
+      setRewards(data as UIReward[])
+    } catch (e) {
+      console.error('Failed to load rewards:', e)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleCreateReward = async () => {
-    if (!newReward.title || !newReward.cost) return
+    if (!newReward.title) return
     setIsSubmitting(true)
     try {
-      await createReward(newReward)
-      mutate('rewards')
+      await createReward({
+        title: newReward.title,
+        description: newReward.description,
+        cost: newReward.cost,
+        icon: newReward.icon,
+        category: newReward.category
+      })
       setIsAddModalOpen(false)
       setNewReward({ title: '', description: '', cost: 50, icon: '🎁', category: 'General' })
-      play('pop')
-    } catch (error) {
-      console.error('Failed to create reward:', error)
+      loadRewards()
+    } catch (e) {
+      console.error('Failed to create reward:', e)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleRedeemReward = async (reward: UIReward) => {
-    if (currentKid.points < reward.cost) return
-
+  const handleRedeem = async (reward: UIReward) => {
+    if (!currentKid) return
     try {
       await redeemReward(reward.id, currentKid.id)
-      addPoints(-reward.cost) // Update local UI immediately
-      
-      play('tada')
-      setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 3000)
-      
-      trackEvent(EVENTS.REWARD_REDEEMED, {
-        rewardTitle: reward.title,
-        cost: reward.cost,
-      })
-    } catch (error) {
-      console.error('Failed to redeem reward:', error)
+      loadRewards()
+    } catch (e) {
+      console.error('Failed to redeem reward:', e)
     }
   }
 
+  if (!currentKid) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">Select a kid to view rewards</p>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-8">
-      <Confetti isActive={showConfetti} />
-
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Rewards Shop</h1>
-          <p className="text-gray-500 mt-1">Exchange your hard-earned points for awesome prizes!</p>
+          <h1 className="text-3xl font-bold">Rewards</h1>
+          <p className="text-gray-500">Motivate with rewards they can earn!</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="px-6 py-3 bg-white rounded-2xl shadow-sm border-2 border-amber-100 flex items-center gap-3">
-            <span className="text-sm font-bold text-amber-600 uppercase tracking-wider">Your Balance:</span>
-            <PointsDisplay points={currentKid.points} size="lg" />
-          </div>
-          <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>Add Reward</Button>
-        </div>
+        <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>
+          Add Reward
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {rewardsLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="animate-pulse h-48 bg-gray-50" />
-          ))
-        ) : dbRewards && dbRewards.length > 0 ? (
-          dbRewards.map((reward, index) => {
-            const canAfford = currentKid.points >= reward.cost
-            return (
-              <motion.div key={reward.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-                <Card className={cn('h-full transition-all overflow-hidden flex flex-col', !canAfford && 'opacity-75')}>
-                  <CardContent className="p-0 flex-1 flex flex-col">
-                    <div className="p-6 flex-1">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="text-4xl">{reward.icon}</div>
-                        <Badge variant={canAfford ? 'primary' : 'secondary'} size="lg">{reward.cost} pts</Badge>
-                      </div>
-                      <h3 className="text-xl font-bold mb-2">{reward.title}</h3>
-                      {reward.description && <p className="text-gray-500 text-sm">{reward.description}</p>}
+      {isLoading ? (
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+        </div>
+      ) : rewards.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Gift className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No rewards yet! Create some incentives.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rewards.map(reward => (
+            <motion.div key={reward.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-2xl">
+                      {reward.icon || '🎁'}
                     </div>
-                    <div className="p-4 bg-gray-50 border-t mt-auto">
-                      <Button className="w-full" variant={canAfford ? 'primary' : 'secondary'} disabled={!canAfford} onClick={() => handleRedeemReward(reward)} leftIcon={canAfford ? <Star className="w-4 h-4" /> : <Lock className="w-4 h-4" />}>
-                        {canAfford ? 'Redeem Now' : 'Keep Earning!'}
-                      </Button>
+                    <div className="flex-1">
+                      <h3 className="font-bold">{reward.title}</h3>
+                      {reward.description && <p className="text-sm text-gray-500">{reward.description}</p>}
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )
-          })
-        ) : (
-          <div className="col-span-full py-16 text-center bg-white rounded-3xl border-2 border-dashed border-gray-200">
-            <Gift className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900">No Rewards Yet</h2>
-            <p className="text-gray-500 mt-2 mb-8 max-w-sm mx-auto">Create some exciting rewards that kids can work towards!</p>
-            <Button size="lg" onClick={() => setIsAddModalOpen(true)}>Create Your First Reward</Button>
-          </div>
-        )}
-      </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-4">
+                    <span className="text-2xl font-bold text-purple-600">{reward.cost} pts</span>
+                    <Button size="sm" onClick={() => handleRedeem(reward)}>
+                      Redeem
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Create New Reward">
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Create Reward">
         <div className="space-y-4">
-          <Input label="Reward Name" placeholder="e.g. Extra 30 mins Screen Time" value={newReward.title} onChange={e => setNewReward({ ...newReward, title: e.target.value })} />
-          <Input label="Description (Optional)" placeholder="What's the prize?" value={newReward.description} onChange={e => setNewReward({ ...newReward, description: e.target.value })} />
-          
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Choose an Icon</label>
-            <div className="flex flex-wrap gap-2">
+          <Input label="Reward Name" value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} placeholder="e.g., Extra Screen Time" />
+          <Input label="Description" value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} placeholder="Optional description" />
+          <Input label="Points Cost" type="number" value={newReward.cost} onChange={(e) => setNewReward({ ...newReward, cost: parseInt(e.target.value) || 0 })} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+            <div className="flex gap-2 flex-wrap">
               {rewardIcons.map(icon => (
-                <button key={icon} onClick={() => setNewReward({ ...newReward, icon })} className={cn('w-10 h-10 text-xl flex items-center justify-center rounded-lg border-2 transition-all', newReward.icon === icon ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10' : 'border-gray-100 hover:border-gray-200')}>
+                <button key={icon} onClick={() => setNewReward({ ...newReward, icon })} className={cn('w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all', newReward.icon === icon ? 'bg-purple-100 ring-2 ring-purple-500' : 'bg-gray-100 hover:bg-gray-200')}>
                   {icon}
                 </button>
               ))}
             </div>
           </div>
-
-          <Input label="Point Cost" type="number" value={newReward.cost} onChange={e => setNewReward({ ...newReward, cost: parseInt(e.target.value) })} />
-
-          <Button className="w-full mt-4" onClick={handleCreateReward} disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Launch Reward'}</Button>
+          <Button className="w-full" onClick={handleCreateReward} disabled={isSubmitting || !newReward.title}>
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Reward'}
+          </Button>
         </div>
       </Modal>
     </div>

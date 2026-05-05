@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import { Space_Grotesk, Nunito } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-import { Toaster } from '@/components/ui'
 
 const spaceGrotesk = Space_Grotesk({ 
   subsets: ['latin'],
@@ -57,7 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${nunito.variable}`}>
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ChoreChamps" />
@@ -66,7 +65,6 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <Providers>
           {children}
-          <Toaster position="bottom-right" />
         </Providers>
       </body>
     </html>

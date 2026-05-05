@@ -6,16 +6,9 @@ export interface Kid {
   name: string
   age: number
   avatarId: string
-  themeMode: 'SOLAR' | 'CANDY' | 'DEEP_SEA' | 'FOREST' | 'NEUTRAL'
+  themeMode: string
   primaryColor: string
   secondaryColor: string
-  points: number
-  totalPoints: number
-  gems: number
-  totalGems: number
-  streakDays: number
-  level: number
-  experience: number
 }
 
 interface KidState {
@@ -27,7 +20,6 @@ interface KidState {
   addKid: (kid: Kid) => void
   updateKid: (kidId: string, updates: Partial<Kid>) => void
   removeKid: (kidId: string) => void
-  addPoints: (amount: number) => void
   syncFromServer: (kids: Kid[]) => void
 }
 
@@ -64,27 +56,6 @@ export const useKidStore = create<KidState>()(
             state.currentKid?.id === kidId ? null : state.currentKid,
         })),
 
-      addPoints: (amount) => {
-        const state = get()
-        if (!state.currentKid) return
-
-        const newPoints = state.currentKid.points + amount
-        const newTotalPoints = state.currentKid.totalPoints + amount
-
-        set({
-          currentKid: {
-            ...state.currentKid,
-            points: newPoints,
-            totalPoints: newTotalPoints,
-          },
-          kids: state.kids.map((k) =>
-            k.id === state.currentKid!.id
-              ? { ...k, points: newPoints, totalPoints: newTotalPoints }
-              : k
-          ),
-        })
-      },
-
       // Sync local store with server data, auto-selecting first kid if none selected
       syncFromServer: (serverKids) => {
         const state = get()
@@ -96,13 +67,6 @@ export const useKidStore = create<KidState>()(
           themeMode: sk.themeMode,
           primaryColor: sk.primaryColor,
           secondaryColor: sk.secondaryColor,
-          points: sk.points,
-          totalPoints: sk.totalPoints,
-          gems: sk.gems,
-          totalGems: sk.totalGems,
-          streakDays: sk.streakDays,
-          level: sk.level,
-          experience: sk.experience,
         }))
 
         // Auto-select first kid if currentKid is null and kids exist
@@ -110,12 +74,11 @@ export const useKidStore = create<KidState>()(
         if (!currentKid && kids.length > 0) {
           currentKid = kids[0]
         } else if (currentKid) {
-          // Verify currentKid still exists, otherwise select first
+          // Verify currentKid still exists
           const exists = kids.find((k) => k.id === currentKid!.id)
           if (!exists) {
             currentKid = kids[0] || null
           } else {
-            // Update with fresh server data
             currentKid = kids.find((k) => k.id === currentKid!.id) || null
           }
         }

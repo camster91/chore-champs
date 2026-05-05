@@ -4,13 +4,13 @@ import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 
-export async function POST(
-  request: Request,
-  { params }: { params: { token: string } }
-) {
-  const { token } = params
+type Props = {
+  params: Promise<{ token: string }>
+}
 
-  // Check if user is logged in
+export async function POST(request: Request, { params }: Props) {
+  const { token } = await params
+
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ needsLogin: true }, { status: 401 })
@@ -33,20 +33,17 @@ export async function POST(
   }
 
   const user = await prisma.parent.findUnique({ 
-    where: { id: session.user.id },
-    include: { family: true }
+    where: { id: session.user.id }
   })
 
   if (!user) {
     return NextResponse.json({ error: 'User not found' }, { status: 404 })
   }
 
-  // If user is already in this family
   if (user.familyId === invite.familyId) {
     return NextResponse.json({ error: 'You are already in this family' }, { status: 400 })
   }
 
-  // If user has a different family, they need to leave first
   if (user.familyId) {
     return NextResponse.json({ 
       requiresLeave: true,
@@ -54,13 +51,11 @@ export async function POST(
     }, { status: 400 })
   }
 
-  // Add user to the family
   await prisma.parent.update({
     where: { id: session.user.id },
     data: { familyId: invite.familyId }
   })
 
-  // Mark invite as accepted
   await prisma.familyInvite.update({
     where: { id: invite.id },
     data: { acceptedAt: new Date() }

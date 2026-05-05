@@ -4,31 +4,27 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
-import { ThemeMode } from '@prisma/client'
 
 export async function getKids() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    return []
   }
 
   return await prisma.kid.findMany({
-    where: {
-      familyId: session.user.familyId,
+    where: { familyId: session.user.familyId },
+    include: {
+      choreAssignments: true,
+      habitLogs: true
     },
-    orderBy: {
-      createdAt: 'asc',
-    },
+    orderBy: { createdAt: 'asc' }
   })
 }
 
 export async function createKid(data: {
   name: string
   age: number
-  avatarId: string
-  themeMode: ThemeMode
-  primaryColor: string
-  secondaryColor: string
+  avatarId?: string
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
@@ -37,56 +33,37 @@ export async function createKid(data: {
 
   const kid = await prisma.kid.create({
     data: {
-      ...data,
+      name: data.name,
+      age: data.age,
+      avatarId: data.avatarId || 'default',
       familyId: session.user.familyId,
-    },
+    }
   })
 
-  revalidatePath('/profile')
   revalidatePath('/dashboard')
   return kid
 }
 
-export async function updateKid(
-  kidId: string,
-  data: {
-    name?: string
-    age?: number
-    avatarId?: string
-    themeMode?: ThemeMode
-    primaryColor?: string
-    secondaryColor?: string
-    points?: number
-    totalPoints?: number
-    streakDays?: number
-    level?: number
-    experience?: number
-  }
-) {
+export async function updateKid(kidId: string, data: Partial<{
+  name: string
+  age: number
+  avatarId: string
+  themeMode: string
+  primaryColor: string
+  secondaryColor: string
+}>) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
   }
 
-  // Ensure the kid belongs to the family
-  const existingKid = await prisma.kid.findFirst({
-    where: {
-      id: kidId,
-      familyId: session.user.familyId,
-    },
-  })
-
-  if (!existingKid) {
-    throw new Error('Kid not found or unauthorized')
-  }
-
   const kid = await prisma.kid.update({
     where: { id: kidId },
-    data,
+    data
   })
 
-  revalidatePath('/profile')
   revalidatePath('/dashboard')
+  revalidatePath('/profile')
   return kid
 }
 
@@ -96,23 +73,6 @@ export async function deleteKid(kidId: string) {
     throw new Error('Unauthorized')
   }
 
-  // Ensure the kid belongs to the family
-  const existingKid = await prisma.kid.findFirst({
-    where: {
-      id: kidId,
-      familyId: session.user.familyId,
-    },
-  })
-
-  if (!existingKid) {
-    throw new Error('Kid not found or unauthorized')
-  }
-
-  await prisma.kid.delete({
-    where: { id: kidId },
-  })
-
-  revalidatePath('/profile')
+  await prisma.kid.delete({ where: { id: kidId } })
   revalidatePath('/dashboard')
-  return { success: true }
 }

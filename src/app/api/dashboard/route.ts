@@ -13,108 +13,48 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'kidId is required' }, { status: 400 })
   }
 
-  const today = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z')
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const weekAgo = new Date(today)
-  weekAgo.setDate(weekAgo.getDate() - 7)
+  const kid = await prisma.kid.findFirst({
+    where: { id: kidId, familyId: auth.familyId },
+    include: { choreAssignments: true }
+  })
 
-  const [
-    kid,
-    todaysAssignments,
-    weeklyCompleted,
-    recentBadges,
-    totalChoresCompleted,
-    leaderboard,
-  ] = await Promise.all([
-    // Current kid data
-    prisma.kid.findFirst({
-      where: { id: kidId, familyId: auth.familyId },
-    }),
+  if (!kid) return unauthorized()
 
-    // Today's chore assignments
-    prisma.choreAssignment.findMany({
-      where: {
-        kidId,
-        dueDate: { gte: today, lt: tomorrow },
-      },
-      include: { chore: true },
-      orderBy: [{ status: 'asc' }, { chore: { timeOfDay: 'asc' } }],
-    }),
+  const todaysAssignments = await prisma.choreAssignment.findMany({
+    where: {
+      kidId,
+      dueDate: { gte: today, lt: tomorrow },
+    },
+    include: { chore: true },
+  })
 
-    // Completed this week
-    prisma.choreAssignment.count({
-      where: {
-        kidId,
-        status: 'COMPLETED',
-        completedAt: { gte: weekAgo },
-      },
-    }),
-
-    // Recent badges
-    prisma.earnedBadge.findMany({
-      where: { kidId },
-      include: { badge: true },
-      orderBy: { earnedAt: 'desc' },
-      take: 5,
-    }),
-
-    // Total completed
-    prisma.choreAssignment.count({
-      where: { kidId, status: 'COMPLETED' },
-    }),
-
-    // Family leaderboard
-    prisma.kid.findMany({
-      where: { familyId: auth.familyId },
-      select: {
-        id: true,
-        name: true,
-        avatarId: true,
-        points: true,
-        totalPoints: true,
-        level: true,
-        streakDays: true,
-        primaryColor: true,
-        secondaryColor: true,
-      },
-      orderBy: { totalPoints: 'desc' },
-    }),
-  ])
-
-  if (!kid) {
-    return NextResponse.json({ error: 'Kid not found' }, { status: 404 })
-  }
-
-  const todayCompleted = todaysAssignments.filter((a) => a.status === 'COMPLETED').length
-  const todayTotal = todaysAssignments.length
-  const todayPoints = todaysAssignments
-    .filter((a) => a.status === 'COMPLETED')
-    .reduce((sum, a) => sum + (a.pointsEarned || 0), 0)
-  const todayPossiblePoints = todaysAssignments.reduce(
-    (sum, a) => sum + a.chore.basePoints,
-    0
-  )
+  const completedCount = todaysAssignments.filter(a => a.status === 'COMPLETED').length
 
   return NextResponse.json({
-    kid,
-    today: {
-      assignments: todaysAssignments,
-      completed: todayCompleted,
-      total: todayTotal,
-      points: todayPoints,
-      possiblePoints: todayPossiblePoints,
+    kid: {
+      id: kid.id,
+      name: kid.name,
+      age: kid.age,
+      avatarId: kid.avatarId,
     },
-    weeklyCompleted,
-    totalChoresCompleted,
-    recentBadges: recentBadges.map((eb) => ({
-      id: eb.badge.id,
-      name: eb.badge.name,
-      icon: eb.badge.icon,
-      description: eb.badge.description,
-      earnedAt: eb.earnedAt,
+    todaysAssignments: todaysAssignments.map(a => ({
+      id: a.id,
+      choreId: a.choreId,
+      title: a.chore.title,
+      description: a.chore.description,
+      icon: a.chore.icon,
+      points: a.chore.basePoints,
+      status: a.status,
+      dueDate: a.dueDate,
     })),
-    leaderboard,
+    stats: {
+      completedToday: completedCount,
+      totalToday: todaysAssignments.length,
+    }
   })
 }

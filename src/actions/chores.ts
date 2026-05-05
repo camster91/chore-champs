@@ -4,45 +4,40 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
-import { Difficulty, RecurringType, TimeOfDay } from '@prisma/client'
-import { processGamification } from '@/lib/gamification'
-import { calculateLevel } from '@/lib/utils'
 
 export async function getChores() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    return []
   }
 
   return await prisma.chore.findMany({
-    where: {
-      familyId: session.user.familyId,
-      isActive: true,
-    },
+    where: { familyId: session.user.familyId },
     include: {
       assignments: {
-        where: {
-          dueDate: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0)),
-            lte: new Date(new Date().setHours(23, 59, 59, 999)),
-          },
-        },
-      },
+        include: { kid: true },
+        orderBy: { dueDate: 'asc' }
+      }
     },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    orderBy: { createdAt: 'desc' }
+  })
+}
+
+export async function getChoreById(id: string) {
+  return await prisma.chore.findUnique({
+    where: { id },
+    include: { assignments: { include: { kid: true } } }
   })
 }
 
 export async function createChore(data: {
   title: string
   description?: string
+  basePoints?: number
+  difficulty?: string
+  recurring?: string
+  timeOfDay?: string
   icon?: string
-  difficulty?: Difficulty
-  basePoints: number
-  recurring?: RecurringType | null
-  timeOfDay?: TimeOfDay
   assignToKids?: string[]
 }) {
   const session = await getServerSession(authOptions)
@@ -50,113 +45,100 @@ export async function createChore(data: {
     throw new Error('Unauthorized')
   }
 
-  const { assignToKids, ...choreData } = data
-
   const chore = await prisma.chore.create({
     data: {
-      title: choreData.title,
-      description: choreData.description,
-      icon: choreData.icon || 'star',
-      difficulty: choreData.difficulty || 'EASY',
-      basePoints: choreData.basePoints,
-      recurring: choreData.recurring,
-      timeOfDay: choreData.timeOfDay || 'ANYTIME',
+      title: data.title,
+      description: data.description,
+      basePoints: data.basePoints || 5,
+      difficulty: data.difficulty || 'EASY',
+      recurring: data.recurring,
+      timeOfDay: data.timeOfDay || 'ANYTIME',
+      icon: data.icon || '📋',
       familyId: session.user.familyId,
-    },
+    }
   })
 
-  if (assignToKids && assignToKids.length > 0) {
+  if (data.assignToKids && data.assignToKids.length > 0) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
     await prisma.choreAssignment.createMany({
-      data: assignToKids.map(kidId => ({
+      data: data.assignToKids.map(kidId => ({
         choreId: chore.id,
         kidId,
         dueDate: today,
+        status: 'PENDING'
       }))
     })
   }
 
   revalidatePath('/chores')
-  revalidatePath('/dashboard')
   return chore
 }
 
-export async function assignChore(choreId: string, kidId: string, dueDate: Date) {
+export async function completeChore(assignmentId: string, pointsEarned: number, kidId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
   }
 
-  const date = new Date(dueDate)
-  date.setHours(0, 0, 0, 0)
-
-  return await prisma.choreAssignment.create({
-    data: {
-      choreId,
-      kidId,
-      dueDate: date,
-    },
-  })
-}
-
-export async function completeChore(assignmentId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
-  }
-
-  const assignment = await prisma.choreAssignment.findUnique({
+  const assignment = await prisma.choreAssignment.update({
     where: { id: assignmentId },
-    include: { chore: true, kid: true },
+    data: { 
+      status: 'COMPLETED',
+      completedAt: new Date()
+    },
+    include: { chore: true }
   })
-
-  if (!assignment || assignment.kid.familyId !== session.user.familyId) {
-    throw new Error('Assignment not found')
-  }
-
-  if (assignment.status === 'COMPLETED') {
-    return { leveledUp: false, newLevel: null }
-  }
-
-  const pointsToAward = assignment.chore.basePoints + assignment.bonusPoints
-  const oldLevel = assignment.kid.level
-  const newTotalPoints = assignment.kid.totalPoints + pointsToAward
-  const newLevel = calculateLevel(newTotalPoints)
-  const leveledUp = newLevel > oldLevel
-
-  await prisma.$transaction([
-    prisma.choreAssignment.update({
-      where: { id: assignmentId },
-      data: {
-        status: 'COMPLETED',
-        completedAt: new Date(),
-        pointsEarned: pointsToAward,
-      },
-    }),
-    prisma.kid.update({
-      where: { id: assignment.kidId },
-      data: {
-        points: { increment: pointsToAward },
-        totalPoints: { increment: pointsToAward },
-        experience: { increment: pointsToAward },
-        lastActiveAt: new Date(),
-        level: newLevel,
-      },
-    }),
-  ])
-
-  // Update streaks, gems, and family goals
-  await processGamification(assignment.kidId, pointsToAward, session.user.familyId)
 
   revalidatePath('/chores')
   revalidatePath('/dashboard')
   revalidatePath('/profile')
 
-  return {
-    leveledUp,
-    newLevel: leveledUp ? newLevel : null,
-    pointsEarned: pointsToAward,
+  return { assignment }
+}
+
+export async function assignChore(choreId: string, kidId: string, dueDate: Date) {
+  return await prisma.choreAssignment.create({
+    data: {
+      choreId,
+      kidId,
+      dueDate,
+      status: 'PENDING'
+    }
+  })
+}
+
+export async function deleteChore(choreId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    throw new Error('Unauthorized')
   }
+
+  await prisma.chore.delete({ where: { id: choreId } })
+  revalidatePath('/chores')
+}
+
+export async function updateChore(choreId: string, data: Partial<{
+  title: string
+  description: string
+  basePoints: number
+  difficulty: string
+  recurring: string
+  timeOfDay: string
+  icon: string
+  isActive: boolean
+}>) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    throw new Error('Unauthorized')
+  }
+
+  const chore = await prisma.chore.update({
+    where: { id: choreId },
+    data
+  })
+
+  revalidatePath('/chores')
+  return chore
 }

@@ -122,18 +122,13 @@ export default function ChoresPage() {
         assignmentId = newAssignment.id
       }
 
-      const result = await completeChore(assignmentId)
+      const result = await completeChore(assignmentId, chore.points, currentKid.id)
       
       play('pop')
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
 
-      if (result.leveledUp) {
-        setLevelUpLevel(result.newLevel)
-        play('levelUp')
-      } else {
-        play('tada')
-      }
+      // Level up notification removed
 
       mutate(`chores-${currentKid.id}`)
       

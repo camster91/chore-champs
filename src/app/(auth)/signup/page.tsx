@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteToken = searchParams.get('invite')
@@ -20,33 +20,6 @@ export default function SignupPage() {
   })
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hasExistingFamily, setHasExistingFamily] = useState(false)
-
-  // Check if user already has an account
-  useEffect(() => {
-    async function checkAccount() {
-      if (formData.email) {
-        try {
-          const res = await fetch('/api/auth/check-account', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: formData.email })
-          })
-          const data = await res.json()
-          
-          if (data.hasAccount) {
-            if (data.familyId && inviteToken) {
-              // User already has a family but is using an invite
-              setError('You already have an account. Sign in to accept the invitation.')
-            }
-          }
-        } catch (e) {
-          // Ignore check errors
-        }
-      }
-    }
-    checkAccount()
-  }, [formData.email, inviteToken])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,18 +46,6 @@ export default function SignupPage() {
         return
       }
 
-      // Auto sign in
-      const loginRes = await fetch('/api/auth/callback/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.email, // Password is email for magic link users
-          redirect: false
-        })
-      })
-
-      // Redirect to dashboard or invite accept
       if (inviteToken) {
         router.push(`/invite/${inviteToken}`)
       } else {
@@ -121,11 +82,7 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 py-12">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md relative"
-      >
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-8">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -133,10 +90,8 @@ export default function SignupPage() {
           Back to home
         </Link>
 
-        <div className="rounded-2xl transition-all bg-white shadow-xl">
-          {inviteToken && (
-            <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-t-2xl" />
-          )}
+        <div className="rounded-2xl bg-white shadow-xl">
+          {inviteToken && <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-t-2xl" />}
           <div className="p-8">
             <div className="flex items-center justify-center gap-2 mb-8">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
@@ -151,80 +106,40 @@ export default function SignupPage() {
               {inviteToken ? 'Join the Family!' : 'Create Your Family Account'}
             </h1>
             <p className="text-gray-500 text-center mb-8">
-              {inviteToken 
-                ? 'Create an account to join the family adventure!'
-                : 'Start your chore-conquering adventure!'
-              }
+              {inviteToken ? 'Create an account to join the family adventure!' : 'Start your chore-conquering adventure!'}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Your Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 transition-colors text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 border-gray-200 hover:border-gray-300"
-                  placeholder="Mom, Dad, Guardian..."
-                />
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">Your Name</label>
+                <input id="name" type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[var(--color-primary)] focus:outline-none" placeholder="Mom, Dad, Guardian..." />
               </div>
-
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border-2 transition-colors text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 border-gray-200 hover:border-gray-300"
-                  placeholder="parent@example.com"
-                />
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <input id="email" type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[var(--color-primary)] focus:outline-none" placeholder="parent@example.com" />
               </div>
 
-              {error && (
-                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
+              {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="inline-flex items-center justify-center font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-primary)] text-white hover:opacity-90 focus:ring-[var(--color-primary)] px-6 py-3 text-lg gap-2 w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Creating Account...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    {inviteToken ? 'Join Family' : 'Create Account'}
-                  </>
-                )}
+              <button type="submit" disabled={isLoading} className="w-full py-3 px-6 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> {inviteToken ? 'Join Family' : 'Create Account'}</>}
               </button>
             </form>
 
             <p className="text-center text-gray-500 mt-6">
-              Already have an account?{' '}
-              <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">
-                Sign in
-              </Link>
+              Already have an account? <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">Sign in</Link>
             </p>
           </div>
         </div>
-
-        <div className="absolute top-20 right-10 text-4xl opacity-20">🎉</div>
-        <div className="absolute bottom-20 left-10 text-4xl opacity-20">🚀</div>
       </motion.div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-purple-500" /></div>}>
+      <SignupForm />
+    </Suspense>
   )
 }

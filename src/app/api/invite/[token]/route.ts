@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 
-export async function GET(
-  request: Request,
-  { params }: { params: { token: string } }
-) {
-  const { token } = params
+type Props = {
+  params: Promise<{ token: string }>
+}
+
+export async function GET(request: Request, { params }: Props) {
+  const { token } = await params
 
   const invite = await prisma.familyInvite.findUnique({
     where: { token },

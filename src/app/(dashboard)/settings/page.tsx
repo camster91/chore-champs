@@ -30,8 +30,8 @@ interface PendingInvite {
   id: string
   email: string
   role: string
-  createdAt: string
-  expiresAt: string
+  createdAt: string | Date
+  expiresAt: string | Date
 }
 
 export default function SettingsPage() {

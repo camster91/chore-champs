@@ -19,9 +19,7 @@ import {
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 import { useKidStore } from '@/stores/kid-store'
-import { useThemeStore } from '@/stores/theme-store'
 import { Avatar, Button } from '@/components/ui'
-import { PointsDisplay, StreakCounter, LevelBadge } from '@/components/gamification'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -39,19 +37,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const { currentKid } = useKidStore()
-  const { setMode, setCustomColors } = useThemeStore()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login')
   }, [status, router])
-
-  useEffect(() => {
-    if (currentKid) {
-      setMode(currentKid.themeMode)
-      setCustomColors(currentKid.primaryColor, currentKid.secondaryColor)
-    }
-  }, [currentKid, setMode, setCustomColors])
 
   if (status === 'loading') return (
     <div className="min-h-screen flex items-center justify-center">
@@ -81,7 +71,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Avatar name={currentKid.name} size="lg" />
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-800 truncate">{currentKid.name}</p>
-                <div className="flex items-center gap-3 mt-1"><PointsDisplay points={currentKid.points} size="sm" /><StreakCounter days={currentKid.streakDays} size="sm" showLabel={false} /></div>
+                <p className="text-sm text-gray-500">{currentKid.age} years old</p>
               </div>
             </div>
           </div>
@@ -100,10 +90,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ))}
         </nav>
 
-        <div className="p-4 border-t"><button onClick={() => signOut({ callbackUrl: '/' })} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-50 text-red-500"><LogOut className="w-5 h-5" /><span className="font-medium">Sign Out</span></button></div>
+        <div className="p-4 border-t">
+          <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => signOut({ callbackUrl: '/login' })} leftIcon={<LogOut className="w-4 h-4" />}>
+            Sign Out
+          </Button>
+        </div>
       </motion.aside>
 
-      <main className="flex-1 p-4 lg:p-8 lg:ml-0 mt-16 lg:mt-0"><div className="max-w-6xl mx-auto">{children}</div></main>
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 p-4 lg:p-8 pt-16 lg:pt-8 bg-[var(--color-background)]">
+          <div className="max-w-4xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
+      )}
     </div>
   )
 }

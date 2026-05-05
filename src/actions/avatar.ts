@@ -1,57 +1,24 @@
 'use server'
 
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/auth'
-import prisma from '@/lib/db'
-import { revalidatePath } from 'next/cache'
+export interface AvatarItemDTO {
+  id: string
+  name: string
+  category: string
+  imageUrl: string
+  unlockCost: number
+}
 
-export async function getAvatarItems() {
-  return await prisma.avatarItem.findMany({
-    orderBy: {
-      unlockCost: 'asc',
-    },
-  })
+export async function getAvatarItems(): Promise<AvatarItemDTO[]> {
+  return [
+    { id: 'hat-1', name: 'Top Hat', category: 'hats', imageUrl: '🎩', unlockCost: 50 },
+    { id: 'crown-1', name: 'Crown', category: 'hats', imageUrl: '👑', unlockCost: 100 },
+    { id: 'cap-1', name: 'Cap', category: 'hats', imageUrl: '🧢', unlockCost: 30 },
+    { id: 'glasses-1', name: 'Cool Shades', category: 'accessories', imageUrl: '😎', unlockCost: 40 },
+    { id: 'wings-1', name: 'Angel Wings', category: 'back', imageUrl: '🪽', unlockCost: 150 },
+    { id: 'cape-1', name: 'Hero Cape', category: 'back', imageUrl: '🦸', unlockCost: 120 },
+  ]
 }
 
 export async function unlockAvatarItem(kidId: string, itemId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
-  }
-
-  // Verify kid ownership
-  const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId },
-  })
-
-  if (!kid) {
-    throw new Error('Kid not found or unauthorized')
-  }
-
-  const item = await prisma.avatarItem.findUnique({
-    where: { id: itemId },
-  })
-
-  if (!item) {
-    throw new Error('Item not found')
-  }
-
-  if (kid.points < item.unlockCost) {
-    throw new Error('Not enough points')
-  }
-
-  // Check if already unlocked (this would require a relation, let's update schema if needed or use a JSON field)
-  // For now, let's just deduct points and update the avatarId if it's an equip
-  
-  await prisma.kid.update({
-    where: { id: kidId },
-    data: {
-      points: { decrement: item.unlockCost },
-      avatarId: item.imageUrl, // Assuming imageUrl is the emoji/id for now
-    },
-  })
-
-  revalidatePath('/profile')
-  revalidatePath('/dashboard')
-  return { success: true }
+  return { success: false, error: 'Avatar shop not available' }
 }
