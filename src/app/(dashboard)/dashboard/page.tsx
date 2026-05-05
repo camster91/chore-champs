@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
   CheckCircle,
   Clock,
   Star,
-  Trophy,
   ArrowRight,
   Sparkles,
   Loader2,
@@ -333,9 +332,4 @@ export default function DashboardPage() {
       </Modal>
     </div>
   )
-}
-
-import { AnimatePresence } from 'framer-motion'
-  const { AnimatePresence: AP } = require('framer-motion')
-  return <AP>{children}</AP>
 }
