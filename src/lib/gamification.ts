@@ -60,7 +60,7 @@ async function updateFamilyGoalPoints(familyId: string, points: number) {
   const goals = await prisma.familyGoal.findMany({
     where: {
       familyId,
-      status: 'ACTIVE',
+      isActive: true,
     },
   })
 
@@ -71,7 +71,7 @@ async function updateFamilyGoalPoints(familyId: string, points: number) {
       where: { id: goal.id },
       data: {
         currentPoints: newCurrent,
-        status: newCurrent >= goal.targetPoints ? 'COMPLETED' : 'ACTIVE',
+        isActive: newCurrent < goal.targetPoints,
       },
     })
   }
