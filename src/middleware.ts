@@ -20,12 +20,12 @@ export default withAuth(
         if (
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/register') ||
-          pathname === '/api/health'
+          pathname.startsWith('/api/health') ||
+          pathname.startsWith('/api/test-auth')
         ) {
           return true
         }
 
-        // All other routes require authentication
         return !!token
       },
     },
