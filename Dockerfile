@@ -19,9 +19,7 @@ RUN npx prisma generate
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Note: Build-time environment variables should be defined here if needed
-# ARG NEXT_PUBLIC_...
-
+# Build the app
 RUN npm run build
 
 # Stage 3: Runner
@@ -49,10 +47,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Ensure Prisma client is available at runtime
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+# Copy ALL node_modules (not just @prisma and .prisma)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 USER nextjs
 
