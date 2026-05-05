@@ -42,30 +42,9 @@ export async function POST(request: Request) {
     // Check if user already exists
     const existingUser = await prisma.parent.findUnique({ where: { email } })
     if (existingUser) {
-      // If they're already in this family
-      if (existingUser.familyId === session.user.familyId) {
-        return NextResponse.json({ 
-          message: 'This person is already in your family!',
-          direct: true 
-        })
-      }
-      
-      // If they have a different family, we can't add them directly
-      if (existingUser.familyId) {
-        return NextResponse.json({ 
-          error: 'This person is already in another family. They need to leave their family first.'
-        }, { status: 400 })
-      }
-
-      // They have no family - add them directly
-      await prisma.parent.update({
-        where: { id: existingUser.id },
-        data: { familyId: session.user.familyId }
-      })
-
       return NextResponse.json({ 
-        message: 'Added to your family!',
-        direct: true 
+        message: 'This person already has an account. Send them an invite link!',
+        direct: false 
       })
     }
 
@@ -85,9 +64,6 @@ export async function POST(request: Request) {
     })
 
     const inviteUrl = `https://kidschore.ashbi.ca/invite/${token}`
-
-    // TODO: Send email with invite link
-    // For now, return the URL for copy/paste
 
     return NextResponse.json({ 
       message: 'Invitation created!',

@@ -28,7 +28,6 @@ export const authOptions: NextAuthOptions = {
 
         const parent = await prisma.parent.findUnique({
           where: { email: credentials.email },
-          include: { family: true },
         })
 
         if (!parent) {
@@ -44,11 +43,16 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Find the family by parentId
+        const family = await prisma.family.findFirst({
+          where: { parentId: parent.id }
+        })
+
         return {
           id: parent.id,
           email: parent.email,
           name: parent.name,
-          familyId: parent.family?.id,
+          familyId: family?.id,
         }
       },
     }),
@@ -57,7 +61,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.familyId = user.familyId
+        token.familyId = (user as any).familyId
       }
       return token
     },

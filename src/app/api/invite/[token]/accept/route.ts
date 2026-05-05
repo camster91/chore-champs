@@ -32,30 +32,13 @@ export async function POST(request: Request, { params }: Props) {
     return NextResponse.json({ error: 'This invitation has expired' }, { status: 400 })
   }
 
-  const user = await prisma.parent.findUnique({ 
-    where: { id: session.user.id }
+  // Update Family to set the new parent's ID
+  await prisma.family.update({
+    where: { id: invite.familyId },
+    data: { parentId: session.user.id }
   })
 
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
-  }
-
-  if (user.familyId === invite.familyId) {
-    return NextResponse.json({ error: 'You are already in this family' }, { status: 400 })
-  }
-
-  if (user.familyId) {
-    return NextResponse.json({ 
-      requiresLeave: true,
-      message: 'You need to leave your current family to join a new one.'
-    }, { status: 400 })
-  }
-
-  await prisma.parent.update({
-    where: { id: session.user.id },
-    data: { familyId: invite.familyId }
-  })
-
+  // Mark invite as accepted
   await prisma.familyInvite.update({
     where: { id: invite.id },
     data: { acceptedAt: new Date() }

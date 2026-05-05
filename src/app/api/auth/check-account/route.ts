@@ -7,12 +7,11 @@ export async function POST(request: Request) {
     
     const user = await prisma.parent.findUnique({
       where: { email },
-      select: { id: true, familyId: true }
+      select: { id: true }
     })
 
     return NextResponse.json({
       hasAccount: !!user,
-      familyId: user?.familyId
     })
   } catch (error) {
     return NextResponse.json({ hasAccount: false })

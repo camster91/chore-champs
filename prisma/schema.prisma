@@ -11,16 +11,16 @@ model Family {
   id        String   @id @default(cuid())
   name      String
   parentId  String   @unique
-  parent    Parent   @relation(fields: [parentId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  kids        Kid[]
-  chores      Chore[]
-  rewards     Reward[]
-  habits      Habit[]
-  familyGoals FamilyGoal[]
-  badges      BadgeDefinition[]
+  kids          Kid[]
+  chores        Chore[]
+  rewards       Reward[]
+  habits        Habit[]
+  familyGoals   FamilyGoal[]
+  badges        BadgeDefinition[]
+  invites       FamilyInvite[]
 }
 
 model Parent {
@@ -31,7 +31,6 @@ model Parent {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  family        Family?
   notifications Notification[]
   subscriptions PushSubscription[]
   invites       FamilyInvite[]
@@ -44,6 +43,14 @@ model Kid {
   avatarId       String   @default("default")
   familyId       String
   family         Family   @relation(fields: [familyId], references: [id])
+  points         Int      @default(0)
+  totalPoints    Int      @default(0)
+  gems           Int      @default(0)
+  totalGems      Int      @default(0)
+  streakDays     Int      @default(0)
+  level          Int      @default(1)
+  experience     Int      @default(0)
+  lastActiveAt   DateTime?
   themeMode      String   @default("NEUTRAL")
   primaryColor   String   @default("#6366f1")
   secondaryColor String   @default("#8b5cf6")
@@ -53,6 +60,7 @@ model Kid {
   choreAssignments ChoreAssignment[]
   habitLogs       HabitLog[]
   redemptions     Redemption[]
+  earnedBadges    EarnedBadge[]
 }
 
 model Chore {
@@ -155,16 +163,17 @@ model FamilyGoal {
   updatedAt    DateTime @updatedAt
 }
 
-// System badges (not family-specific)
 model BadgeDefinition {
   id          String   @id @default(cuid())
   name        String
   description String
   icon        String
-  requirement String   // JSON: { type: 'streak'|'level'|'points', value: number }
-  familyId    String?  // null = global badge
+  requirement String
+  familyId    String?
   family      Family?  @relation(fields: [familyId], references: [id])
   createdAt   DateTime @default(now())
+  
+  earned      EarnedBadge[]
 }
 
 model EarnedBadge {
@@ -178,7 +187,6 @@ model EarnedBadge {
   @@unique([badgeId, kidId])
 }
 
-// Family invites with magic links
 model FamilyInvite {
   id          String    @id @default(cuid())
   email       String
@@ -196,7 +204,6 @@ model FamilyInvite {
   @@index([token])
 }
 
-// Password reset tokens
 model PasswordResetToken {
   id        String    @id @default(cuid())
   email     String
@@ -209,7 +216,6 @@ model PasswordResetToken {
   @@index([token])
 }
 
-// Push notifications
 model Notification {
   id        String    @id @default(cuid())
   userId    String
@@ -225,7 +231,6 @@ model Notification {
   @@index([createdAt(sort: Desc)])
 }
 
-// Push subscriptions for PWA
 model PushSubscription {
   id        String    @id @default(cuid())
   userId    String
@@ -236,4 +241,32 @@ model PushSubscription {
   updatedAt DateTime?
 
   @@unique([userId, endpoint])
+}
+
+model AvatarItem {
+  id          String   @id @default(cuid())
+  name        String
+  emoji       String
+  category    String
+  unlockCost  Int
+  imageUrl    String
+  createdAt   DateTime @default(now())
+}
+
+model RedeemedReward {
+  id        String   @id @default(cuid())
+  rewardId  String
+  kidId     String
+  points    Int
+  createdAt DateTime @default(now())
+}
+
+model PlannerItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  kidId       String?
+  createdAt   DateTime @default(now())
 }
