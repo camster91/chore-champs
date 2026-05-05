@@ -1,30 +1,19 @@
 'use client'
 
 import { SessionProvider } from 'next-auth/react'
-import { ThemeProvider } from '@/components/themes/ThemeProvider'
-import posthog from 'posthog-js'
-import { PostHogProvider as PHProvider } from 'posthog-js/react'
-import { AudioProvider } from '@/lib/audio-context'
+import { ThemeProvider } from '@/components/theme-provider'
+import { SoundProvider } from '@/lib/audio-context'
+import { ServiceWorkerRegistration } from './service-worker-registration'
 
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://app.posthog.com',
-    capture_pageview: false, // Disable automatic pageview capture, as we capture manually
-  })
-}
-
-interface ProvidersProps {
-  children: React.ReactNode
-}
-
-export function Providers({ children }: ProvidersProps) {
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <PHProvider client={posthog}>
-        <AudioProvider>
-          <ThemeProvider>{children}</ThemeProvider>
-        </AudioProvider>
-      </PHProvider>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <SoundProvider>
+          {children}
+          <ServiceWorkerRegistration />
+        </SoundProvider>
+      </ThemeProvider>
     </SessionProvider>
   )
 }

@@ -1,47 +1,58 @@
 'use client'
 
-import { useState } from 'react'
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Sparkles, Mail, Lock, User, Users, ArrowLeft } from 'lucide-react'
-import { Button, Input, Card, CardContent } from '@/components/ui'
+import { Sparkles, Loader2, CheckCircle } from 'lucide-react'
+import { Button, Input } from '@/components/ui'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const inviteToken = searchParams.get('invite')
+  
+  const [step, setStep] = useState<'info' | 'creating'>('info')
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    familyName: '',
+    email: searchParams.get('email') || '',
+    inviteToken: inviteToken,
   })
-  const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [hasExistingFamily, setHasExistingFamily] = useState(false)
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }))
-  }
+  // Check if user already has an account
+  useEffect(() => {
+    async function checkAccount() {
+      if (formData.email) {
+        try {
+          const res = await fetch('/api/auth/check-account', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formData.email })
+          })
+          const data = await res.json()
+          
+          if (data.hasAccount) {
+            if (data.familyId && inviteToken) {
+              // User already has a family but is using an invite
+              setError('You already have an account. Sign in to accept the invitation.')
+            }
+          }
+        } catch (e) {
+          // Ignore check errors
+        }
+      }
+    }
+    checkAccount()
+  }, [formData.email, inviteToken])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters')
-      return
-    }
-
     setIsLoading(true)
+    setError(null)
+    setStep('creating')
 
     try {
       const res = await fetch('/api/register', {
@@ -50,53 +61,83 @@ export default function SignupPage() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          password: formData.password,
-          familyName: formData.familyName,
-        }),
+          inviteToken: formData.inviteToken,
+        })
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Something went wrong')
+        setError(data.error || 'Failed to create account')
+        setStep('info')
         return
       }
 
-      // Sign in after successful registration
-      const result = await signIn('credentials', {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
+      // Auto sign in
+      const loginRes = await fetch('/api/auth/callback/credentials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.email, // Password is email for magic link users
+          redirect: false
+        })
       })
 
-      if (result?.ok) {
+      // Redirect to dashboard or invite accept
+      if (inviteToken) {
+        router.push(`/invite/${inviteToken}`)
+      } else {
         router.push('/dashboard')
       }
-    } catch {
+    } catch (e) {
       setError('Something went wrong. Please try again.')
+      setStep('info')
     } finally {
       setIsLoading(false)
     }
   }
 
+  if (step === 'creating') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mx-auto mb-6"
+          >
+            <Sparkles className="w-10 h-10 text-white" />
+          </motion.div>
+          <h2 className="text-2xl font-bold mb-2">Creating Your Account...</h2>
+          <p className="text-gray-500 mb-4">
+            {inviteToken ? 'Joining your family!' : 'Setting up your family!'}
+          </p>
+          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 py-12">
-      <motion.div
-        className="w-full max-w-md relative"
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative"
       >
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
+        <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-8">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
           Back to home
         </Link>
 
-        <Card variant="elevated">
-          <CardContent className="p-8">
-            {/* Logo */}
+        <div className="rounded-2xl transition-all bg-white shadow-xl">
+          {inviteToken && (
+            <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-t-2xl" />
+          )}
+          <div className="p-8">
             <div className="flex items-center justify-center gap-2 mb-8">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
                 <Sparkles className="w-7 h-7 text-white" />
@@ -107,115 +148,82 @@ export default function SignupPage() {
             </div>
 
             <h1 className="text-2xl font-bold text-center mb-2">
-              Create Your Family Account
+              {inviteToken ? 'Join the Family!' : 'Create Your Family Account'}
             </h1>
             <p className="text-gray-500 text-center mb-8">
-              Start your chore-conquering adventure!
+              {inviteToken 
+                ? 'Create an account to join the family adventure!'
+                : 'Start your chore-conquering adventure!'
+              }
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Your Name"
-                name="name"
-                type="text"
-                placeholder="Mom, Dad, Guardian..."
-                value={formData.name}
-                onChange={handleChange}
-                leftIcon={<User className="w-5 h-5" />}
-                required
-              />
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Your Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border-2 transition-colors text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 border-gray-200 hover:border-gray-300"
+                  placeholder="Mom, Dad, Guardian..."
+                />
+              </div>
 
-              <Input
-                label="Family Name"
-                name="familyName"
-                type="text"
-                placeholder="The Smith Family"
-                value={formData.familyName}
-                onChange={handleChange}
-                leftIcon={<Users className="w-5 h-5" />}
-                required
-              />
-
-              <Input
-                label="Email"
-                name="email"
-                type="email"
-                placeholder="parent@example.com"
-                value={formData.email}
-                onChange={handleChange}
-                leftIcon={<Mail className="w-5 h-5" />}
-                required
-              />
-
-              <Input
-                label="Password"
-                name="password"
-                type="password"
-                placeholder="At least 6 characters"
-                value={formData.password}
-                onChange={handleChange}
-                leftIcon={<Lock className="w-5 h-5" />}
-                required
-              />
-
-              <Input
-                label="Confirm Password"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                leftIcon={<Lock className="w-5 h-5" />}
-                required
-              />
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border-2 transition-colors text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20 border-gray-200 hover:border-gray-300"
+                  placeholder="parent@example.com"
+                />
+              </div>
 
               {error && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-red-500 text-sm text-center"
-                >
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                   {error}
-                </motion.p>
+                </div>
               )}
 
-              <Button
+              <button
                 type="submit"
-                className="w-full"
-                size="lg"
-                isLoading={isLoading}
+                disabled={isLoading}
+                className="inline-flex items-center justify-center font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed bg-[var(--color-primary)] text-white hover:opacity-90 focus:ring-[var(--color-primary)] px-6 py-3 text-lg gap-2 w-full"
               >
-                Create Account
-              </Button>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Creating Account...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    {inviteToken ? 'Join Family' : 'Create Account'}
+                  </>
+                )}
+              </button>
             </form>
 
             <p className="text-center text-gray-500 mt-6">
               Already have an account?{' '}
-              <Link
-                href="/login"
-                className="text-[var(--color-primary)] font-semibold hover:underline"
-              >
+              <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">
                 Sign in
               </Link>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        {/* Decorative elements */}
-        <motion.div
-          className="absolute top-20 right-10 text-4xl opacity-20"
-          animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 4, repeat: Infinity }}
-        >
-          🎉
-        </motion.div>
-        <motion.div
-          className="absolute bottom-20 left-10 text-4xl opacity-20"
-          animate={{ y: [0, 10, 0], rotate: [0, -5, 5, 0] }}
-          transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-        >
-          🚀
-        </motion.div>
+        <div className="absolute top-20 right-10 text-4xl opacity-20">🎉</div>
+        <div className="absolute bottom-20 left-10 text-4xl opacity-20">🚀</div>
       </motion.div>
     </div>
   )

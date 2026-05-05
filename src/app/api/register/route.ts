@@ -1,103 +1,139 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
-import { Prisma } from '@prisma/client'
-import { checkRateLimit } from '@/lib/auth/helpers'
-import { z } from 'zod'
+import crypto from 'crypto'
 
-const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  name: z.string().min(1, 'Name is required'),
-  familyName: z.string().min(1, 'Family name is required'),
-})
+function generateToken(): string {
+  return crypto.randomBytes(32).toString('base64url')
+}
 
-export async function POST(request: Request) {
-  // Rate limiting
-  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
-  if (!checkRateLimit(ip, 3, 3600000)) { // 3 attempts per hour for registration
-    return NextResponse.json(
-      { error: 'Too many registration attempts. Please try again later.' },
-      { status: 429 }
-    )
-  }
-
-  // Check for required environment variables
-  if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not configured')
-    return NextResponse.json(
-      { error: 'Server configuration error. Please contact support.' },
-      { status: 500 }
-    )
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    const json = await request.json()
-    const body = registerSchema.parse(json)
-    const { email, password, name, familyName } = body
+    const { name, email, inviteToken } = await request.json()
 
-    // Check if user already exists
-    const existingUser = await prisma.parent.findUnique({
-      where: { email },
-    })
-
-    if (existingUser) {
+    if (!name || !email) {
       return NextResponse.json(
-        { error: 'Email already registered' },
+        { error: 'Name and email are required' },
         { status: 400 }
       )
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Create parent and family in a transaction
-    const parent = await prisma.parent.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name,
-        family: {
-          create: {
-            name: familyName,
-          },
-        },
-      },
-      include: {
-        family: true,
-      },
+    // Check if email already exists
+    const existingParent = await prisma.parent.findUnique({
+      where: { email }
     })
 
-    return NextResponse.json({
-      id: parent.id,
-      email: parent.email,
-      name: parent.name,
-      familyId: parent.family?.id,
-    })
-  } catch (error) {
-    console.error('Registration error:', error)
-
-    // Handle specific Prisma errors
-    if (error instanceof Prisma.PrismaClientInitializationError) {
-      console.error('Database connection failed. Check DATABASE_URL.')
-      return NextResponse.json(
-        { error: 'Database connection error. Please try again later.' },
-        { status: 503 }
-      )
-    }
-
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      // Unique constraint violation
-      if (error.code === 'P2002') {
+    if (existingParent) {
+      // If they have a family already, redirect to login
+      if (existingParent.familyId) {
         return NextResponse.json(
-          { error: 'Email already registered' },
+          { error: 'An account with this email already exists. Please sign in.' },
           { status: 400 }
         )
       }
+      // If no family, they can be added to one
     }
 
+    // Handle invite token
+    let familyId: string | undefined
+    let familyName: string | undefined
+
+    if (inviteToken) {
+      const invite = await prisma.familyInvite.findUnique({
+        where: { token: inviteToken }
+      })
+
+      if (!invite) {
+        return NextResponse.json(
+          { error: 'Invalid invitation link' },
+          { status: 400 }
+        )
+      }
+
+      if (invite.acceptedAt) {
+        return NextResponse.json(
+          { error: 'This invitation has already been used' },
+          { status: 400 }
+        )
+      }
+
+      if (new Date() > invite.expiresAt) {
+        return NextResponse.json(
+          { error: 'This invitation has expired' },
+          { status: 400 }
+        )
+      }
+
+      // If email doesn't match invite, we still allow - the invite email 
+      // is just a hint, anyone with the link can join
+      familyId = invite.familyId
+
+      const family = await prisma.family.findUnique({ where: { id: familyId } })
+      familyName = family?.name
+    }
+
+    // If there's an existing user without a family, add them to the invited family
+    if (existingParent && !existingParent.familyId && familyId) {
+      await prisma.parent.update({
+        where: { id: existingParent.id },
+        data: { familyId }
+      })
+
+      // Mark invite as accepted
+      if (inviteToken) {
+        await prisma.familyInvite.update({
+          where: { token: inviteToken },
+          data: { acceptedAt: new Date() }
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Welcome back! You've joined ${familyName || 'the family'}!`,
+        joinedFamily: true
+      })
+    }
+
+    // Create new parent and family
+    if (!familyId) {
+      // Create a new family
+      const family = await prisma.family.create({
+        data: {
+          name: `${name}'s Family`,
+        }
+      })
+      familyId = family.id
+      familyName = family.name
+    }
+
+    // Create parent (no password needed - magic link auth)
+    const parent = await prisma.parent.create({
+      data: {
+        name,
+        email,
+        familyId,
+        // Set a placeholder password - in production you'd use magic links
+        password: crypto.randomBytes(32).toString('hex'), // Random, unusable password
+      }
+    })
+
+    // Mark invite as accepted
+    if (inviteToken) {
+      await prisma.familyInvite.update({
+        where: { token: inviteToken },
+        data: { acceptedAt: new Date() }
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Account created! You can now sign in.',
+      familyName
+    })
+  } catch (error) {
+    console.error('Registration error:', error)
     return NextResponse.json(
-      { error: 'Registration failed. Please try again.' },
+      { error: 'Failed to create account. Please try again.' },
       { status: 500 }
     )
   }

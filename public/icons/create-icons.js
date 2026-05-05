@@ -1,0 +1,23 @@
+// Run this once to generate icon PNGs from the SVG
+// In production, you'd use actual PNG files
+
+// For now, we'll create an SVG favicon as placeholder
+const fs = require('fs')
+
+// Create a simple SVG icon
+const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="100" fill="url(#grad)"/>
+  <text x="256" y="320" font-size="280" font-weight="bold" fill="white" text-anchor="middle">⭐</text>
+</svg>`
+
+fs.writeFileSync('public/favicon.svg', svgIcon)
+fs.writeFileSync('public/icons/icon-512.svg', svgIcon)
+fs.writeFileSync('public/icons/icon-192.svg', svgIcon)
+
+console.log('Icons created! In production, convert these to PNG at the sizes specified in manifest.json')

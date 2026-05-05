@@ -1,42 +1,72 @@
-import type { Metadata } from 'next'
-import localFont from 'next/font/local'
+import type { Metadata, Viewport } from 'next'
+import { Space_Grotesk, Nunito } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-import { Suspense } from 'react'
-import PostHogPageView from '@/components/PostHogPageView'
+import { Toaster } from '@/components/ui'
 
-const geistSans = localFont({
-  src: './fonts/GeistVF.woff2',
-  variable: '--font-geist-sans',
-  weight: '100 900',
+const spaceGrotesk = Space_Grotesk({ 
+  subsets: ['latin'],
+  variable: '--font-space-grotesk',
 })
 
-const geistMono = localFont({
-  src: './fonts/GeistMonoVF.woff2',
-  variable: '--font-geist-mono',
-  weight: '100 900',
+const nunito = Nunito({ 
+  subsets: ['latin'],
+  variable: '--font-nunito',
 })
 
 export const metadata: Metadata = {
-  title: 'ChoreChamps - Fun Chores for Kids!',
-  description: 'A fun, gamified chore and habit tracker for kids. Complete tasks, earn rewards, and become a ChoreChamp!',
-  keywords: ['kids', 'chores', 'habits', 'gamification', 'rewards', 'family'],
+  title: 'ChoreChamps - Make Chores Fun!',
+  description: 'A fun, gamified chore and habit tracker for kids. Turn household responsibilities into exciting adventures with points, rewards, and family goals!',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'ChoreChamps',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'ChoreChamps',
+    title: 'ChoreChamps - Make Chores Fun!',
+    description: 'A fun, gamified chore and habit tracker for kids.',
+    images: ['/og-image.png'],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'ChoreChamps - Make Chores Fun!',
+    description: 'A fun, gamified chore and habit tracker for kids.',
+    images: ['/og-image.png'],
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#6366f1',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className={`${spaceGrotesk.variable} ${nunito.variable}`}>
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="ChoreChamps" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
+      <body className="font-sans antialiased">
         <Providers>
-          {/* Analytics Provider Setup */}
-          <Suspense fallback={null}>
-            <PostHogPageView />
-          </Suspense>
           {children}
+          <Toaster position="bottom-right" />
         </Providers>
       </body>
     </html>
