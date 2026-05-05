@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -18,8 +18,10 @@ import { Card, CardContent, Button, Badge, Progress, Modal, Input } from '@/comp
 import { PointsDisplay, StreakCounter, LevelBadge, GemDisplay, FamilyGoals } from '@/components/gamification'
 import { getChores, completeChore, assignChore } from '@/actions/chores'
 import { getFamilyGoals, createFamilyGoal } from '@/actions/goals'
+import { getKids } from '@/actions/kids'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
+import { SetupWizard } from '@/components/SetupWizard'
 import { cn, getLevelProgress, getExperienceForNextLevel, calculateLevel } from '@/lib/utils'
 import { useAudio } from '@/lib/audio-context'
 import { trackEvent, EVENTS } from '@/lib/telemetry'
@@ -33,13 +35,33 @@ interface DashboardChore {
   completed: boolean
 }
 
-export default function DashboardPage() {
-  const { currentKid, updateKid: updateKidInStore } = useKidStore()
+function DashboardContent() {
+  const { currentKid, updateKid: updateKidInStore, setKids, setCurrentKid } = useKidStore()
   const { play } = useAudio()
+  
+  const [showSetup, setShowSetup] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
   
   // Refs to prevent stale closures
   const currentKidRef = useRef(currentKid)
   useEffect(() => { currentKidRef.current = currentKid }, [currentKid])
+  
+  // Check if user has any kids on mount
+  useEffect(() => {
+    async function checkKids() {
+      try {
+        const kids = await getKids()
+        if (kids.length === 0) {
+          setShowSetup(true)
+        }
+        setIsInitialized(true)
+      } catch (error) {
+        console.error('Failed to check kids:', error)
+        setIsInitialized(true)
+      }
+    }
+    checkKids()
+  }, [])
   
   // SWR for Chores
   const { data: dbChores, isLoading: choresLoading } = useSWR(
@@ -79,6 +101,24 @@ export default function DashboardPage() {
       setTodaysChores(mappedChores)
     }
   }, [dbChores, currentKid])
+
+  // Show setup wizard if no kids
+  if (showSetup && isInitialized) {
+    return (
+      <SetupWizard 
+        onComplete={() => {
+          setShowSetup(false)
+          // Refresh kids data
+          getKids().then(kids => {
+            setKids(kids)
+            if (kids.length > 0) {
+              setCurrentKid(kids[0])
+            }
+          })
+        }} 
+      />
+    )
+  }
 
   if (!currentKid) {
     return (
@@ -295,7 +335,17 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500 italic">No chores assigned for today!</div>
+                <div className="text-center py-8">
+                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Star className="w-10 h-10 text-gray-300" />
+                  </div>
+                  <p className="text-gray-500 italic mb-4">No chores assigned for today!</p>
+                  <Link href="/chores">
+                    <Button variant="outline" leftIcon={<Plus className="w-4 h-4" />}>
+                      Add Your First Chore
+                    </Button>
+                  </Link>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -331,5 +381,18 @@ export default function DashboardPage() {
         </div>
       </Modal>
     </div>
+  )
+}
+
+// Wrap in Suspense for useSearchParams
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
