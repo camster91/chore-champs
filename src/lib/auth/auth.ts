@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
           )
 
           if (!isPasswordValid) {
-            console.log('Auth: Invalid credentials')
+            console.log('Auth: Invalid password')
             return null
           }
 
@@ -52,7 +52,6 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('Auth error in authorize:', error)
-          // Return null instead of throwing to prevent 500 errors
           return null
         }
       },
@@ -82,4 +81,32 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   debug: process.env.NODE_ENV === 'development',
+}
+
+export const NEXTAUTH_COOKIE_NAME = '__Host-next-auth.session-token'
+
+// Parse our custom session token format
+export function parseCustomSessionToken(token: string): any | null {
+  try {
+    // Our token is base64url encoded JSON
+    const decoded = Buffer.from(token, 'base64url').toString()
+    const data = JSON.parse(decoded)
+    
+    // Validate required fields
+    if (!data.id || !data.email) {
+      return null
+    }
+    
+    return {
+      user: {
+        id: data.id,
+        email: data.email,
+        name: data.name,
+        familyId: data.familyId,
+      },
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    }
+  } catch {
+    return null
+  }
 }
