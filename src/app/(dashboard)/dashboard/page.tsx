@@ -43,7 +43,7 @@ export default function DashboardPage() {
   
   // SWR for Chores
   const { data: dbChores, isLoading: choresLoading } = useSWR(
-    currentKid ? `chores-${currentKid.id}` : null,
+    currentKid ? `chores-${currentKid?.id}` : null,
     () => getChores(),
     { refreshInterval: 30000 } // Poll every 30s
   )
@@ -77,6 +77,19 @@ export default function DashboardPage() {
       setTodaysChores(mappedChores)
     }
   }, [dbChores, currentKid])
+
+  if (!currentKid) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <Sparkles className="w-16 h-16 text-gray-300 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Welcome to ChoreChamps!</h2>
+        <p className="text-gray-500 mb-6">Select a profile to start your adventure.</p>
+        <Link href="/profile">
+          <Button size="lg">Go to Profiles</Button>
+        </Link>
+      </div>
+    )
+  }
 
   const handleCreateGoal = async () => {
     if (!newGoal.title || !newGoal.targetPoints) return
@@ -168,14 +181,14 @@ export default function DashboardPage() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Hey, {currentKid!.name}! <span className="inline-block animate-wiggle">👋</span></h1>
+          <h1 className="text-3xl font-bold">Hey, {currentKid.name}! <span className="inline-block animate-wiggle">👋</span></h1>
           <p className="text-gray-500 mt-1">Ready to conquer some chores today?</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow"><StreakCounter days={currentKid!.streakDays} size="md" /></div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow"><StreakCounter days={currentKid.streakDays} size="md" /></div>
           <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow min-w-[120px]"><PointsDisplay points={currentKid!.points} size="md" /></div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow min-w-[120px]"><GemDisplay gems={currentKid!.gems} size="md" /></div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow min-w-[120px]"><PointsDisplay points={currentKid.points} size="md" /></div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow min-w-[120px]"><GemDisplay gems={currentKid.gems} size="md" /></div>
           </div>
         </div>
       </motion.div>
@@ -199,10 +212,10 @@ export default function DashboardPage() {
             </Card>
             <Card className="p-6">
               <div className="flex justify-between items-center">
-                <div><p className="text-sm text-gray-500">Level</p><p className="text-3xl font-bold">Lv.{currentKid!.level}</p></div>
-                <LevelBadge level={currentKid!.level} experience={currentKid!.experience} experienceToNext={getExperienceForNextLevel(currentKid!.level)} size="md" showProgress={false} />
+                <div><p className="text-sm text-gray-500">Level</p><p className="text-3xl font-bold">Lv.{currentKid.level}</p></div>
+                <LevelBadge level={currentKid.level} experience={currentKid.experience} experienceToNext={getExperienceForNextLevel(currentKid.level)} size="md" showProgress={false} />
               </div>
-              <Progress value={getLevelProgress(currentKid!.experience)} max={100} label="XP to next level" className="mt-4" />
+              <Progress value={getLevelProgress(currentKid.experience)} max={100} label="XP to next level" className="mt-4" />
             </Card>
           </div>
 
