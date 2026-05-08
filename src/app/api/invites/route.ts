@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       }
     })
 
-    const inviteUrl = `https://kidschore.ashbi.ca/invite/${token}`
+    const inviteUrl = `https://kids-chore-app.ashbi.ca/invite/${token}`
 
     return NextResponse.json({ 
       message: 'Invitation created!',

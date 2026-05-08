@@ -10,11 +10,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://chorechamps:KidsChore2024!@kids-chore-postgres:5432/chorechamps
       - NEXTAUTH_SECRET=kids-chore-app-secret-key-production
-      - NEXTAUTH_URL=https://kidschore.ashbi.ca
+      - NEXTAUTH_URL=https://kids-chore-app.ashbi.ca
       - NODE_ENV=production
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.kids-chore.rule=Host(`kidschore.ashbi.ca`)"
+      - "traefik.http.routers.kids-chore.rule=Host(`kids-chore-app.ashbi.ca`) || Host(`kidschore.ashbi.ca`)"
       - "traefik.http.routers.kids-chore.tls=true"
       - "traefik.http.routers.kids-chore.tls.certresolver=letsencrypt"
       - "traefik.http.services.kids-chore.loadbalancer.server.port=3000"

@@ -39,7 +39,7 @@ export async function createFamilyInvite(email: string, role: string = 'MEMBER')
     }
   })
 
-  const inviteUrl = `https://kidschore.ashbi.ca/invite/${token}`
+  const inviteUrl = `https://kids-chore-app.ashbi.ca/invite/${token}`
   return { 
     message: 'Invitation created!', 
     inviteUrl,
