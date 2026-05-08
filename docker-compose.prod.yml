@@ -14,7 +14,7 @@ services:
       - NODE_ENV=production
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.kids-chore.rule=Host(`kids-chore-app.ashbi.ca`)"
+      - "traefik.http.routers.kids-chore.rule=Host(`kids-chore-app.ashbi.ca`) || Host(`kidschore.ashbi.ca`)"
       - "traefik.http.routers.kids-chore.tls=true"
       - "traefik.http.routers.kids-chore.tls.certresolver=letsencrypt"
       - "traefik.http.services.kids-chore.loadbalancer.server.port=3000"
