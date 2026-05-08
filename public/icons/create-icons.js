@@ -2,6 +2,7 @@
 // In production, you'd use actual PNG files
 
 // For now, we'll create an SVG favicon as placeholder
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require('fs')
 
 // Create a simple SVG icon
