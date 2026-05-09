@@ -137,7 +137,7 @@ export default function RewardsPage() {
         <div className="space-y-4">
           <Input label="Reward Name" value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} placeholder="e.g., Extra Screen Time" />
           <Input label="Description" value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} placeholder="Optional description" />
-          <Input label="Points Cost" type="number" value={newReward.cost} onChange={(e) => setNewReward({ ...newReward, cost: parseInt(e.target.value) || 0 })} />
+          <Input label="Points Cost" type="number" min={1} value={newReward.cost} onChange={(e) => setNewReward({ ...newReward, cost: parseInt(e.target.value) || 1 })} />
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
             <div className="flex gap-2 flex-wrap">
