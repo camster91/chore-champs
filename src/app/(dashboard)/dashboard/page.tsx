@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Star, CheckCircle, Clock, Loader2, Sparkles, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useKidStore } from '@/stores/kid-store'
@@ -16,42 +15,21 @@ export default function DashboardPage() {
   const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
   const [chores, setChores] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [choresLoading, setChoresLoading] = useState(false)
   const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [newKid, setNewKid] = useState({ name: '', age: '' })
   const [loadingKids, setLoadingKids] = useState(false)
 
-  useEffect(() => {
-    loadData()
-  }, [])
-
-  const loadData = async () => {
-    setIsLoading(true)
-    try {
-      const kidsData = await getKids()
-      setKids(kidsData as any[])
-      if (kidsData.length > 0 && !currentKid) {
-        setCurrentKid(kidsData[0] as any)
-      }
-    } catch (e) {
-      console.error('Failed to load data:', e)
-    } finally {
-      setIsLoading(false)
+  const loadChores = useCallback(async () => {
+    if (!currentKid) {
+      setChores([])
+      return
     }
-  }
-
-  useEffect(() => {
-    if (currentKid) {
-      loadChores()
-    }
-  }, [currentKid])
-
-  const loadChores = async () => {
-    if (!currentKid) return
+    setChoresLoading(true)
     try {
       const dbChores = await getChores()
       if (!dbChores) return
-      
       const mapped = dbChores.map((chore: any) => {
         const assignment = chore.assignments?.find((a: any) => a.kidId === currentKid?.id)
         return {
@@ -67,8 +45,56 @@ export default function DashboardPage() {
       setChores(mapped)
     } catch (e) {
       console.error('Failed to load chores:', e)
+    } finally {
+      setChoresLoading(false)
+    }
+  }, [currentKid])
+
+  useEffect(() => {
+    loadData()
+  }, [])
+
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      const [kidsData, choresData] = await Promise.all([
+        getKids(),
+        getChores()
+      ])
+      setKids(kidsData as any[])
+      const firstKid = kidsData.length > 0 ? kidsData[0] : null
+      if (firstKid && !currentKid) {
+        setCurrentKid(firstKid as any)
+      }
+      // Map chores against the first kid (or currentKid if already set)
+      const activeKidId = currentKid?.id || firstKid?.id
+      if (activeKidId && choresData) {
+        const mapped = choresData.map((chore: any) => {
+          const assignment = chore.assignments?.find((a: any) => a.kidId === activeKidId)
+          return {
+            id: assignment?.id || chore.id,
+            choreId: chore.id,
+            title: chore.title,
+            description: chore.description,
+            points: chore.basePoints || 5,
+            completed: assignment?.status === 'COMPLETED',
+            icon: chore.icon || '📋'
+          }
+        })
+        setChores(mapped)
+      }
+    } catch (e) {
+      console.error('Failed to load data:', e)
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (currentKid) {
+      loadChores()
+    }
+  }, [currentKid, loadChores])
 
   const handleCompleteChore = async (chore: any) => {
     if (chore.completed) return
@@ -126,10 +152,8 @@ export default function DashboardPage() {
   if (!kids || kids.length === 0) {
     return (
       <div className="space-y-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
+        <div 
+          className="animate-fade-in text-center py-16"
         >
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6">
             <Sparkles className="w-12 h-12 text-white" />
@@ -147,7 +171,7 @@ export default function DashboardPage() {
               Add Sample Data
             </Button>
           </div>
-        </motion.div>
+        </div>
 
         <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title="Add a Child">
           <div className="space-y-4">
@@ -230,16 +254,15 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <div className="space-y-3">
-            {chores.map(chore => (
-              <motion.div
+            {chores.map((chore, idx) => (
+              <div
                 key={chore.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
                 className={cn(
-                  'flex items-center justify-between p-4 rounded-xl bg-white shadow-sm border-2 transition-all',
+                  'flex items-center justify-between p-4 rounded-xl bg-white shadow-sm border-2 transition-all animate-fade-in',
                   chore.completed ? 'border-green-200 bg-green-50' : 'border-gray-100 hover:border-purple-200 cursor-pointer',
                   chore.completed && 'opacity-60'
                 )}
+                style={{ animationDelay: `${idx * 40}ms` }}
                 onClick={() => handleCompleteChore(chore)}
               >
                 <div className="flex items-center gap-4">
@@ -261,7 +284,7 @@ export default function DashboardPage() {
                     <div className="w-6 h-6 rounded-full border-2 border-gray-300" />
                   )}
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
         )}

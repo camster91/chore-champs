@@ -114,6 +114,12 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: 'kids-chore-theme',
+      partialize: (state) => ({
+        mode: state.mode,
+        customPrimary: state.customPrimary,
+        customSecondary: state.customSecondary,
+        kidId: state.kidId,
+      }),
     }
   )
 )
