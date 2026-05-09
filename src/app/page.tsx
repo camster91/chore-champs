@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Star, Trophy, Flame, CheckCircle, Sparkles, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui'
@@ -41,6 +41,8 @@ const floatingIcons = [
 ]
 
 export default function LandingPage() {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Floating background icons */}
@@ -85,12 +87,8 @@ export default function LandingPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <Link href="/login">
-              <Button variant="ghost">Log In</Button>
-            </Link>
-            <Link href="/signup">
-              <Button>Get Started</Button>
-            </Link>
+            <Button variant="ghost" onClick={() => router.push('/login')}>Log In</Button>
+            <Button onClick={() => router.push('/signup')}>Get Started</Button>
           </motion.div>
         </nav>
       </header>
@@ -121,16 +119,12 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Link href="/signup">
-              <Button size="xl" rightIcon={<ArrowRight className="w-5 h-5" />}>
-                Start Your Adventure
-              </Button>
-            </Link>
-            <Link href="/login">
-              <Button size="xl" variant="outline">
-                I Have an Account
-              </Button>
-            </Link>
+            <Button size="xl" rightIcon={<ArrowRight className="w-5 h-5" />} onClick={() => router.push('/signup')}>
+              Start Your Adventure
+            </Button>
+            <Button size="xl" variant="outline" onClick={() => router.push('/login')}>
+              I Have an Account
+            </Button>
           </motion.div>
 
           {/* Preview Card */}
@@ -245,11 +239,9 @@ export default function LandingPage() {
         >
           <h2 className="text-3xl font-bold mb-4">Ready to become a ChoreChamp?</h2>
           <p className="text-gray-600 mb-8">Join thousands of families making chores fun!</p>
-          <Link href="/signup">
-            <Button size="xl">
-              Create Free Account
-            </Button>
-          </Link>
+          <Button size="xl" onClick={() => router.push('/signup')}>
+            Create Free Account
+          </Button>
         </motion.div>
       </main>
 
