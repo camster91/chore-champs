@@ -4,45 +4,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { initI18n, getLocalizedSampleData } from '@/lib/i18n'
 
-const SAMPLE_KIDS = [
-  { name: 'Alex', age: 8, avatarId: 'robot' },
-  { name: 'Emma', age: 6, avatarId: 'astronaut' },
-  { name: 'Sam', age: 10, avatarId: 'ninja' },
-]
-
-const SAMPLE_CHORES = [
-  { title: 'Make Your Bed', description: 'Straighten sheets and fluff pillows', basePoints: 5, icon: '🛏️', difficulty: 'EASY' as const },
-  { title: 'Brush Teeth', description: 'Brush for 2 minutes', basePoints: 5, icon: '🦷', difficulty: 'EASY' as const },
-  { title: 'Clean Room', description: 'Tidy toys, make bed, vacuum floor', basePoints: 15, icon: '✨', difficulty: 'MEDIUM' as const },
-  { title: 'Feed Pet', description: 'Give food and fresh water to pet', basePoints: 10, icon: '🐕', difficulty: 'EASY' as const },
-  { title: 'Do Homework', description: 'Complete all assignments', basePoints: 20, icon: '📚', difficulty: 'MEDIUM' as const },
-  { title: 'Set Table', description: 'Put out plates and utensils for dinner', basePoints: 5, icon: '🍽️', difficulty: 'EASY' as const },
-  { title: 'Take Out Trash', description: 'Empty all trash cans and take to curb', basePoints: 10, icon: '🗑️', difficulty: 'MEDIUM' as const },
-  { title: 'Read for 20 Minutes', description: 'Read quietly in your favorite spot', basePoints: 15, icon: '📖', difficulty: 'EASY' as const },
-  { title: 'Help with Dishes', description: 'Load or unload dishwasher', basePoints: 10, icon: '🍳', difficulty: 'EASY' as const },
-  { title: 'Practice Instrument', description: 'Practice for at least 15 minutes', basePoints: 15, icon: '🎵', difficulty: 'MEDIUM' as const },
-]
-
-const SAMPLE_REWARDS = [
-  { title: 'Extra Screen Time', description: '30 minutes of extra tablet or TV time', cost: 25, icon: '📱', category: 'Entertainment' },
-  { title: 'Pick a Movie', description: 'Choose the family movie for movie night', cost: 30, icon: '🎬', category: 'Entertainment' },
-  { title: 'Stay Up Late', description: '30 minutes past bedtime', cost: 40, icon: '🌙', category: 'Special' },
-  { title: 'Ice Cream Trip', description: 'Trip to the ice cream shop', cost: 100, icon: '🍦', category: 'Treats' },
-  { title: 'New Book', description: 'Pick out a new book to read', cost: 75, icon: '📚', category: 'Education' },
-  { title: 'Friend Sleepover', description: 'Invite a friend for a sleepover', cost: 150, icon: '🎉', category: 'Special' },
-  { title: 'Game Night Choice', description: 'You pick the game for family game night', cost: 35, icon: '🎲', category: 'Fun' },
-  { title: 'Skip a Chore', description: 'Skip one chore of your choice', cost: 50, icon: '⏭️', category: 'Special' },
-]
-
-const SAMPLE_HABITS = [
-  { title: 'Drink Water', description: 'Drink 8 glasses of water', icon: '💧', points: 5 },
-  { title: 'Exercise', description: '30 minutes of physical activity', icon: '🏃', points: 10 },
-  { title: 'Practice Gratitude', description: 'Write down 3 things you are thankful for', icon: '🙏', points: 5 },
-  { title: 'Read Before Bed', description: 'Read for at least 10 minutes', icon: '📖', points: 5 },
-]
-
-export async function addSampleData() {
+export async function addSampleData(locale: string = 'en') {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
@@ -50,15 +14,19 @@ export async function addSampleData() {
 
   const familyId = session.user.familyId
 
+  // Initialize i18n and get localized data
+  await initI18n(locale)
+  const { kids: sampleKids, chores: sampleChores, rewards: sampleRewards, habits: sampleHabits, familyGoal: sampleGoal, messages } = getLocalizedSampleData()
+
   // Check if family already has data
   const existingKids = await prisma.kid.count({ where: { familyId } })
   if (existingKids > 0) {
-    return { message: 'Family already has kids. Sample data not added.', added: false }
+    return { message: messages.alreadyHasData, added: false }
   }
 
   // Add sample kids
   const kids = await Promise.all(
-    SAMPLE_KIDS.map(kid => 
+    sampleKids.map(kid =>
       prisma.kid.create({
         data: {
           ...kid,
@@ -75,7 +43,7 @@ export async function addSampleData() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  for (const chore of SAMPLE_CHORES) {
+  for (const chore of sampleChores) {
     const newChore = await prisma.chore.create({
       data: {
         title: chore.title,
@@ -84,7 +52,7 @@ export async function addSampleData() {
         icon: chore.icon,
         difficulty: chore.difficulty,
         familyId,
-        recurring: chore.title.includes('Brush') || chore.title.includes('Read') ? 'DAILY' : null,
+        recurring: chore.key === 'brush_teeth' || chore.key === 'read_20_min' ? 'DAILY' : null,
         timeOfDay: 'ANYTIME',
         isActive: true,
       }
@@ -103,10 +71,14 @@ export async function addSampleData() {
 
   // Add sample rewards
   await Promise.all(
-    SAMPLE_REWARDS.map(reward =>
+    sampleRewards.map(reward =>
       prisma.reward.create({
         data: {
-          ...reward,
+          title: reward.title,
+          description: reward.description,
+          cost: reward.cost,
+          icon: reward.icon,
+          category: reward.category,
           familyId,
           isActive: true,
         }
@@ -116,10 +88,13 @@ export async function addSampleData() {
 
   // Add sample habits
   await Promise.all(
-    SAMPLE_HABITS.map(habit =>
+    sampleHabits.map(habit =>
       prisma.habit.create({
         data: {
-          ...habit,
+          title: habit.title,
+          description: habit.description,
+          icon: habit.icon,
+          points: habit.points,
           familyId,
           isActive: true,
         }
@@ -130,11 +105,11 @@ export async function addSampleData() {
   // Add a sample family goal
   await prisma.familyGoal.create({
     data: {
-      title: 'Summer Vacation Fund',
-      description: 'Work together to earn enough for our family trip!',
+      title: sampleGoal.title,
+      description: sampleGoal.description,
       targetPoints: 1000,
       currentPoints: 0,
-      reward: 'Beach vacation! 🏖️',
+      reward: `${sampleGoal.reward} 🏖️`,
       familyId,
       isActive: true,
     }
@@ -146,13 +121,13 @@ export async function addSampleData() {
   revalidatePath('/habits')
   revalidatePath('/profile')
 
-  return { 
-    message: 'Sample data added! Explore with 3 kids, 10 chores, and 8 rewards.', 
+  return {
+    message: messages.sampleAdded,
     added: true,
     kidsCount: kids.length,
-    choresCount: SAMPLE_CHORES.length,
-    rewardsCount: SAMPLE_REWARDS.length,
-    habitsCount: SAMPLE_HABITS.length,
+    choresCount: sampleChores.length,
+    rewardsCount: sampleRewards.length,
+    habitsCount: sampleHabits.length,
   }
 }
 
@@ -162,9 +137,9 @@ export async function hasExistingData() {
     return false
   }
 
-  const kidsCount = await prisma.kid.count({ 
-    where: { familyId: session.user.familyId } 
+  const kidsCount = await prisma.kid.count({
+    where: { familyId: session.user.familyId }
   })
-  
+
   return kidsCount > 0
 }
