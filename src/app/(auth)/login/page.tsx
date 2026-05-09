@@ -1,18 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Sparkles, Mail, Lock, ArrowLeft } from 'lucide-react'
+import { Sparkles, Mail, Lock, ArrowLeft, AlertCircle } from 'lucide-react'
 import { Button, Input, Card, CardContent } from '@/components/ui'
 
-export default function LoginPage() {
+// Map NextAuth error codes to user-friendly messages
+const NEXT_AUTH_ERRORS: Record<string, string> = {
+  Configuration: 'There is a problem with the server configuration. Please try again later or contact support.',
+  CredentialsSignin: 'Invalid email or password.',
+  AccessDenied: 'Access denied. You do not have permission to sign in.',
+  Verification: 'The verification link has expired or is invalid. Please request a new one.',
+  OAuthSignin: 'There was a problem signing in with that provider.',
+  OAuthCallback: 'There was a problem completing the sign-in process.',
+  OAuthCreateAccount: 'Could not create an account with that provider.',
+  EmailCreateAccount: 'Could not create an account with that email.',
+  Callback: 'There was a problem processing your sign-in.',
+  SessionRequired: 'You must be signed in to access this page.',
+  Default: 'An unexpected error occurred. Please try again.',
+}
+
+function getErrorMessage(errorCode: string | null): string | null {
+  if (!errorCode) return null
+  return NEXT_AUTH_ERRORS[errorCode] || NEXT_AUTH_ERRORS.Default
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() => {
+    // Check for NextAuth error in URL on initial load
+    return getErrorMessage(searchParams.get('error'))
+  })
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,13 +117,14 @@ export default function LoginPage() {
               />
 
               {error && (
-                <motion.p
+                <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-red-500 text-sm text-center"
+                  className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
                 >
-                  {error}
-                </motion.p>
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <span>{error}</span>
+                </motion.div>
               )}
 
               <Button
@@ -141,5 +166,13 @@ export default function LoginPage() {
         </motion.div>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
