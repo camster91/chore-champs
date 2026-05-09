@@ -3,6 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Star, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { useEffect, useRef, useCallback } from 'react'
 
 interface LevelUpModalProps {
   isOpen: boolean
@@ -11,10 +12,69 @@ interface LevelUpModalProps {
 }
 
 export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null)
+  const previousActiveElement = useRef<Element | null>(null)
+
+  // Focus trap and escape key handler
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    },
+    [onClose]
+  )
+
+  useEffect(() => {
+    if (isOpen) {
+      previousActiveElement.current = document.activeElement
+      // Focus the close button after animation starts
+      setTimeout(() => {
+        const closeBtn = modalRef.current?.querySelector<HTMLElement>('button')
+        closeBtn?.focus()
+      }, 300)
+      document.addEventListener('keydown', handleKeyDown)
+      // Prevent body scroll
+      document.body.style.overflow = 'hidden'
+    }
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+      // Restore focus to previously active element
+      if (previousActiveElement.current instanceof HTMLElement) {
+        previousActiveElement.current.focus()
+      }
+    }
+  }, [isOpen, handleKeyDown])
+
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="level-up-title"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -69,7 +129,7 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
             >
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Sparkles className="w-6 h-6 text-amber-500" />
-                <h2 className="text-3xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                <h2 id="level-up-title" className="text-3xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                   LEVEL UP!
                 </h2>
                 <Sparkles className="w-6 h-6 text-amber-500" />
