@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Star, Trophy } from 'lucide-react'
 import { Button } from '@/components/ui'
@@ -11,6 +12,34 @@ interface LevelUpModalProps {
 }
 
 export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement
+      // Small delay to let framer-motion finish mounting
+      const timer = setTimeout(() => {
+        dialogRef.current?.focus()
+      }, 50)
+      return () => clearTimeout(timer)
+    } else {
+      previousFocusRef.current?.focus()
+      previousFocusRef.current = null
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -20,14 +49,22 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
           onClick={onClose}
+          role="button"
+          aria-label="Close modal"
+          tabIndex={-1}
         >
           <motion.div
+            ref={dialogRef}
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             exit={{ scale: 0, rotate: 180 }}
             transition={{ type: 'spring', damping: 15, stiffness: 200 }}
-            className="bg-white rounded-3xl p-8 max-w-sm mx-4 text-center shadow-2xl"
+            className="bg-white rounded-3xl p-8 max-w-sm mx-4 text-center shadow-2xl outline-none"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="level-up-title"
+            tabIndex={-1}
           >
             {/* Animated stars background */}
             <div className="relative mb-6">
@@ -69,7 +106,7 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
             >
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Sparkles className="w-6 h-6 text-amber-500" />
-                <h2 className="text-3xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                <h2 id="level-up-title" className="text-3xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                   LEVEL UP!
                 </h2>
                 <Sparkles className="w-6 h-6 text-amber-500" />
