@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   resetError = () => {
-    this.setState({ hasError: false, error: null })
+    console.warn("Error boundary reset")
   }
 
   render() {
