@@ -1,6 +1,8 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 
+const SECRET = process.env.NEXTAUTH_SECRET || 'INSECURE-FALLBACK-ONLY-FOR-DEVELOPMENT'
+
 export default withAuth(
   function middleware(req) {
     const pathname = req.nextUrl.pathname
@@ -14,6 +16,7 @@ export default withAuth(
     return NextResponse.next()
   },
   {
+    secret: SECRET,
     callbacks: {
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
