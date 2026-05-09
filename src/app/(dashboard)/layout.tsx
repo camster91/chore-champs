@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
 import {
   Home,
   CheckSquare,
@@ -45,9 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (status === 'loading') return (
     <div className="min-h-screen flex items-center justify-center">
-      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-        <Sparkles className="w-12 h-12 text-[var(--color-primary)]" />
-      </motion.div>
+      <div className="w-12 h-12 rounded-full border-4 border-[var(--color-primary)] border-t-transparent animate-spin" />
     </div>
   )
 
@@ -59,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
-      <motion.aside className={cn('fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white shadow-xl flex flex-col transform transition-transform lg:translate-x-0', isSidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
+      <aside className={cn('fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white shadow-xl flex flex-col transform transition-transform lg:translate-x-0', isSidebarOpen ? 'translate-x-0' : '-translate-x-full')}>
         <div className="p-6 border-b flex items-center gap-2">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center"><Sparkles className="w-6 h-6 text-white" /></div>
           <span className="text-xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">ChoreChamps</span>
@@ -95,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             Sign Out
           </Button>
         </div>
-      </motion.aside>
+      </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 p-4 lg:p-8 pt-16 lg:pt-8 bg-[var(--color-background)]">

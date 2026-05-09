@@ -88,6 +88,10 @@ export const useKidStore = create<KidState>()(
     }),
     {
       name: 'kids-chore-kid',
+      partialize: (state) => ({
+        currentKid: state.currentKid,
+        kids: state.kids,
+      }),
     }
   )
 )
