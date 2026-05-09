@@ -22,7 +22,18 @@ export async function PATCH(
   const updates: Record<string, unknown> = {}
   for (const field of allowedFields) {
     if (body[field] !== undefined) {
-      updates[field] = field === 'cost' ? parseInt(body[field]) : body[field]
+      if (field === 'cost') {
+        const parsed = parseInt(body[field])
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          return NextResponse.json(
+            { error: 'Reward cost must be a positive integer (>= 1)' },
+            { status: 400 }
+          )
+        }
+        updates[field] = parsed
+      } else {
+        updates[field] = body[field]
+      }
     }
   }
 

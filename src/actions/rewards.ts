@@ -29,6 +29,10 @@ export async function createReward(data: {
     throw new Error('Unauthorized')
   }
 
+  if (!Number.isInteger(data.cost) || data.cost < 1) {
+    throw new Error('Reward cost must be a positive integer (>= 1)')
+  }
+
   const reward = await prisma.reward.create({
     data: {
       title: data.title,
