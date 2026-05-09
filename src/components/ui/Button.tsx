@@ -58,6 +58,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         whileHover={{ scale: disabled ? 1 : 1.02 }}
         whileTap={{ scale: disabled ? 1 : 0.98 }}
         {...props}
+        aria-busy={isLoading || undefined}
+        aria-label={isLoading ? 'Loading' : undefined}
       >
         {isLoading ? (
           <svg
