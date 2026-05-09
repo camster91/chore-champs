@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
+import { registerSchema } from '@/lib/validation/schemas'
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email } = await request.json()
+    const body = await request.json()
+    const { name, email, password } = body
 
-    if (!name || !email) {
-      return NextResponse.json({ error: 'Name and email are required' }, { status: 400 })
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 })
+    }
+
+    // Validate with schema
+    const parsed = registerSchema.safeParse({ name, email, password })
+    if (!parsed.success) {
+      const errors = parsed.error.errors.map(e => e.message).join(', ')
+      return NextResponse.json({ error: errors }, { status: 400 })
     }
 
     // Check if email already exists
@@ -19,18 +28,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'An account with this email already exists. Please sign in.' }, { status: 400 })
     }
 
-    // Create parent with placeholder password
+    // Create parent with hashed password
+    const hashedPassword = await bcrypt.hash(password, 12)
     const parent = await prisma.parent.create({
       data: {
         name,
         email,
-        password: crypto.randomBytes(32).toString('hex'),
+        password: hashedPassword,
       }
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Account created! You can now sign in.'
+      parentId: parent.id,
+      message: 'Account created! Signing you in...'
     })
   } catch (error) {
     console.error('Registration error:', error)
