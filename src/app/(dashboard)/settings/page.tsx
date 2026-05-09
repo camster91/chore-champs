@@ -227,6 +227,7 @@ export default function SettingsPage() {
               </p>
               <div className="flex gap-2">
                 <Input 
+                  label="Invite Link"
                   value={typeof window !== 'undefined' ? `${window.location.origin}/signup` : ''} 
                   readOnly 
                   className="flex-1"
@@ -362,6 +363,7 @@ export default function SettingsPage() {
                   <p className="text-sm text-green-700 mb-2">Share this link:</p>
                   <div className="flex gap-2">
                     <Input 
+                      label="Invite Link"
                       value={inviteResult.inviteUrl} 
                       readOnly 
                       className="text-sm"
