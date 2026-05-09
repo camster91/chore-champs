@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, Mail, Lock, ArrowLeft, AlertCircle } from 'lucide-react'
 import { Button, Input, Card, CardContent } from '@/components/ui'
 
@@ -31,6 +32,7 @@ function getErrorMessage(errorCode: string | null): string | null {
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(() => {
@@ -52,12 +54,12 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        setError(t('auth.invalidEmailOrPassword'))
       } else {
         router.push('/dashboard')
       }
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError(t('auth.somethingWentWrong'))
     } finally {
       setIsLoading(false)
     }
@@ -75,7 +77,7 @@ function LoginForm() {
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to home
+          {t('auth.backToHome')}
         </Link>
 
         <Card variant="elevated">
@@ -90,14 +92,14 @@ function LoginForm() {
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold text-center mb-2">Welcome back!</h1>
+            <h1 className="text-2xl font-bold text-center mb-2">{t('auth.loginTitle')}</h1>
             <p className="text-gray-500 text-center mb-8">
-              Sign in to continue your adventure
+              {t('auth.loginSubtitle')}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
-                label="Email"
+                label={t('auth.email')}
                 type="email"
                 placeholder="parent@example.com"
                 value={email}
@@ -107,9 +109,9 @@ function LoginForm() {
               />
 
               <Input
-                label="Password"
+                label={t('auth.password')}
                 type="password"
-                placeholder="Enter your password"
+                placeholder={t('auth.enterPassword')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 leftIcon={<Lock className="w-5 h-5" />}
@@ -133,17 +135,17 @@ function LoginForm() {
                 size="lg"
                 isLoading={isLoading}
               >
-                Sign In
+                {t('auth.signIn')}
               </Button>
             </form>
 
             <p className="text-center text-gray-500 mt-6">
-              Don&apos;t have an account?{' '}
+              {t('auth.noAccount')}{' '}
               <Link
                 href="/signup"
                 className="text-[var(--color-primary)] font-semibold hover:underline"
               >
-                Sign up
+                {t('auth.signUp')}
               </Link>
             </p>
           </CardContent>

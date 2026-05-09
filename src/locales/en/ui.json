@@ -1,0 +1,102 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "noResults": "No results found",
+    "tryAgain": "Try Again",
+    "goHome": "Go Home"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginTitle": "Welcome back!",
+    "loginSubtitle": "Sign in to continue your adventure",
+    "signupTitle": "Join the Family!",
+    "signupSubtitle": "Start your chore-conquering adventure!",
+    "name": "Your Name",
+    "confirmPassword": "Confirm Password",
+    "backToHome": "Back to home",
+    "enterPassword": "Enter your password",
+    "invalidEmailOrPassword": "Invalid email or password",
+    "somethingWentWrong": "Something went wrong. Please try again.",
+    "creatingAccount": "Creating Your Account...",
+    "settingUpFamily": "Setting up your family!",
+    "joiningFamily": "Joining your family!",
+    "createAccount": "Create Account",
+    "joinFamily": "Join Family",
+    "inviteSubtitle": "Create an account to join the family adventure!",
+    "createFamilyTitle": "Create Your Family Account"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "home": "Home",
+    "chores": "Chores",
+    "rewards": "Rewards",
+    "habits": "Habits",
+    "avatarShop": "Avatar Shop",
+    "profiles": "Profiles",
+    "settings": "Settings",
+    "signOut": "Sign Out",
+    "selectProfile": "Select Profile",
+    "yearsOld": "{{age}} years old"
+  },
+  "chores": {
+    "title": "Chores",
+    "createChore": "Create a Chore",
+    "choreName": "Chore Name",
+    "description": "Description",
+    "points": "Points",
+    "difficulty": "Difficulty",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "assignTo": "Assign To",
+    "noChores": "No chores yet!",
+    "markComplete": "Mark Complete",
+    "completed": "Completed"
+  },
+  "rewards": {
+    "title": "Rewards",
+    "createReward": "Create a Reward",
+    "rewardName": "Reward Name",
+    "cost": "Cost",
+    "pointsCost": "points",
+    "redeem": "Redeem",
+    "noRewards": "No rewards yet!"
+  },
+  "kids": {
+    "title": "Kids",
+    "addKid": "Add a Kid",
+    "name": "Name",
+    "age": "Age",
+    "noKids": "No kids added yet!"
+  },
+  "modals": {
+    "levelUp": "Level Up!",
+    "congratulations": "Congratulations!",
+    "keepGoing": "Keep Going"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred",
+    "resetButton": "Try Again",
+    "pageLoadError": "Failed to load this page"
+  }
+}

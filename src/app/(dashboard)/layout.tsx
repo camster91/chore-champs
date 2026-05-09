@@ -18,19 +18,10 @@ import {
   ShoppingBag,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
+import { useTranslation } from 'react-i18next'
 import { useKidStore } from '@/stores/kid-store'
 import { Avatar, Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Home' },
-  { href: '/chores', icon: CheckSquare, label: 'Chores' },
-  { href: '/habits', icon: Sparkles, label: 'Habits' },
-  { href: '/rewards', icon: Gift, label: 'Rewards' },
-  { href: '/avatar-shop', icon: ShoppingBag, label: 'Avatar Shop' },
-  { href: '/profile', icon: User, label: 'Profiles' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
-]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
@@ -38,6 +29,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const { currentKid } = useKidStore()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const { t } = useTranslation()
+
+  const navItems = [
+    { href: '/dashboard', icon: Home, label: t('nav.home') },
+    { href: '/chores', icon: CheckSquare, label: t('nav.chores') },
+    { href: '/habits', icon: Sparkles, label: t('nav.habits') },
+    { href: '/rewards', icon: Gift, label: t('nav.rewards') },
+    { href: '/avatar-shop', icon: ShoppingBag, label: t('nav.avatarShop') },
+    { href: '/profile', icon: User, label: t('nav.profiles') },
+    { href: '/settings', icon: Settings, label: t('nav.settings') },
+  ]
 
   useEffect(() => {
     if (status === 'unauthenticated') router.push('/login')
@@ -71,12 +73,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Avatar name={currentKid.name} size="lg" />
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-800 truncate">{currentKid.name}</p>
-                <p className="text-sm text-gray-500">{currentKid.age} years old</p>
+                <p className="text-sm text-gray-500">{t('nav.yearsOld', { age: currentKid.age })}</p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="p-4 border-b"><Link href="/profile"><Button variant="outline" className="w-full">Select Profile</Button></Link></div>
+          <div className="p-4 border-b"><Link href="/profile"><Button variant="outline" className="w-full">{t('nav.selectProfile')}</Button></Link></div>
         )}
 
         <nav className="flex-1 p-4 space-y-2">
@@ -92,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         <div className="p-4 border-t">
           <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => signOut({ callbackUrl: '/login' })} leftIcon={<LogOut className="w-4 h-4" />}>
-            Sign Out
+            {t('nav.signOut')}
           </Button>
         </div>
       </motion.aside>

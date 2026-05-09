@@ -1,0 +1,45 @@
+{
+  "kids": [
+    { "name": "Alex", "age": 8, "avatarId": "robot" },
+    { "name": "Emma", "age": 6, "avatarId": "astronaut" },
+    { "name": "Sam", "age": 10, "avatarId": "ninja" }
+  ],
+  "chores": [
+    { "key": "make_bed", "title": "Make Your Bed", "description": "Straighten sheets and fluff pillows" },
+    { "key": "brush_teeth", "title": "Brush Teeth", "description": "Brush for 2 minutes" },
+    { "key": "clean_room", "title": "Clean Room", "description": "Tidy toys, make bed, vacuum floor" },
+    { "key": "feed_pet", "title": "Feed Pet", "description": "Give food and fresh water to pet" },
+    { "key": "do_homework", "title": "Do Homework", "description": "Complete all assignments" },
+    { "key": "set_table", "title": "Set Table", "description": "Put out plates and utensils for dinner" },
+    { "key": "take_out_trash", "title": "Take Out Trash", "description": "Empty all trash cans and take to curb" },
+    { "key": "read_20_min", "title": "Read for 20 Minutes", "description": "Read quietly in your favorite spot" },
+    { "key": "help_dishes", "title": "Help with Dishes", "description": "Load or unload dishwasher" },
+    { "key": "practice_instrument", "title": "Practice Instrument", "description": "Practice for at least 15 minutes" }
+  ],
+  "rewards": [
+    { "key": "extra_screen_time", "title": "Extra Screen Time", "description": "30 minutes of extra tablet or TV time" },
+    { "key": "pick_movie", "title": "Pick a Movie", "description": "Choose the family movie for movie night" },
+    { "key": "stay_up_late", "title": "Stay Up Late", "description": "30 minutes past bedtime" },
+    { "key": "ice_cream_trip", "title": "Ice Cream Trip", "description": "Trip to the ice cream shop" },
+    { "key": "new_book", "title": "New Book", "description": "Pick out a new book to read" },
+    { "key": "friend_sleepover", "title": "Friend Sleepover", "description": "Invite a friend for a sleepover" },
+    { "key": "game_night_choice", "title": "Game Night Choice", "description": "You pick the game for family game night" },
+    { "key": "skip_chore", "title": "Skip a Chore", "description": "Skip one chore of your choice" }
+  ],
+  "habits": [
+    { "key": "drink_water", "title": "Drink Water", "description": "Drink 8 glasses of water" },
+    { "key": "exercise", "title": "Exercise", "description": "30 minutes of physical activity" },
+    { "key": "practice_gratitude", "title": "Practice Gratitude", "description": "Write down 3 things you are thankful for" },
+    { "key": "read_before_bed", "title": "Read Before Bed", "description": "Read for at least 10 minutes" }
+  ],
+  "familyGoal": {
+    "title": "Summer Vacation Fund",
+    "description": "Work together to earn enough for our family trip!",
+    "reward": "Beach vacation!"
+  },
+  "messages": {
+    "alreadyHasData": "Family already has kids. Sample data not added.",
+    "sampleAdded": "Sample data added! Explore with 3 kids, 10 chores, and 8 rewards.",
+    "unauthorized": "Unauthorized"
+  }
+}

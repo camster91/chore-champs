@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 
@@ -11,6 +12,7 @@ function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const inviteToken = searchParams.get('invite')
+  const { t } = useTranslation()
   
   const [step, setStep] = useState<'info' | 'creating'>('info')
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ function SignupForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create account')
+        setError(data.error || t('errors.unexpectedError'))
         setStep('info')
         return
       }
@@ -52,7 +54,7 @@ function SignupForm() {
         router.push('/dashboard')
       }
     } catch (e) {
-      setError('Something went wrong. Please try again.')
+      setError(t('auth.somethingWentWrong'))
       setStep('info')
     } finally {
       setIsLoading(false)
@@ -70,9 +72,9 @@ function SignupForm() {
           >
             <Sparkles className="w-10 h-10 text-white" />
           </motion.div>
-          <h2 className="text-2xl font-bold mb-2">Creating Your Account...</h2>
+          <h2 className="text-2xl font-bold mb-2">{t('auth.creatingAccount')}</h2>
           <p className="text-gray-500 mb-4">
-            {inviteToken ? 'Joining your family!' : 'Setting up your family!'}
+            {inviteToken ? t('auth.joiningFamily') : t('auth.settingUpFamily')}
           </p>
           <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
         </div>
@@ -87,7 +89,7 @@ function SignupForm() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to home
+          {t('auth.backToHome')}
         </Link>
 
         <div className="rounded-2xl bg-white shadow-xl">
@@ -103,31 +105,31 @@ function SignupForm() {
             </div>
 
             <h1 className="text-2xl font-bold text-center mb-2">
-              {inviteToken ? 'Join the Family!' : 'Create Your Family Account'}
+              {inviteToken ? t('auth.signupTitle') : t('auth.createFamilyTitle')}
             </h1>
             <p className="text-gray-500 text-center mb-8">
-              {inviteToken ? 'Create an account to join the family adventure!' : 'Start your chore-conquering adventure!'}
+              {inviteToken ? t('auth.inviteSubtitle') : t('auth.signupSubtitle')}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">Your Name</label>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.name')}</label>
                 <input id="name" type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[var(--color-primary)] focus:outline-none" placeholder="Mom, Dad, Guardian..." />
               </div>
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">{t('auth.email')}</label>
                 <input id="email" type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-[var(--color-primary)] focus:outline-none" placeholder="parent@example.com" />
               </div>
 
               {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
 
               <button type="submit" disabled={isLoading} className="w-full py-3 px-6 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
-                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> {inviteToken ? 'Join Family' : 'Create Account'}</>}
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> {inviteToken ? t('auth.joinFamily') : t('auth.createAccount')}</>}
               </button>
             </form>
 
             <p className="text-center text-gray-500 mt-6">
-              Already have an account? <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">Sign in</Link>
+              {t('auth.hasAccount')} <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">{t('auth.signIn')}</Link>
             </p>
           </div>
         </div>
