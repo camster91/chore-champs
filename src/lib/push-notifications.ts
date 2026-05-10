@@ -20,13 +20,21 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 
   try {
+    // Check if service worker is already registered to avoid SecurityError
+    // from re-registering the same script (can happen when next-pwa auto-registers)
+    const existingReg = await navigator.serviceWorker.getRegistration('/sw.js')
+    if (existingReg) {
+      console.log('Service worker already registered, using existing registration')
+      return existingReg
+    }
+
     const registration = await navigator.serviceWorker.register('/sw.js', {
       scope: '/'
     })
-    
+
     // Wait for the service worker to be ready
     await navigator.serviceWorker.ready
-    
+
     return registration
   } catch (error) {
     console.error('Service worker registration failed:', error)
