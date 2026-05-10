@@ -109,20 +109,20 @@ function SignupForm() {
 
         <div className="rounded-2xl bg-white shadow-xl">
           {inviteToken && <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-t-2xl" />}
-          <div className="p-4 sm:p-8">
-            <div className="flex items-center justify-center gap-2 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
-                <Sparkles className="w-7 h-7 text-white" />
+          <div className="p-5 sm:p-8">
+            <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
+                <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
+              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
                 ChoreChamps
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold text-center mb-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-center mb-2">
               {inviteToken ? 'Join the Family!' : 'Create Your Family Account'}
             </h1>
-            <p className="text-gray-500 text-center mb-8">
+            <p className="text-gray-500 text-center mb-6 sm:mb-8 text-sm sm:text-base">
               {inviteToken ? 'Create an account to join the family adventure!' : 'Start your chore-conquering adventure!'}
             </p>
 
@@ -133,12 +133,12 @@ function SignupForm() {
 
               {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
 
-              <button type="submit" disabled={isLoading} className="w-full py-3 px-6 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
+              <button type="submit" disabled={isLoading} className="w-full py-3 px-6 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm sm:text-base">
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> {inviteToken ? 'Join Family' : 'Create Account'}</>}
               </button>
             </form>
 
-            <p className="text-center text-gray-500 mt-6">
+            <p className="text-center text-gray-500 mt-6 text-sm sm:text-base">
               Already have an account? <Link href="/login" className="text-[var(--color-primary)] font-semibold hover:underline">Sign in</Link>
             </p>
           </div>
