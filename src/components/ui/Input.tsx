@@ -35,13 +35,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full px-4 py-3 rounded-xl border-2 transition-colors',
+              'w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl border-2 transition-colors',
               'text-gray-900 placeholder:text-gray-400',
               'focus:outline-none focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary)]/20',
               error
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-gray-200 hover:border-gray-300',
-              leftIcon && 'pl-10',
+              leftIcon && 'pl-9 sm:pl-10',
               rightIcon && 'pr-10',
               className
             )}

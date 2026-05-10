@@ -109,7 +109,7 @@ function SignupForm() {
 
         <div className="rounded-2xl bg-white shadow-xl">
           {inviteToken && <div className="h-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-t-2xl" />}
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
             <div className="flex items-center justify-center gap-2 mb-8">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
                 <Sparkles className="w-7 h-7 text-white" />
