@@ -37,7 +37,9 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
 
     return registration
   } catch (error) {
-    console.error('Service worker registration failed:', error)
+    // Service worker registration may fail due to redirect/disallowed contexts
+    // (e.g. source behind a redirect — SecurityError code 18). Fail silently.
+    console.warn('Service worker registration failed, skipping:', error instanceof Error ? error.message : String(error))
     return null
   }
 }
