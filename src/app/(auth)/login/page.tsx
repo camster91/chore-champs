@@ -79,19 +79,19 @@ function LoginForm() {
         </Link>
 
         <Card variant="elevated">
-          <CardContent className="p-4 sm:p-8">
+          <CardContent className="p-5 sm:p-8">
             {/* Logo */}
             <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
-              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
+              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
                 ChoreChamps
               </span>
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold text-center mb-1 sm:mb-2">Welcome back!</h1>
-            <p className="text-gray-500 text-center mb-6 sm:mb-8 text-sm sm:text-base">
+            <h1 className="text-lg sm:text-2xl font-bold text-center mb-1 sm:mb-2">Welcome back!</h1>
+            <p className="text-gray-500 text-center mb-5 sm:mb-8 text-sm sm:text-base">
               Sign in to continue your adventure
             </p>
 

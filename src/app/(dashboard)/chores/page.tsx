@@ -164,7 +164,14 @@ export default function ChoresPage() {
         ) : chores.length > 0 ? (
           chores.map((chore, index) => (
             <motion.div key={chore.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-              <Card className={cn('h-full cursor-pointer transition-all hover:scale-[1.02]', chore.completed ? 'bg-green-50 border-green-200' : 'hover:border-[var(--color-primary)]')} onClick={() => handleCompleteChore(chore)}>
+              <Card 
+                className={cn('h-full cursor-pointer transition-all hover:scale-[1.02]', chore.completed ? 'bg-green-50 border-green-200' : 'hover:border-[var(--color-primary)]')} 
+                onClick={() => handleCompleteChore(chore)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !chore.completed) handleCompleteChore(chore) }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Complete ${chore.title} for ${chore.points} points`}
+              >
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', chore.completed ? 'bg-green-500 text-white' : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]')}>

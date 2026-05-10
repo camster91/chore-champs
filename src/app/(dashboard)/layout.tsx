@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         ) : (
-          <div className="p-4 border-b"><Link href="/profile"><Button variant="outline" className="w-full">Select Profile</Button></Link></div>
+          <div className="p-4 border-b"><Link href="/profile" className="block w-full px-4 py-2 text-center border-2 border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white rounded-xl font-semibold transition-colors">Select Profile</Link></div>
         )}
 
         <nav className="flex-1 p-4 space-y-2">

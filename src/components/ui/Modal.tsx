@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment } from 'react'
+import { Fragment, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -24,6 +24,33 @@ export function Modal({
   size = 'md',
   showCloseButton = true,
 }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement
+      const timer = setTimeout(() => {
+        modalRef.current?.focus()
+      }, 50)
+      return () => clearTimeout(timer)
+    } else {
+      previousFocusRef.current?.focus()
+      previousFocusRef.current = null
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   const sizes = {
     sm: 'max-w-sm',
     md: 'max-w-md',
@@ -47,6 +74,7 @@ export function Modal({
           {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
+              ref={modalRef}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -55,13 +83,17 @@ export function Modal({
                 'w-full bg-white rounded-2xl shadow-2xl overflow-hidden',
                 sizes[size]
               )}
+              tabIndex={-1}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? 'modal-title' : undefined}
             >
               {/* Header */}
               {(title || showCloseButton) && (
                 <div className="flex items-start justify-between p-6 border-b border-gray-100">
                   <div>
                     {title && (
-                      <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+                      <h2 id="modal-title" className="text-xl font-bold text-gray-900">{title}</h2>
                     )}
                     {description && (
                       <p className="mt-1 text-sm text-gray-500">{description}</p>
