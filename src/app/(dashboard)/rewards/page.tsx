@@ -7,6 +7,7 @@ import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { getRewards, createReward, redeemReward } from '@/actions/rewards'
+import { initI18n, t as translate } from '@/lib/i18n'
 
 interface UIReward {
   id: string
@@ -28,6 +29,7 @@ export default function RewardsPage() {
   const [newReward, setNewReward] = useState({ title: '', description: '', cost: 50, icon: '🎁', category: 'General' })
 
   useEffect(() => {
+    initI18n()
     loadRewards()
   }, [])
 
@@ -77,7 +79,7 @@ export default function RewardsPage() {
   if (!currentKid) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Select a kid to view rewards</p>
+        <p className="text-gray-500">{translate('rewards.selectKidToViewRewards')}</p>
       </div>
     )
   }
@@ -86,11 +88,11 @@ export default function RewardsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Rewards</h1>
-          <p className="text-gray-500">Motivate with rewards they can earn!</p>
+          <h1 className="text-3xl font-bold">{translate('rewards.title')}</h1>
+          <p className="text-gray-500">{translate('rewards.motivateWithRewards')}</p>
         </div>
         <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>
-          Add Reward
+          {translate('rewards.addReward')}
         </Button>
       </div>
 
@@ -102,7 +104,7 @@ export default function RewardsPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <Gift className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No rewards yet! Create some incentives.</p>
+            <p className="text-gray-500">{translate('rewards.noRewardsYet')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -121,9 +123,9 @@ export default function RewardsPage() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between mt-4">
-                    <span className="text-2xl font-bold text-purple-600">{reward.cost} pts</span>
+                    <span className="text-2xl font-bold text-purple-600">{reward.cost} {translate('rewards.pts')}</span>
                     <Button size="sm" onClick={() => handleRedeem(reward)}>
-                      Redeem
+                      {translate('rewards.redeem')}
                     </Button>
                   </div>
                 </CardContent>
@@ -133,13 +135,13 @@ export default function RewardsPage() {
         </div>
       )}
 
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Create Reward">
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={translate('rewards.createReward')}>
         <div className="space-y-4">
-          <Input label="Reward Name" value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} placeholder="e.g., Extra Screen Time" />
-          <Input label="Description" value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} placeholder="Optional description" />
-          <Input label="Points Cost" type="number" min={1} value={newReward.cost} onChange={(e) => setNewReward({ ...newReward, cost: parseInt(e.target.value) || 1 })} />
+          <Input label={translate('rewards.rewardName')} value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} placeholder={translate('rewards.e.gExtraScreenTime')} />
+          <Input label={translate('common.description')} value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} placeholder={translate('rewards.optional')} />
+          <Input label={translate('rewards.pointsCost')} type="number" min={1} value={newReward.cost} onChange={(e) => setNewReward({ ...newReward, cost: parseInt(e.target.value) || 1 })} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{translate('rewards.icon')}</label>
             <div className="flex gap-2 flex-wrap">
               {rewardIcons.map(icon => (
                 <button key={icon} onClick={() => setNewReward({ ...newReward, icon })} className={cn('w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all', newReward.icon === icon ? 'bg-purple-100 ring-2 ring-purple-500' : 'bg-gray-100 hover:bg-gray-200')}>
@@ -149,7 +151,7 @@ export default function RewardsPage() {
             </div>
           </div>
           <Button className="w-full" onClick={handleCreateReward} disabled={isSubmitting || !newReward.title}>
-            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Reward'}
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('rewards.createReward')}
           </Button>
         </div>
       </Modal>

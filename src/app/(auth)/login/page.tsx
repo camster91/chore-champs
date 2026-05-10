@@ -7,25 +7,28 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Sparkles, Mail, Lock, ArrowLeft, AlertCircle } from 'lucide-react'
 import { Button, Input, Card, CardContent } from '@/components/ui'
+import { initI18n, t as translate } from '@/lib/i18n'
+import { useEffect } from 'react'
 
 // Map NextAuth error codes to user-friendly messages
 const NEXT_AUTH_ERRORS: Record<string, string> = {
-  Configuration: 'There is a problem with the server configuration. Please try again later or contact support.',
-  CredentialsSignin: 'Invalid email or password.',
-  AccessDenied: 'Access denied. You do not have permission to sign in.',
-  Verification: 'The verification link has expired or is invalid. Please request a new one.',
-  OAuthSignin: 'There was a problem signing in with that provider.',
-  OAuthCallback: 'There was a problem completing the sign-in process.',
-  OAuthCreateAccount: 'Could not create an account with that provider.',
-  EmailCreateAccount: 'Could not create an account with that email.',
-  Callback: 'There was a problem processing your sign-in.',
-  SessionRequired: 'You must be signed in to access this page.',
-  Default: 'An unexpected error occurred. Please try again.',
+  Configuration: 'errors.configuration',
+  CredentialsSignin: 'errors.credentialsSignin',
+  AccessDenied: 'errors.accessDenied',
+  Verification: 'errors.verification',
+  OAuthSignin: 'errors.oauthSignin',
+  OAuthCallback: 'errors.oauthCallback',
+  OAuthCreateAccount: 'errors.oauthCreateAccount',
+  EmailCreateAccount: 'errors.emailCreateAccount',
+  Callback: 'errors.callback',
+  SessionRequired: 'errors.sessionRequired',
+  Default: 'errors.default',
 }
 
 function getErrorMessage(errorCode: string | null): string | null {
   if (!errorCode) return null
-  return NEXT_AUTH_ERRORS[errorCode] || NEXT_AUTH_ERRORS.Default
+  const key = NEXT_AUTH_ERRORS[errorCode] || NEXT_AUTH_ERRORS.Default
+  return translate(key)
 }
 
 function LoginForm() {
@@ -34,7 +37,6 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(() => {
-    // Check for NextAuth error in URL on initial load
     return getErrorMessage(searchParams.get('error'))
   })
   const [isLoading, setIsLoading] = useState(false)
@@ -52,12 +54,12 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        setError(translate('auth.invalidCredentials'))
       } else {
         router.push('/dashboard')
       }
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError(translate('auth.somethingWentWrong'))
     } finally {
       setIsLoading(false)
     }
@@ -75,29 +77,31 @@ function LoginForm() {
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to home
+          {translate('common.back')}
         </Link>
 
         <Card variant="elevated">
-          <CardContent className="p-5 sm:p-8">
+          <CardContent className="p-4 sm:p-8">
             {/* Logo */}
             <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+                <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
               </div>
-              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
+              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
                 ChoreChamps
               </span>
             </div>
 
-            <h1 className="text-lg sm:text-2xl font-bold text-center mb-1 sm:mb-2">Welcome back!</h1>
-            <p className="text-gray-500 text-center mb-5 sm:mb-8 text-sm sm:text-base">
-              Sign in to continue your adventure
+            <h1 className="text-xl sm:text-2xl font-bold text-center mb-1 sm:mb-2">
+              {translate('auth.welcomeBack')}
+            </h1>
+            <p className="text-gray-500 text-center mb-6 sm:mb-8 text-sm sm:text-base">
+              {translate('auth.signInToContinue')}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
-                label="Email"
+                label={translate('auth.email')}
                 type="email"
                 placeholder="parent@example.com"
                 value={email}
@@ -107,9 +111,9 @@ function LoginForm() {
               />
 
               <Input
-                label="Password"
+                label={translate('auth.password')}
                 type="password"
-                placeholder="Enter your password"
+                placeholder={translate('auth.password')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 leftIcon={<Lock className="w-5 h-5" />}
@@ -133,17 +137,17 @@ function LoginForm() {
                 size="lg"
                 isLoading={isLoading}
               >
-                Sign In
+                {translate('auth.signIn')}
               </Button>
             </form>
 
             <p className="text-center text-gray-500 mt-6">
-              Don&apos;t have an account?{' '}
+              {translate('auth.dontHaveAccount')}{' '}
               <Link
                 href="/signup"
                 className="text-[var(--color-primary)] font-semibold hover:underline"
               >
-                Sign up
+                {translate('auth.signUp')}
               </Link>
             </p>
           </CardContent>
@@ -170,6 +174,10 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  useEffect(() => {
+    initI18n()
+  }, [])
+
   return (
     <Suspense>
       <LoginForm />

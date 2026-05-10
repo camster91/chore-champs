@@ -7,6 +7,7 @@ import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { getHabits, logHabit, createHabit } from '@/actions/habits'
+import { initI18n, t as translate } from '@/lib/i18n'
 
 interface UIHabit {
   id: string
@@ -29,6 +30,7 @@ export default function HabitsPage() {
   const [newHabit, setNewHabit] = useState({ title: '', description: '', icon: '🧘', points: 5 })
 
   useEffect(() => {
+    initI18n()
     loadHabits()
   }, [currentKid])
 
@@ -38,12 +40,12 @@ export default function HabitsPage() {
     try {
       const dbHabits = await getHabits() as any[]
       if (!dbHabits) return
-      
+
       const mapped: UIHabit[] = dbHabits.map(habit => {
         const log = habit.logs?.find((l: any) => l.kidId === currentKid?.id)
         const today = new Date().toDateString()
         const isToday = log?.loggedAt && new Date(log.loggedAt).toDateString() === today
-        
+
         return {
           id: habit.id,
           title: habit.title,
@@ -95,7 +97,7 @@ export default function HabitsPage() {
   if (!currentKid) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Select a kid to view their habits</p>
+        <p className="text-gray-500">{translate('habits.selectKidToViewHabits')}</p>
       </div>
     )
   }
@@ -104,11 +106,11 @@ export default function HabitsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Daily Habits</h1>
-          <p className="text-gray-500">Build healthy routines together</p>
+          <h1 className="text-3xl font-bold">{translate('habits.title')}</h1>
+          <p className="text-gray-500">{translate('habits.buildHealthyRoutines')}</p>
         </div>
         <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>
-          Add Habit
+          {translate('habits.addHabit')}
         </Button>
       </div>
 
@@ -118,12 +120,12 @@ export default function HabitsPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Target className="w-6 h-6 text-purple-500" />
-              <span className="font-semibold">Today&apos;s Progress</span>
+              <span className="font-semibold">{translate('habits.todaysProgress')}</span>
             </div>
             <span className="text-2xl font-bold">{habits.filter(h => h.completed).length}/{habits.length}</span>
           </div>
           <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
               style={{ width: habits.length ? `${(habits.filter(h => h.completed).length / habits.length) * 100}%` : '0%' }}
             />
@@ -140,7 +142,7 @@ export default function HabitsPage() {
         <Card>
           <CardContent className="p-8 text-center">
             <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">No habits yet! Create one to get started.</p>
+            <p className="text-gray-500">{translate('habits.noHabitsYet')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -152,8 +154,8 @@ export default function HabitsPage() {
               animate={{ opacity: 1, y: 0 }}
               className={cn(
                 'flex items-center justify-between p-4 rounded-xl bg-white shadow-sm border-2 transition-all',
-                habit.completed 
-                  ? 'border-green-200 bg-green-50' 
+                habit.completed
+                  ? 'border-green-200 bg-green-50'
                   : 'border-gray-100 hover:border-purple-200 cursor-pointer',
                 habit.completed && 'opacity-60'
               )}
@@ -186,22 +188,22 @@ export default function HabitsPage() {
       )}
 
       {/* Add Habit Modal */}
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Create New Habit">
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={translate('habits.createNewHabit')}>
         <div className="space-y-4">
-          <Input 
-            label="Habit Name" 
-            value={newHabit.title} 
-            onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })} 
-            placeholder="e.g., Drink 8 glasses of water"
+          <Input
+            label={translate('habits.habitName')}
+            value={newHabit.title}
+            onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
+            placeholder={translate('habits.e.gDrinkWater')}
           />
-          <Input 
-            label="Description" 
-            value={newHabit.description} 
-            onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })} 
-            placeholder="Optional description"
+          <Input
+            label={translate('common.description')}
+            value={newHabit.description}
+            onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
+            placeholder={translate('rewards.optional')}
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{translate('rewards.icon')}</label>
             <div className="flex gap-2 flex-wrap">
               {habitIcons.map(icon => (
                 <button
@@ -209,8 +211,8 @@ export default function HabitsPage() {
                   onClick={() => setNewHabit({ ...newHabit, icon })}
                   className={cn(
                     'w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all',
-                    newHabit.icon === icon 
-                      ? 'bg-purple-100 ring-2 ring-purple-500' 
+                    newHabit.icon === icon
+                      ? 'bg-purple-100 ring-2 ring-purple-500'
                       : 'bg-gray-100 hover:bg-gray-200'
                   )}
                 >
@@ -220,7 +222,7 @@ export default function HabitsPage() {
             </div>
           </div>
           <Button className="w-full" onClick={handleCreateHabit} disabled={isSubmitting || !newHabit.title}>
-            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Create Habit'}
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('habits.createNewHabit')}
           </Button>
         </div>
       </Modal>

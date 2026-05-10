@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { getKids, createKid } from '@/actions/kids'
 import { getChores, completeChore, assignChore } from '@/actions/chores'
 import { addSampleData } from '@/actions/sampleData'
+import { initI18n, t as translate } from '@/lib/i18n'
 
 export default function DashboardPage() {
   const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
@@ -20,6 +21,10 @@ export default function DashboardPage() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [newKid, setNewKid] = useState({ name: '', age: '' })
   const [loadingKids, setLoadingKids] = useState(false)
+
+  useEffect(() => {
+    initI18n()
+  }, [])
 
   const loadChores = useCallback(async () => {
     if (!currentKid) {
@@ -152,33 +157,33 @@ export default function DashboardPage() {
   if (!kids || kids.length === 0) {
     return (
       <div className="space-y-6">
-        <div 
+        <div
           className="animate-fade-in text-center py-16"
         >
           <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6">
             <Sparkles className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-3xl font-bold mb-4">Welcome to ChoreChamps!</h1>
+          <h1 className="text-3xl font-bold mb-4">{translate('dashboard.welcomeTitle')}</h1>
           <p className="text-gray-500 mb-8 max-w-md mx-auto">
-            Start by adding your first child or explore with sample data.
+            {translate('dashboard.welcomeSubtitle')}
           </p>
-          
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button onClick={() => setIsAddKidModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>
-              Add Your First Kid
+              {translate('dashboard.addFirstKid')}
             </Button>
             <Button variant="outline" onClick={handleAddSampleData}>
-              Add Sample Data
+              {translate('dashboard.addSampleData')}
             </Button>
           </div>
         </div>
 
-        <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title="Add a Child">
+        <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title={translate('dashboard.addChild')}>
           <div className="space-y-4">
-            <Input label="Name" value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder="Enter name" />
-            <Input label="Age" type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder="Enter age" />
+            <Input label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
+            <Input label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
             <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
-              {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Child'}
+              {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
             </Button>
           </div>
         </Modal>
@@ -198,8 +203,8 @@ export default function DashboardPage() {
             onClick={() => setCurrentKid(kid)}
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap transition-all',
-              kid.id === currentKid?.id 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' 
+              kid.id === currentKid?.id
+                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             )}
           >
@@ -208,7 +213,7 @@ export default function DashboardPage() {
           </button>
         ))}
         <button onClick={() => setIsAddKidModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">
-          <Plus className="w-4 h-4" /> Add Kid
+          <Plus className="w-4 h-4" /> {translate('dashboard.addKid')}
         </button>
       </div>
 
@@ -218,21 +223,21 @@ export default function DashboardPage() {
           <CardContent className="p-4 text-center">
             <Trophy className="w-8 h-8 mx-auto mb-2 opacity-80" />
             <p className="text-3xl font-bold">{completedChores}</p>
-            <p className="text-sm opacity-80">Completed</p>
+            <p className="text-sm opacity-80">{translate('dashboard.completed')}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-green-400 to-emerald-500 text-white">
           <CardContent className="p-4 text-center">
             <Star className="w-8 h-8 mx-auto mb-2 opacity-80" />
             <p className="text-3xl font-bold">{chores.reduce((sum, c) => sum + (c.completed ? c.points : 0), 0)}</p>
-            <p className="text-sm opacity-80">Points</p>
+            <p className="text-sm opacity-80">{translate('dashboard.points')}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
           <CardContent className="p-4 text-center">
             <Clock className="w-8 h-8 mx-auto mb-2 opacity-80" />
             <p className="text-3xl font-bold">{pendingChores.length}</p>
-            <p className="text-sm opacity-80">To Do</p>
+            <p className="text-sm opacity-80">{translate('dashboard.toDo')}</p>
           </CardContent>
         </Card>
       </div>
@@ -241,15 +246,15 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
           <Zap className="w-5 h-5 text-yellow-500" />
-          Today&apos;s Chores
+          {translate('dashboard.todaysChores')}
         </h2>
-        
+
         {chores.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
-              <p className="text-gray-500">No chores yet!</p>
-              <Button variant="outline" className="mt-4" onClick={handleAddSampleData}>Add Sample Data</Button>
+              <p className="text-gray-500">{translate('dashboard.noChoresYet')}</p>
+              <Button variant="outline" className="mt-4" onClick={handleAddSampleData}>{translate('dashboard.addSampleData')}</Button>
             </CardContent>
           </Card>
         ) : (
@@ -293,10 +298,10 @@ export default function DashboardPage() {
       {/* Quick Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { href: '/chores', label: 'All Chores', icon: '📋' },
-          { href: '/rewards', label: 'Rewards', icon: '🎁' },
-          { href: '/habits', label: 'Habits', icon: '✨' },
-          { href: '/avatar-shop', label: 'Avatar Shop', icon: '👕' },
+          { href: '/chores', label: translate('navigation.allChores'), icon: '📋' },
+          { href: '/rewards', label: translate('navigation.rewards'), icon: '🎁' },
+          { href: '/habits', label: translate('navigation.habits'), icon: '✨' },
+          { href: '/avatar-shop', label: translate('navigation.avatarShop'), icon: '👕' },
         ].map(link => (
           <Link key={link.href} href={link.href}>
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
@@ -310,12 +315,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Add Kid Modal */}
-      <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title="Add a Child">
+      <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title={translate('dashboard.addChild')}>
         <div className="space-y-4">
-          <Input label="Name" value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder="Enter name" />
-          <Input label="Age" type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder="Enter age" />
+          <Input label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
+          <Input label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
           <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
-            {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Add Child'}
+            {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
           </Button>
         </div>
       </Modal>

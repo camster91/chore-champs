@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import { Trophy, Settings, ChevronRight } from 'lucide-react'
 import { Card, CardContent, Button } from '@/components/ui'
 import { useKidStore } from '@/stores/kid-store'
+import { initI18n, t as translate } from '@/lib/i18n'
+import { useEffect } from 'react'
 
 const LEVELS = [
   { level: 1, minPoints: 0, title: 'Beginner', icon: '🌱' },
@@ -17,10 +19,14 @@ const LEVELS = [
 export default function ProfilePage() {
   const { currentKid, setCurrentKid, kids } = useKidStore()
 
+  useEffect(() => {
+    initI18n()
+  }, [])
+
   if (!currentKid) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Select a kid to view their profile</p>
+        <p className="text-gray-500">{translate('profile.selectKidToViewProfile')}</p>
       </div>
     )
   }
@@ -29,7 +35,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white"
@@ -40,14 +46,14 @@ export default function ProfilePage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">{currentKid.name}</h1>
-            <p className="text-white/80">{currentKid.age} years old</p>
+            <p className="text-white/80">{currentKid.age} {translate('profile.yearsOld')}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mt-6">
           <div className="text-center">
             <p className="text-3xl font-bold">{completedChores}</p>
-            <p className="text-sm text-white/80">Chores Done</p>
+            <p className="text-sm text-white/80">{translate('profile.choresDone')}</p>
           </div>
         </div>
       </motion.div>
@@ -56,7 +62,7 @@ export default function ProfilePage() {
         <CardContent className="p-6">
           <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
             <Trophy className="w-5 h-5 text-yellow-500" />
-            Achievements
+            {translate('profile.achievements')}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             {LEVELS.map(lvl => (
@@ -75,7 +81,7 @@ export default function ProfilePage() {
       {kids.length > 1 && (
         <Card>
           <CardContent className="p-6">
-            <h2 className="text-xl font-bold mb-4">Switch Kid</h2>
+            <h2 className="text-xl font-bold mb-4">{translate('profile.switchKid')}</h2>
             <div className="space-y-2">
               {kids.map(kid => (
                 <button
@@ -87,7 +93,7 @@ export default function ProfilePage() {
                 >
                   <span className="text-2xl">{kid.avatarId || '🧒'}</span>
                   <span className="font-medium">{kid.name}</span>
-                  {kid.id === currentKid.id && <span className="ml-auto text-purple-600 font-medium">Active</span>}
+                  {kid.id === currentKid.id && <span className="ml-auto text-purple-600 font-medium">{translate('profile.active')}</span>}
                 </button>
               ))}
             </div>
@@ -97,7 +103,7 @@ export default function ProfilePage() {
 
       <Button className="w-full" onClick={() => window.location.href = '/settings'}>
         <Settings className="w-4 h-4 mr-2" />
-        Profile Settings
+        {translate('profile.profileSettings')}
       </Button>
     </div>
   )

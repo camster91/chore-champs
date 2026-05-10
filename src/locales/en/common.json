@@ -14,7 +14,10 @@
     "noResults": "No results found",
     "back": "Back",
     "next": "Next",
-    "submit": "Submit"
+    "submit": "Submit",
+    "name": "Your Name",
+    "passwordMin": "At least 8 characters",
+    "age": "Age"
   },
   "auth": {
     "signIn": "Sign In",

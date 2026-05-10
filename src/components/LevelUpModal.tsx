@@ -64,6 +64,7 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="level-up-title"
+            aria-describedby="level-up-description"
             tabIndex={-1}
           >
             {/* Animated stars background */}
@@ -112,7 +113,14 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
                 <Sparkles className="w-6 h-6 text-amber-500" />
               </div>
 
-              <p className="text-gray-500 mb-2">You&apos;ve reached</p>
+              <p className="text-gray-500 mb-2">You've reached</p>
+
+              <motion.p
+                id="level-up-description"
+                className="sr-only"
+              >
+                You reached Level {level}. Keep up the amazing work!
+              </motion.p>
 
               <motion.p
                 initial={{ scale: 0 }}

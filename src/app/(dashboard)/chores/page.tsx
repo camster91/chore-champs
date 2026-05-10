@@ -22,6 +22,7 @@ import { useAudio } from '@/lib/audio-context'
 import { trackEvent, EVENTS } from '@/lib/telemetry'
 import useSWR, { mutate } from 'swr'
 import Link from 'next/link'
+import { initI18n, t as translate } from '@/lib/i18n'
 
 interface UIChore {
   id: string
@@ -35,6 +36,10 @@ interface UIChore {
 export default function ChoresPage() {
   const { currentKid } = useKidStore()
   const { play } = useAudio()
+
+  useEffect(() => {
+    initI18n()
+  }, [])
 
   const { data: dbChores, isLoading: choresLoading } = useSWR(
     currentKid ? `chores-${currentKid.id}` : null,
@@ -74,10 +79,10 @@ export default function ChoresPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
         <Sparkles className="w-16 h-16 text-gray-300 mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Select a Profile</h2>
-        <p className="text-gray-500 mb-6">Choose a kid to see their chores.</p>
+        <h2 className="text-2xl font-bold mb-2">{translate('chores.selectProfile')}</h2>
+        <p className="text-gray-500 mb-6">{translate('chores.chooseKidToSeeChores')}</p>
         <Link href="/profile">
-          <Button size="lg">Go to Profiles</Button>
+          <Button size="lg">{translate('chores.goToProfiles')}</Button>
         </Link>
       </div>
     )
@@ -95,12 +100,12 @@ export default function ChoresPage() {
         icon: 'star',
         difficulty: 'EASY'
       })
-      
+
       mutate(`chores-${currentKid.id}`)
       setIsAddModalOpen(false)
       setNewChore({ title: '', description: '', points: 10 })
       play('pop')
-      
+
       trackEvent(EVENTS.CHORE_CREATED, {
         title: newChore.title,
         points: newChore.points,
@@ -123,7 +128,7 @@ export default function ChoresPage() {
       }
 
       const result = await completeChore(assignmentId, chore.points, currentKid.id)
-      
+
       play('pop')
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
@@ -131,7 +136,7 @@ export default function ChoresPage() {
       // Level up notification removed
 
       mutate(`chores-${currentKid.id}`)
-      
+
       trackEvent(EVENTS.CHORE_COMPLETED, {
         choreTitle: chore.title,
         points: chore.points,
@@ -148,10 +153,10 @@ export default function ChoresPage() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">{currentKid.name}&apos;s Chores</h1>
-          <p className="text-gray-500 mt-1">Complete tasks to earn points and level up!</p>
+          <h1 className="text-3xl font-bold">{currentKid.name}&apos;s {translate('chores.title')}</h1>
+          <p className="text-gray-500 mt-1">{translate('chores.completeTasks')}</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>Add Chore</Button>
+        <Button onClick={() => setIsAddModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>{translate('chores.addChore')}</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -164,8 +169,8 @@ export default function ChoresPage() {
         ) : chores.length > 0 ? (
           chores.map((chore, index) => (
             <motion.div key={chore.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-              <Card 
-                className={cn('h-full cursor-pointer transition-all hover:scale-[1.02]', chore.completed ? 'bg-green-50 border-green-200' : 'hover:border-[var(--color-primary)]')} 
+              <Card
+                className={cn('h-full cursor-pointer transition-all hover:scale-[1.02]', chore.completed ? 'bg-green-50 border-green-200' : 'hover:border-[var(--color-primary)]')}
                 onClick={() => handleCompleteChore(chore)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !chore.completed) handleCompleteChore(chore) }}
                 tabIndex={0}
@@ -177,7 +182,7 @@ export default function ChoresPage() {
                     <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', chore.completed ? 'bg-green-500 text-white' : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]')}>
                       {chore.completed ? <CheckCircle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                     </div>
-                    <Badge variant={chore.completed ? 'success' : 'primary'} size="lg">+{chore.points} XP</Badge>
+                    <Badge variant={chore.completed ? 'success' : 'primary'} size="lg">+{chore.points} {translate('chores.xp')}</Badge>
                   </div>
                   <h3 className={cn('text-xl font-bold mb-2', chore.completed && 'line-through text-gray-400')}>{chore.title}</h3>
                   {chore.description && <p className="text-gray-500 text-sm line-clamp-2">{chore.description}</p>}
@@ -190,19 +195,19 @@ export default function ChoresPage() {
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-10 h-10 text-gray-300" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900">No chores yet!</h3>
-            <p className="text-gray-500 mt-1 mb-6">Create your first chore to start earning points.</p>
-            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>Create a Chore</Button>
+            <h3 className="text-xl font-medium text-gray-900">{translate('chores.noChoresYetCreate')}</h3>
+            <p className="text-gray-500 mt-1 mb-6">{translate('chores.createAChore')}</p>
+            <Button variant="outline" onClick={() => setIsAddModalOpen(true)}>{translate('chores.createAChore')}</Button>
           </div>
         )}
       </div>
 
-      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Add New Chore">
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={translate('chores.addNewChore')}>
         <div className="space-y-4">
-          <Input label="Chore Name" placeholder="e.g. Clean Bedroom" value={newChore.title} onChange={e => setNewChore({ ...newChore, title: e.target.value })} />
-          <Input label="Description (Optional)" placeholder="Tidy up toys and make the bed" value={newChore.description} onChange={e => setNewChore({ ...newChore, description: e.target.value })} />
+          <Input label={translate('chores.choreName')} placeholder={translate('chores.e.gCleanBedroom')} value={newChore.title} onChange={e => setNewChore({ ...newChore, title: e.target.value })} />
+          <Input label={translate('chores.descriptionOptional')} placeholder={translate('chores.tidyUpToys')} value={newChore.description} onChange={e => setNewChore({ ...newChore, description: e.target.value })} />
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">Points Reward</label>
+            <label className="text-sm font-medium text-gray-700">{translate('chores.pointsReward')}</label>
             <div className="flex gap-2">
               {[5, 10, 15, 20, 50].map(p => (
                 <button key={p} onClick={() => setNewChore({ ...newChore, points: p })} className={cn('flex-1 py-2 px-3 rounded-lg border-2 transition-all font-bold', newChore.points === p ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 text-[var(--color-primary)]' : 'border-gray-100 hover:border-gray-200')}>
@@ -211,7 +216,7 @@ export default function ChoresPage() {
               ))}
             </div>
           </div>
-          <Button className="w-full mt-4" onClick={handleCreateChore} disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Chore'}</Button>
+          <Button className="w-full mt-4" onClick={handleCreateChore} disabled={isSubmitting}>{isSubmitting ? translate('chores.creating') : translate('chores.createChore')}</Button>
         </div>
       </Modal>
     </div>

@@ -1,4 +1,5 @@
 import i18next from 'i18next'
+import enCommon from '@/locales/en/common.json'
 import enSample from '@/locales/en/sample.json'
 
 let initialized = false
@@ -9,7 +10,12 @@ export async function initI18n(locale: string = 'en') {
       lng: locale,
       fallbackLng: 'en',
       resources: {
-        en: { translation: enSample },
+        en: {
+          translation: {
+            ...enCommon,
+            ...enSample,
+          },
+        },
       },
       interpolation: {
         escapeValue: false,
@@ -17,6 +23,14 @@ export async function initI18n(locale: string = 'en') {
     })
     initialized = true
   }
+}
+
+export function getTranslation() {
+  return i18next.getFixedT('en')
+}
+
+export function t(key: string, options?: Record<string, unknown>): string {
+  return i18next.t(key, options) as string
 }
 
 export function getLocalizedSampleData() {
