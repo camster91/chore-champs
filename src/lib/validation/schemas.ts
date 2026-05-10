@@ -6,7 +6,11 @@ export const registerSchema = z.object({
     .email('Invalid email address')
     .refine(val => !val.includes(','), 'Email addresses cannot contain commas'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long')
+    .refine(async (val) => {
+      // Verify string is valid UTF-8 (no null bytes, can round-trip)
+      try { return Buffer.from(Buffer.from(val).toString()).toString() === val } catch { return false }
+    }, { message: 'Name contains invalid characters' }),
 })
 
 export const createChoreSchema = z.object({

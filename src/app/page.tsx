@@ -87,8 +87,9 @@ export default function LandingPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <Button variant="ghost" onClick={() => router.push('/login')}>Log In</Button>
-            <Button onClick={() => router.push('/signup')}>Get Started</Button>
+            <Button variant="ghost" className="hidden sm:flex" onClick={() => router.push('/login')}>Log In</Button>
+            <Button className="hidden sm:flex" onClick={() => router.push('/signup')}>Get Started</Button>
+            <Button size="sm" className="sm:hidden" onClick={() => router.push('/signup')}>Start</Button>
           </motion.div>
         </nav>
       </header>
@@ -102,9 +103,8 @@ export default function LandingPage() {
             transition={{ delay: 0.2 }}
           >
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              Make Chores{' '}
-              <span className="bg-gradient-to-r from-[var(--color-primary)] via-[var(--color-accent)] to-[var(--color-secondary)] bg-clip-text text-transparent">
-                Super Fun!
+              <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
+                Make Chores Super Fun!
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
