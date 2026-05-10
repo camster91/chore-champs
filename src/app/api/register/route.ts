@@ -44,6 +44,13 @@ export async function POST(request: NextRequest) {
       message: 'Account created! Signing you in...'
     })
   } catch (error) {
+    // Distinguish between connection errors (user-facing) vs internal errors (logged)
+    const message = error instanceof Error ? error.message : String(error)
+    const isConnectionError = message.includes('connection') || message.includes('timeout') || message.includes('ECONNREFUSED') || message.includes('ENOTFOUND')
+
+    if (isConnectionError) {
+      return NextResponse.json({ error: 'Database connection error. Please try again later.' }, { status: 500 })
+    }
     console.error('Registration error:', error)
     return NextResponse.json({ error: 'Failed to create account. Please try again.' }, { status: 500 })
   }
