@@ -4,30 +4,31 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Star, Trophy, Flame, CheckCircle, Sparkles, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { useTranslation } from '@/lib/i18n'
 
 const features = [
   {
     icon: CheckCircle,
-    title: 'Track Chores',
-    description: 'Make daily chores fun with colorful cards and satisfying check-offs!',
+    title: 'landing.trackChores',
+    description: 'landing.trackChoresDesc',
     color: '#22c55e',
   },
   {
     icon: Star,
-    title: 'Earn Points',
-    description: 'Complete tasks to earn coins and climb the leaderboard!',
+    title: 'landing.earnPoints',
+    description: 'landing.earnPointsDesc',
     color: '#f59e0b',
   },
   {
     icon: Trophy,
-    title: 'Win Badges',
-    description: 'Unlock cool achievements and show off your progress!',
+    title: 'landing.winBadges',
+    description: 'landing.winBadgesDesc',
     color: '#6366f1',
   },
   {
     icon: Flame,
-    title: 'Build Streaks',
-    description: 'Keep your streak alive by completing tasks every day!',
+    title: 'landing.buildStreaks',
+    description: 'landing.buildStreaksDesc',
     color: '#ef4444',
   },
 ]
@@ -42,6 +43,7 @@ const floatingIcons = [
 
 export default function LandingPage() {
   const router = useRouter()
+  const { t } = useTranslation()
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -87,9 +89,9 @@ export default function LandingPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <Button variant="ghost" className="hidden sm:flex" onClick={() => router.push('/login')}>Log In</Button>
-            <Button className="hidden sm:flex" onClick={() => router.push('/signup')}>Get Started</Button>
-            <Button size="sm" className="sm:hidden" onClick={() => router.push('/signup')}>Start</Button>
+            <Button variant="ghost" className="hidden sm:flex" onClick={() => router.push('/login')}>{t('landing.ctaLogIn')}</Button>
+            <Button className="hidden sm:flex" onClick={() => router.push('/signup')}>{t('landing.ctaPrimary')}</Button>
+            <Button size="sm" className="sm:hidden" onClick={() => router.push('/signup')}>{t('landing.ctaStart')}</Button>
           </motion.div>
         </nav>
       </header>
@@ -104,12 +106,11 @@ export default function LandingPage() {
           >
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] bg-clip-text text-transparent">
-                Make Chores Super Fun!
+                {t('landing.heroTitle')}
               </span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Turn everyday tasks into exciting adventures! Earn points, collect badges,
-              and watch your character grow while helping around the house.
+              {t('landing.heroSubtitle')}
             </p>
           </motion.div>
 
@@ -120,10 +121,10 @@ export default function LandingPage() {
             transition={{ delay: 0.4 }}
           >
             <Button size="xl" rightIcon={<ArrowRight className="w-5 h-5" />} onClick={() => router.push('/signup')}>
-              Start Your Adventure
+              {t('landing.ctaPrimary')}
             </Button>
             <Button size="xl" variant="outline" onClick={() => router.push('/login')}>
-              I Have an Account
+              {t('landing.ctaSecondary')}
             </Button>
           </motion.div>
 
@@ -224,8 +225,8 @@ export default function LandingPage() {
               >
                 <feature.icon className="w-6 h-6" style={{ color: feature.color }} />
               </div>
-              <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
-              <p className="text-gray-500 text-sm">{feature.description}</p>
+              <h3 className="font-bold text-lg mb-2">{t(feature.title)}</h3>
+              <p className="text-gray-500 text-sm">{t(feature.description)}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -237,10 +238,10 @@ export default function LandingPage() {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.6 }}
         >
-          <h2 className="text-3xl font-bold mb-4">Ready to become a ChoreChamp?</h2>
-          <p className="text-gray-600 mb-8">Join thousands of families making chores fun!</p>
+          <h2 className="text-3xl font-bold mb-4">{t('landing.ctaReady')}</h2>
+          <p className="text-gray-600 mb-8">{t('landing.ctaJoin')}</p>
           <Button size="xl" onClick={() => router.push('/signup')}>
-            Create Free Account
+            {t('landing.ctaCreate')}
           </Button>
         </motion.div>
       </main>
@@ -253,7 +254,7 @@ export default function LandingPage() {
             <span>ChoreChamps</span>
           </div>
           <p className="text-sm text-gray-400">
-            Made with love for awesome kids everywhere
+            {t('landing.footer')}
           </p>
         </div>
       </footer>
