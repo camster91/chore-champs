@@ -32,7 +32,20 @@ export async function POST(request: Request, { params }: Props) {
     return NextResponse.json({ error: 'This invitation has expired' }, { status: 400 })
   }
 
-  // Update Family to set the new parent's ID
+  // Verify the invitee email matches the session user
+  const parent = await prisma.parent.findUnique({
+    where: { id: session.user.id },
+    select: { email: true }
+  })
+
+  if (!parent || parent.email.toLowerCase() !== invite.email.toLowerCase()) {
+    return NextResponse.json(
+      { error: 'This invitation was sent to a different email address.' },
+      { status: 403 }
+    )
+  }
+
+  // Update Family to set this parent as the member
   await prisma.family.update({
     where: { id: invite.familyId },
     data: { parentId: session.user.id }

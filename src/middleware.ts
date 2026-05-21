@@ -1,29 +1,41 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 
-const SECRET = process.env.NEXTAUTH_SECRET || 'INSECURE-FALLBACK-ONLY-FOR-DEVELOPMENT'
+const SECRET = process.env.NEXTAUTH_SECRET
+
+if (!SECRET) {
+  console.error('FATAL: NEXTAUTH_SECRET is not set. Auth will not function securely.')
+}
 
 export default withAuth(
   function middleware(req) {
     const pathname = req.nextUrl.pathname
-    const token = req.nextauth.token
+    // NextAuth middleware augments req with `nextauth` property — not in NextRequest type
+    const token = (req as any).nextauth?.token
+    
+    let response = NextResponse.next()
     
     // If authenticated and trying to access auth pages, redirect to dashboard
     if (token && (pathname === '/login' || pathname === '/signup')) {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      response = NextResponse.redirect(new URL('/dashboard', req.url))
     }
     
-    return NextResponse.next()
+    // Security headers for all responses
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    
+    return response
   },
   {
     secret: SECRET,
     callbacks: {
       authorized: ({ token, req }) => {
-        const pathname = req.nextUrl.pathname
+        const pathname = (req as any).nextUrl?.pathname || ''
 
-        // Public routes - no auth required
-        const publicRoutes = ['/', '/login', '/signup']
-        if (publicRoutes.includes(pathname)) {
+        // Public routes
+        const publicPaths = ['/', '/login', '/signup', '/forgot-password', '/invite/']
+        if (publicPaths.some(p => pathname === p || pathname.startsWith(p))) {
           return true
         }
 
@@ -32,12 +44,12 @@ export default withAuth(
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/register') ||
           pathname.startsWith('/api/health') ||
+          pathname.startsWith('/api/recovery-codes') ||
           pathname.startsWith('/api/test-auth')
         ) {
           return true
         }
 
-        // Require authentication for everything else
         return !!token
       },
     },

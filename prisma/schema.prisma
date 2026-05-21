@@ -24,12 +24,13 @@ model Family {
 }
 
 model Parent {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  password       String
+  recoveryCodes  String?  // JSON array of hashed single-use recovery codes
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   
   notifications Notification[]
   subscriptions PushSubscription[]
@@ -269,4 +270,27 @@ model PlannerItem {
   completedAt DateTime?
   kidId       String?
   createdAt   DateTime @default(now())
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  ip        String
+  email     String?
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@index([email, createdAt])
+}
+
+model RecoveryCode {
+  id        String   @id @default(cuid())
+  parentId  String
+  codeHash  String   // bcrypt hash of the single-use code
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([parentId])
+  @@index([codeHash])
 }

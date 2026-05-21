@@ -63,7 +63,9 @@ export async function POST(request: Request) {
       }
     })
 
-    const inviteUrl = `https://kids-chore-app.ashbi.ca/invite/${token}`
+    // Use dynamic URL from env
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const inviteUrl = `${baseUrl}/invite/${token}`
 
     return NextResponse.json({ 
       message: 'Invitation created!',

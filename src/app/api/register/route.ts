@@ -15,8 +15,7 @@ export async function POST(request: NextRequest) {
     // Validate with schema
     const parsed = registerSchema.safeParse({ name, email, password })
     if (!parsed.success) {
-      const errors = parsed.error.errors.map(e => e.message).join(', ')
-      return NextResponse.json({ error: errors }, { status: 400 })
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 })
     }
 
     // Check if email already exists

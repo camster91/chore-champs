@@ -12,10 +12,13 @@ import {
   Loader2, 
   Shield, 
   Smartphone,
-  Link,
+  Link as LinkIcon,
   UserPlus,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  KeyRound,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { Card, CardContent, Button, Input, Modal } from '@/components/ui'
 import { cn } from '@/lib/utils'
@@ -24,6 +27,7 @@ import {
   cancelInvite, 
   createFamilyInvite 
 } from '@/actions/invites'
+import { RecoveryCodesPanel } from '@/components/RecoveryCodesPanel'
 import { useAudio } from '@/lib/audio-context'
 
 interface PendingInvite {
@@ -321,15 +325,16 @@ export default function SettingsPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold mb-4">Account Security</h2>
               <p className="text-gray-600 mb-4">
-                No password required! We use magic links to sign in securely. 
-                Your spouse can invite you and you&apos;ll get an email to join instantly.
+                Forgot your password? Use your recovery codes to reset it instantly.
               </p>
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-4">
                 <p className="text-purple-800 text-sm">
-                  <strong>How it works:</strong> When someone invites you, you&apos;ll receive an email with a magic link. 
-                  Click it to create your account and join the family automatically.
+                  <strong>Recovery codes</strong> are single-use passwords that let you back into
+                  your account even if you forget your main password. Generate them now and
+                  save them somewhere safe.
                 </p>
               </div>
+              <RecoveryCodesPanel />
             </CardContent>
           </Card>
         </div>

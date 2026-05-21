@@ -3,17 +3,18 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 
-// Only log warnings - throwing during module load breaks Next.js builds
 if (!process.env.NEXTAUTH_SECRET) {
-  console.warn('WARNING: NEXTAUTH_SECRET is not set. Authentication will use an insecure fallback.')
+  throw new Error('NEXTAUTH_SECRET environment variable is required. Set a strong random secret.')
 }
 
 if (!process.env.NEXTAUTH_URL) {
-  console.warn('WARNING: NEXTAUTH_URL is not set. Set it for proper production deployment.')
+  throw new Error('NEXTAUTH_URL environment variable is required.')
 }
 
+const SECRET = process.env.NEXTAUTH_SECRET
+
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || 'INSECURE-FALLBACK-ONLY-FOR-DEVELOPMENT',
+  secret: SECRET,
   providers: [
     CredentialsProvider({
       name: 'credentials',
