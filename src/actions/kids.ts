@@ -4,14 +4,15 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { Kid } from '@/stores/kid-store'
 
-export async function getKids() {
+export async function getKids(): Promise<Kid[]> {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     return []
   }
 
-  return await prisma.kid.findMany({
+  const kids = await prisma.kid.findMany({
     where: { familyId: session.user.familyId },
     include: {
       choreAssignments: true,
@@ -19,6 +20,16 @@ export async function getKids() {
     },
     orderBy: { createdAt: 'asc' }
   })
+
+  return kids.map(k => ({
+    id: k.id,
+    name: k.name,
+    age: k.age,
+    avatarId: k.avatarId,
+    themeMode: k.themeMode,
+    primaryColor: k.primaryColor,
+    secondaryColor: k.secondaryColor,
+  }))
 }
 
 export async function createKid(data: {

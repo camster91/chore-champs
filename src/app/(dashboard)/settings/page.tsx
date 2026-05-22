@@ -27,7 +27,6 @@ import {
   cancelInvite, 
   createFamilyInvite 
 } from '@/actions/invites'
-import { RecoveryCodesPanel } from '@/components/RecoveryCodesPanel'
 import { useAudio } from '@/lib/audio-context'
 
 interface PendingInvite {
@@ -137,7 +136,7 @@ export default function SettingsPage() {
     { id: 'family', label: 'Family', icon: Users },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'account', label: 'Account', icon: Shield },
-  ]
+  ] as const
 
   return (
     <div className="space-y-8">
@@ -151,7 +150,7 @@ export default function SettingsPage() {
         {tabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
             className={cn(
               'flex items-center gap-2 px-4 py-3 border-b-2 transition-colors',
               activeTab === tab.id 
@@ -325,16 +324,15 @@ export default function SettingsPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold mb-4">Account Security</h2>
               <p className="text-gray-600 mb-4">
-                Forgot your password? Use your recovery codes to reset it instantly.
+                No password required! We use magic links to sign in securely.
+                Your spouse can invite you and you&apos;ll get an email to join instantly.
               </p>
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-4">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <p className="text-purple-800 text-sm">
-                  <strong>Recovery codes</strong> are single-use passwords that let you back into
-                  your account even if you forget your main password. Generate them now and
-                  save them somewhere safe.
+                  <strong>How it works:</strong> When someone invites you, you&apos;ll receive an email with a magic link.
+                  Click it to create your account and join the family automatically.
                 </p>
               </div>
-              <RecoveryCodesPanel />
             </CardContent>
           </Card>
         </div>

@@ -39,7 +39,8 @@ export async function createFamilyInvite(email: string, role: string = 'MEMBER')
     }
   })
 
-  const inviteUrl = `https://kids-chore-app.ashbi.ca/invite/${token}`
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+  const inviteUrl = `${baseUrl}/invite/${token}`
   return { 
     message: 'Invitation created!', 
     inviteUrl,

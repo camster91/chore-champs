@@ -1,15 +1,21 @@
 import webpush from 'web-push'
 import prisma from '@/lib/db'
 
-// VAPID keys - in production, these should be in environment variables
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || 'your-private-key'
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
 
-webpush.setVapidDetails(
-  'mailto:admin@chorechamps.com',
-  vapidPublicKey,
-  vapidPrivateKey
-)
+if (!vapidPublicKey || !vapidPrivateKey) {
+  // Push notifications are disabled when VAPID keys are not configured
+  console.warn('VAPID keys not configured. Push notifications are disabled.')
+}
+
+if (vapidPublicKey && vapidPrivateKey) {
+  webpush.setVapidDetails(
+    'mailto:admin@chorechamps.com',
+    vapidPublicKey,
+    vapidPrivateKey
+  )
+}
 
 interface NotificationPayload {
   title: string
@@ -20,6 +26,11 @@ interface NotificationPayload {
 }
 
 export async function sendPushNotification(userId: string, notification: NotificationPayload) {
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    console.warn('VAPID keys not configured. Skipping push notification.')
+    return
+  }
+
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId }
   })
@@ -41,7 +52,11 @@ export async function sendPushNotification(userId: string, notification: Notific
     } catch (error) {
       console.error('Push notification failed:', error)
       // Remove invalid subscriptions
-      if ((error as any).statusCode === 404 || (error as any).statusCode === 410) {
+      const statusCode =
+        error && typeof error === 'object' && 'statusCode' in error
+          ? (error as Record<string, unknown>).statusCode
+          : undefined
+      if (statusCode === 404 || statusCode === 410) {
         await prisma.pushSubscription.delete({ where: { id: sub.id } })
       }
     }

@@ -150,14 +150,7 @@ function LoginForm() {
                 {translate('auth.signUp')}
               </Link>
             </p>
-            <p className="text-center mt-2">
-              <Link
-                href="/forgot-password"
-                className="text-sm text-gray-400 hover:text-gray-600"
-              >
-                Forgot your password?
-              </Link>
-            </p>
+
           </CardContent>
         </Card>
 

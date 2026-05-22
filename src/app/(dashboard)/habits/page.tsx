@@ -38,11 +38,11 @@ export default function HabitsPage() {
     if (!currentKid) return
     setIsLoading(true)
     try {
-      const dbHabits = await getHabits() as any[]
+      const dbHabits = await getHabits()
       if (!dbHabits) return
 
       const mapped: UIHabit[] = dbHabits.map(habit => {
-        const log = habit.logs?.find((l: any) => l.kidId === currentKid?.id)
+        const log = habit.logs?.find((l) => l.kidId === currentKid?.id)
         const today = new Date().toDateString()
         const isToday = log?.loggedAt && new Date(log.loggedAt).toDateString() === today
 

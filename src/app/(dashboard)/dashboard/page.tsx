@@ -12,9 +12,19 @@ import { getChores, completeChore, assignChore } from '@/actions/chores'
 import { addSampleData } from '@/actions/sampleData'
 import { initI18n, t as translate } from '@/lib/i18n'
 
+interface DashboardChore {
+  id: string
+  choreId: string
+  title: string
+  description: string | null
+  points: number
+  completed: boolean
+  icon: string
+}
+
 export default function DashboardPage() {
   const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
-  const [chores, setChores] = useState<any[]>([])
+  const [chores, setChores] = useState<DashboardChore[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [choresLoading, setChoresLoading] = useState(false)
   const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
@@ -35,8 +45,8 @@ export default function DashboardPage() {
     try {
       const dbChores = await getChores()
       if (!dbChores) return
-      const mapped = dbChores.map((chore: any) => {
-        const assignment = chore.assignments?.find((a: any) => a.kidId === currentKid?.id)
+      const mapped = dbChores.map((chore) => {
+        const assignment = chore.assignments?.find((a) => a.kidId === currentKid?.id)
         return {
           id: assignment?.id || chore.id,
           choreId: chore.id,
@@ -66,16 +76,16 @@ export default function DashboardPage() {
         getKids(),
         getChores()
       ])
-      setKids(kidsData as any[])
+      setKids(kidsData)
       const firstKid = kidsData.length > 0 ? kidsData[0] : null
       if (firstKid && !currentKid) {
-        setCurrentKid(firstKid as any)
+        setCurrentKid(firstKid)
       }
       // Map chores against the first kid (or currentKid if already set)
       const activeKidId = currentKid?.id || firstKid?.id
       if (activeKidId && choresData) {
-        const mapped = choresData.map((chore: any) => {
-          const assignment = chore.assignments?.find((a: any) => a.kidId === activeKidId)
+        const mapped = choresData.map((chore) => {
+          const assignment = chore.assignments?.find((a) => a.kidId === activeKidId)
           return {
             id: assignment?.id || chore.id,
             choreId: chore.id,
@@ -101,7 +111,7 @@ export default function DashboardPage() {
     }
   }, [currentKid, loadChores])
 
-  const handleCompleteChore = async (chore: any) => {
+  const handleCompleteChore = async (chore: DashboardChore) => {
     if (chore.completed) return
     try {
       let assignmentId = chore.id
@@ -197,7 +207,7 @@ export default function DashboardPage() {
 
       {/* Kid Selector */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {kids.map((kid: any) => (
+        {kids.map((kid) => (
           <button
             key={kid.id}
             onClick={() => setCurrentKid(kid)}

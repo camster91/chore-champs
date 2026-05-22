@@ -3,12 +3,22 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 type Props = {
   params: Promise<{ token: string }>
 }
 
 export async function POST(request: Request, { params }: Props) {
+  const ip = getClientIp(request)
+  const { allowed, retryAfter } = checkRateLimit(ip, 'invite-accept', 10, 15 * 60 * 1000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
+  }
+
   const { token } = await params
 
   const session = await getServerSession(authOptions)

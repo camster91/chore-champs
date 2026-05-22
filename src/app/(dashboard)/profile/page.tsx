@@ -7,6 +7,7 @@ import { Card, CardContent, Button } from '@/components/ui'
 import { useKidStore } from '@/stores/kid-store'
 import { initI18n, t as translate } from '@/lib/i18n'
 import { useEffect } from 'react'
+import { getChores } from '@/actions/chores'
 
 const LEVELS = [
   { level: 1, minPoints: 0, title: 'Beginner', icon: '🌱' },
@@ -18,10 +19,24 @@ const LEVELS = [
 
 export default function ProfilePage() {
   const { currentKid, setCurrentKid, kids } = useKidStore()
+  const [completedChores, setCompletedChores] = useState(0)
 
   useEffect(() => {
     initI18n()
-  }, [])
+    async function loadStats() {
+      if (!currentKid) return
+      try {
+        const chores = await getChores()
+        const completed = chores.filter((chore) =>
+          chore.assignments?.some((a) => a.kidId === currentKid.id && a.status === 'COMPLETED')
+        ).length
+        setCompletedChores(completed)
+      } catch (e) {
+        console.error('Failed to load profile stats:', e)
+      }
+    }
+    loadStats()
+  }, [currentKid])
 
   if (!currentKid) {
     return (
@@ -30,8 +45,6 @@ export default function ProfilePage() {
       </div>
     )
   }
-
-  const completedChores = 0
 
   return (
     <div className="space-y-6">
@@ -86,7 +99,7 @@ export default function ProfilePage() {
               {kids.map(kid => (
                 <button
                   key={kid.id}
-                  onClick={() => setCurrentKid(kid as any)}
+                  onClick={() => setCurrentKid(kid)}
                   className={`w-full p-3 rounded-lg flex items-center gap-3 ${
                     kid.id === currentKid.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-50 hover:bg-gray-100'
                   }`}

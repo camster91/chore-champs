@@ -2,8 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { registerSchema } from '@/lib/validation/schemas'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  const { allowed, retryAfter } = checkRateLimit(ip, 'register', 5, 15 * 60 * 1000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
+  }
+
   try {
     const body = await request.json()
     const { name, email, password } = body
@@ -15,7 +25,8 @@ export async function POST(request: NextRequest) {
     // Validate with schema
     const parsed = registerSchema.safeParse({ name, email, password })
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid input' }, { status: 400 })
+      const errors = parsed.error.issues.map((e) => e.message).join(', ')
+      return NextResponse.json({ error: errors }, { status: 400 })
     }
 
     // Check if email already exists

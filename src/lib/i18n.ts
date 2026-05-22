@@ -51,27 +51,26 @@ export const translations = {
 export type Locale = keyof typeof translations;
 export type Namespace = keyof typeof translations.en;
 
-// --- Client-side hook ---
-export function useTranslation(locale: Locale = 'en') {
-  const t = (key: string) => {
-    const parts = key.split('.');
-    let current: any = translations[locale];
-    for (const part of parts) {
-      current = current?.[part];
+function resolveTranslation(key: string, locale: Locale = 'en'): string {
+  const parts = key.split('.');
+  let current: unknown = translations[locale];
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in current) {
+      current = (current as Record<string, unknown>)[part];
+    } else {
+      return key;
     }
-    return current ?? key;
-  };
+  }
+  return typeof current === 'string' ? current : key;
+}
+
+export function useTranslation(locale: Locale = 'en') {
+  const t = (key: string) => resolveTranslation(key, locale);
   return { t, locale };
 }
 
-// --- Server/client-compatible translation function ---
 export const t = (key: string, locale: Locale = 'en'): string => {
-  const parts = key.split('.');
-  let current: any = translations[locale];
-  for (const part of parts) {
-    current = current?.[part];
-  }
-  return current ?? key;
+  return resolveTranslation(key, locale);
 };
 
 // --- Init function (used in useEffect / server setup) ---

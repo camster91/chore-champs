@@ -10,6 +10,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingRoot: process.cwd(),
 };
 
 export default withPWA(nextConfig);

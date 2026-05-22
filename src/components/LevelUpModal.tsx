@@ -113,7 +113,7 @@ export function LevelUpModal({ isOpen, level, onClose }: LevelUpModalProps) {
                 <Sparkles className="w-6 h-6 text-amber-500" />
               </div>
 
-              <p className="text-gray-500 mb-2">You've reached</p>
+              <p className="text-gray-500 mb-2">You&apos;ve reached</p>
 
               <motion.p
                 id="level-up-description"

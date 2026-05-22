@@ -118,22 +118,27 @@ npm run seed         # Seed database with sample data
 
 ```
 kids-chore-app/
-├── app/                    # Next.js App Router
-│   ├── (auth)/            # Authentication routes
-│   ├── (parent)/          # Parent dashboard routes
-│   ├── (child)/           # Child interface routes
-│   ├── api/               # API routes
-│   └── layout.tsx         # Root layout
-├── components/            # Reusable UI components
-│   ├── chores/            # Chore-related components
-│   ├── rewards/           # Reward components
-│   ├── gamification/      # Badges, points, streaks
-│   └── ui/                # Generic UI components
-├── lib/                   # Utility functions
+├── src/
+│   ├── app/               # Next.js App Router
+│   │   ├── (auth)/        # Authentication routes (login, signup)
+│   │   ├── (dashboard)/   # Main app routes (dashboard, chores, habits, rewards, profile, settings)
+│   │   ├── api/           # API routes
+│   │   ├── invite/        # Public invite acceptance pages
+│   │   └── layout.tsx     # Root layout
+│   ├── actions/           # Server Actions (data fetching & mutations)
+│   ├── components/        # Reusable UI components
+│   │   ├── ui/            # Generic UI primitives
+│   │   └── gamification/  # Points, badges, confetti, level-up modals
+│   ├── lib/               # Utility functions, auth, db, rate-limiter
+│   ├── stores/            # Zustand state stores
+│   └── types/             # TypeScript type declarations
 ├── prisma/                # Database schema and seeds
 │   ├── schema.prisma      # Prisma schema
-│   └── seed.js           # Sample data seeding
-└── stores/                # Zustand state stores
+│   └── seed.js            # Sample data seeding
+├── public/                # Static assets & PWA service worker
+├── Dockerfile             # Multi-stage production build
+├── docker-compose.yml     # Local development with Postgres
+└── entrypoint.sh          # Runtime env checks & startup
 ```
 
 ## Database Schema

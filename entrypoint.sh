@@ -1,4 +1,17 @@
 #!/bin/sh
+set -e
+
+# Enforce required environment variables at runtime
+if [ -z "$NEXTAUTH_SECRET" ]; then
+  echo "ERROR: NEXTAUTH_SECRET is required. Set it in your environment variables."
+  exit 1
+fi
+
+if [ -z "$NEXTAUTH_URL" ]; then
+  echo "ERROR: NEXTAUTH_URL is required. Set it in your environment variables."
+  exit 1
+fi
+
 # Download and install libssl1.1 for Prisma
 wget -q -O /tmp/libssl1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/main/x86_64/libssl1.1-1.1.1w-r1.apk 2>/dev/null || true
 wget -q -O /tmp/libcrypto1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/main/x86_64/libcrypto1.1-1.1.1w-r1.apk 2>/dev/null || true

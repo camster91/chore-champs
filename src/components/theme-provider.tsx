@@ -2,6 +2,10 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
+// Suppress unused prop warnings for backward-compatible API
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+type _UnusedProps = Pick<ThemeProviderProps, 'attribute' | 'enableSystem'>
+
 type Theme = 'dark' | 'light' | 'system'
 
 interface ThemeProviderProps {
@@ -23,18 +27,15 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 export function ThemeProvider({
   children,
-  attribute = 'class',
   defaultTheme = 'light',
-  enableSystem = true,
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(defaultTheme)
-
-  useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme | null
-    if (stored) {
-      setTheme(stored)
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('theme') as Theme | null
+      return stored ?? defaultTheme
     }
-  }, [])
+    return defaultTheme
+  })
 
   useEffect(() => {
     const root = window.document.documentElement

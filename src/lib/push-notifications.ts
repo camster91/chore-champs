@@ -7,9 +7,8 @@ export function isPushSupported(): boolean {
 }
 
 // Get VAPID public key from env
-export function getVapidPublicKey(): string {
-  // This would normally come from environment variables
-  return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
+export function getVapidPublicKey(): string | undefined {
+  return process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 }
 
 // Register service worker
@@ -49,10 +48,16 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
   const registration = await registerServiceWorker()
   if (!registration) return null
 
+  const vapidKey = getVapidPublicKey()
+  if (!vapidKey) {
+    console.warn('VAPID public key not configured. Push notifications are disabled.')
+    return null
+  }
+
   try {
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: getVapidPublicKey()
+      applicationServerKey: vapidKey
     })
 
     // Send subscription to server

@@ -14,6 +14,7 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
   title: 'ChoreChamps - Make Chores Fun!',
   description: 'A fun, gamified chore and habit tracker for kids. Turn household responsibilities into exciting adventures with points, rewards, and family goals!',
   manifest: '/manifest.json',

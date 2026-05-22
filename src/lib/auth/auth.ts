@@ -2,19 +2,9 @@ import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
-
-if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error('NEXTAUTH_SECRET environment variable is required. Set a strong random secret.')
-}
-
-if (!process.env.NEXTAUTH_URL) {
-  throw new Error('NEXTAUTH_URL environment variable is required.')
-}
-
-const SECRET = process.env.NEXTAUTH_SECRET
+import { checkRateLimit } from '@/lib/rate-limiter'
 
 export const authOptions: NextAuthOptions = {
-  secret: SECRET,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -27,8 +17,14 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const email = credentials.email.toLowerCase().trim()
+        const { allowed } = checkRateLimit(email, 'login', 5, 15 * 60 * 1000)
+        if (!allowed) {
+          throw new Error('Too many login attempts. Please try again in 15 minutes.')
+        }
+
         const parent = await prisma.parent.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         })
 
         if (!parent) {
@@ -62,7 +58,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.familyId = (user as any).familyId
+        token.familyId = user.familyId
       }
       return token
     },

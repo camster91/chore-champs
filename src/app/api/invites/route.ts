@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import crypto from 'crypto'
+import { checkRateLimit } from '@/lib/rate-limiter'
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('base64url')
@@ -30,6 +31,15 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const userId = session.user.id
+  const { allowed, retryAfter } = checkRateLimit(userId, 'invite-create', 10, 15 * 60 * 1000)
+  if (!allowed) {
+    return NextResponse.json(
+      { error: 'Too many attempts. Try again later.' },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
   }
 
   try {
