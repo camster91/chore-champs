@@ -26,6 +26,7 @@ export async function getKids(): Promise<Kid[]> {
     name: k.name,
     age: k.age,
     avatarId: k.avatarId,
+    points: k.points,
     themeMode: k.themeMode,
     primaryColor: k.primaryColor,
     secondaryColor: k.secondaryColor,

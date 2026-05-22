@@ -128,11 +128,17 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
     })
   ])
 
+  // Fetch updated kid to get new totalPoints for level calculation
+  const updatedKid = await prisma.kid.findUnique({
+    where: { id: kidId },
+    select: { points: true, totalPoints: true }
+  })
+
   revalidatePath('/chores')
   revalidatePath('/dashboard')
   revalidatePath('/profile')
 
-  return { assignment }
+  return { assignment, kidPoints: updatedKid?.points || 0, kidTotalPoints: updatedKid?.totalPoints || 0 }
 }
 
 export async function assignChore(choreId: string, kidId: string, dueDate: Date) {

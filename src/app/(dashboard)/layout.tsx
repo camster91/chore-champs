@@ -19,6 +19,8 @@ import {
 import { signOut } from 'next-auth/react'
 import { useKidStore } from '@/stores/kid-store'
 import { Avatar, Button } from '@/components/ui'
+import { PwaInstallPrompt } from '@/components/ui/PwaInstallPrompt'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { cn } from '@/lib/utils'
 
 const navItems = [
@@ -52,6 +54,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen flex">
+      {/* Skip navigation link for keyboard users */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:bg-[var(--color-primary)] focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
+
       <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-xl shadow-lg">
         {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
@@ -103,9 +113,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 p-4 lg:p-8 pt-16 lg:pt-8 bg-[var(--color-background)]">
+        <main id="main-content" className="flex-1 p-4 lg:p-8 pt-16 lg:pt-8 bg-[var(--color-background)]">
           <div className="max-w-4xl mx-auto">
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
           </div>
         </main>
       </div>
@@ -113,6 +125,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setIsSidebarOpen(false)} />
       )}
+
+      <PwaInstallPrompt />
     </div>
   )
 }

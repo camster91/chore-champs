@@ -4,7 +4,7 @@ import withPWAInit from "next-pwa";
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: true,
+  register: false, // we handle SW registration in push-notifications.ts
   skipWaiting: true,
 });
 

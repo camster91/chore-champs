@@ -16,7 +16,7 @@ import { PointsEarned } from '@/components/gamification'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
 import { BadgeUnlockToast } from '@/components/BadgeUnlockToast'
-import { cn } from '@/lib/utils'
+import { cn, calculateLevel } from '@/lib/utils'
 import { getChores, createChore, completeChore, assignChore } from '@/actions/chores'
 import { useAudio } from '@/lib/audio-context'
 import { trackEvent, EVENTS } from '@/lib/telemetry'
@@ -133,7 +133,14 @@ export default function ChoresPage() {
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
 
-      // Level up notification removed
+      // Check for level-up
+      if (result.kidTotalPoints) {
+        const oldLevel = calculateLevel(result.kidTotalPoints - chore.points)
+        const newLevel = calculateLevel(result.kidTotalPoints)
+        if (newLevel > oldLevel) {
+          setLevelUpLevel(newLevel)
+        }
+      }
 
       mutate(`chores-${currentKid.id}`)
 

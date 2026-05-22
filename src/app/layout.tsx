@@ -6,11 +6,13 @@ import { Providers } from './providers'
 const spaceGrotesk = Space_Grotesk({ 
   subsets: ['latin'],
   variable: '--font-space-grotesk',
+  display: 'swap',
 })
 
 const nunito = Nunito({ 
   subsets: ['latin'],
   variable: '--font-nunito',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -45,8 +47,8 @@ export const viewport: Viewport = {
   themeColor: '#6366f1',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({

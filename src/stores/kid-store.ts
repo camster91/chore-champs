@@ -6,6 +6,7 @@ export interface Kid {
   name: string
   age: number
   avatarId: string
+  points: number
   themeMode: string
   primaryColor: string
   secondaryColor: string
@@ -64,6 +65,7 @@ export const useKidStore = create<KidState>()(
           name: sk.name,
           age: sk.age,
           avatarId: sk.avatarId,
+          points: sk.points || 0,
           themeMode: sk.themeMode,
           primaryColor: sk.primaryColor,
           secondaryColor: sk.secondaryColor,
