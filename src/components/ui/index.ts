@@ -25,3 +25,5 @@ export type { Toast, ToastVariant } from './Toast'
 export { ErrorState } from './ErrorState'
 
 export { EmptyState } from './EmptyState'
+
+export { Skeleton, CardSkeleton, ListItemSkeleton, ProfileCardSkeleton } from './Skeleton'
