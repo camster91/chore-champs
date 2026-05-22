@@ -19,14 +19,14 @@ export function PwaInstallPrompt() {
   useEffect(() => {
     // Check if already in standalone mode
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsStandalone(true)
+      queueMicrotask(() => setIsStandalone(true))
       return
     }
 
     // Detect iOS (needs special instructions)
     const ua = navigator.userAgent.toLowerCase()
     const ios = /iphone|ipad|ipod/.test(ua)
-    setIsIOS(ios)
+    queueMicrotask(() => setIsIOS(ios))
 
     // Listen for beforeinstallprompt (Android/Desktop Chrome)
     const handler = (e: Event) => {
