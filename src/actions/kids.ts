@@ -68,6 +68,13 @@ export async function updateKid(kidId: string, data: Partial<{
     throw new Error('Unauthorized')
   }
 
+  const existing = await prisma.kid.findFirst({
+    where: { id: kidId, familyId: session.user.familyId }
+  })
+  if (!existing) {
+    throw new Error('Kid not found')
+  }
+
   const kid = await prisma.kid.update({
     where: { id: kidId },
     data
@@ -84,6 +91,16 @@ export async function deleteKid(kidId: string) {
     throw new Error('Unauthorized')
   }
 
+  const kid = await prisma.kid.findFirst({
+    where: { id: kidId, familyId: session.user.familyId }
+  })
+  if (!kid) {
+    throw new Error('Kid not found')
+  }
+
   await prisma.kid.delete({ where: { id: kidId } })
   revalidatePath('/dashboard')
+  revalidatePath('/chores')
+  revalidatePath('/profile')
+  revalidatePath('/habits')
 }

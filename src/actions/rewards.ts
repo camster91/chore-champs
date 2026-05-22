@@ -54,8 +54,8 @@ export async function redeemReward(rewardId: string, kidId: string) {
     throw new Error('Unauthorized')
   }
 
-  const reward = await prisma.reward.findUnique({
-    where: { id: rewardId }
+  const reward = await prisma.reward.findFirst({
+    where: { id: rewardId, familyId: session.user.familyId }
   })
 
   if (!reward) {
@@ -63,32 +63,32 @@ export async function redeemReward(rewardId: string, kidId: string) {
   }
 
   const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId },
-    include: { 
-      choreAssignments: { 
-        where: { status: 'COMPLETED' },
-        include: { chore: true }
-      } 
-    }
+    where: { id: kidId, familyId: session.user.familyId }
   })
 
   if (!kid) {
     throw new Error('Kid not found')
   }
 
-  const totalPoints = kid.choreAssignments.reduce((sum, a) => sum + (a.chore?.basePoints || 5), 0)
-
-  if (totalPoints < reward.cost) {
+  if (kid.points < reward.cost) {
     throw new Error('Insufficient points')
   }
 
-  const redemption = await prisma.redemption.create({
-    data: {
-      rewardId,
-      kidId,
-      points: reward.cost
-    }
-  })
+  const [redemption] = await prisma.$transaction([
+    prisma.redemption.create({
+      data: {
+        rewardId,
+        kidId,
+        points: reward.cost
+      }
+    }),
+    prisma.kid.update({
+      where: { id: kidId },
+      data: {
+        points: { decrement: reward.cost }
+      }
+    })
+  ])
 
   revalidatePath('/rewards')
   revalidatePath('/dashboard')
@@ -99,6 +99,13 @@ export async function deleteReward(rewardId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
+  }
+
+  const reward = await prisma.reward.findFirst({
+    where: { id: rewardId, familyId: session.user.familyId }
+  })
+  if (!reward) {
+    throw new Error('Reward not found')
   }
 
   await prisma.reward.delete({ where: { id: rewardId } })

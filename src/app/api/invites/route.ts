@@ -101,12 +101,15 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Invite ID required' }, { status: 400 })
   }
 
-  await prisma.familyInvite.delete({
-    where: { 
-      id: inviteId,
-      familyId: session.user.familyId
-    }
+  const invite = await prisma.familyInvite.findFirst({
+    where: { id: inviteId, familyId: session.user.familyId }
   })
+
+  if (!invite) {
+    return NextResponse.json({ error: 'Invite not found' }, { status: 404 })
+  }
+
+  await prisma.familyInvite.delete({ where: { id: inviteId } })
 
   return NextResponse.json({ success: true })
 }

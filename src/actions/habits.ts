@@ -68,6 +68,13 @@ export async function deleteHabit(habitId: string) {
     throw new Error('Unauthorized')
   }
 
+  const habit = await prisma.habit.findFirst({
+    where: { id: habitId, familyId: session.user.familyId }
+  })
+  if (!habit) {
+    throw new Error('Habit not found')
+  }
+
   await prisma.habit.delete({ where: { id: habitId } })
   revalidatePath('/habits')
 }

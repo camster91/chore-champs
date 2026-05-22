@@ -24,8 +24,13 @@ export async function getChores() {
 }
 
 export async function getChoreById(id: string) {
-  return await prisma.chore.findUnique({
-    where: { id },
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return null
+  }
+
+  return await prisma.chore.findFirst({
+    where: { id, familyId: session.user.familyId },
     include: { assignments: { include: { kid: true } } }
   })
 }
@@ -59,17 +64,27 @@ export async function createChore(data: {
   })
 
   if (data.assignToKids && data.assignToKids.length > 0) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    await prisma.choreAssignment.createMany({
-      data: data.assignToKids.map(kidId => ({
-        choreId: chore.id,
-        kidId,
-        dueDate: today,
-        status: 'PENDING'
-      }))
+    // Validate all kid IDs belong to this family
+    const familyKids = await prisma.kid.findMany({
+      where: { familyId: session.user.familyId },
+      select: { id: true }
     })
+    const familyKidIds = new Set(familyKids.map(k => k.id))
+    const validKidIds = data.assignToKids.filter(kidId => familyKidIds.has(kidId))
+
+    if (validKidIds.length > 0) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      await prisma.choreAssignment.createMany({
+        data: validKidIds.map(kidId => ({
+          choreId: chore.id,
+          kidId,
+          dueDate: today,
+          status: 'PENDING'
+        }))
+      })
+    }
   }
 
   revalidatePath('/chores')
@@ -82,14 +97,36 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
     throw new Error('Unauthorized')
   }
 
-  const assignment = await prisma.choreAssignment.update({
-    where: { id: assignmentId },
-    data: { 
-      status: 'COMPLETED',
-      completedAt: new Date()
+  // Verify the assignment belongs to a kid in this family
+  const existing = await prisma.choreAssignment.findFirst({
+    where: {
+      id: assignmentId,
+      kid: { familyId: session.user.familyId }
     },
-    include: { chore: true }
+    include: { kid: true }
   })
+
+  if (!existing) {
+    throw new Error('Assignment not found')
+  }
+
+  const [assignment] = await prisma.$transaction([
+    prisma.choreAssignment.update({
+      where: { id: assignmentId },
+      data: { 
+        status: 'COMPLETED',
+        completedAt: new Date()
+      },
+      include: { chore: true }
+    }),
+    prisma.kid.update({
+      where: { id: kidId },
+      data: {
+        points: { increment: pointsEarned },
+        totalPoints: { increment: pointsEarned }
+      }
+    })
+  ])
 
   revalidatePath('/chores')
   revalidatePath('/dashboard')
@@ -99,6 +136,24 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
 }
 
 export async function assignChore(choreId: string, kidId: string, dueDate: Date) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    throw new Error('Unauthorized')
+  }
+
+  // Verify both chore and kid belong to this family
+  const [chore, kid] = await Promise.all([
+    prisma.chore.findFirst({ where: { id: choreId, familyId: session.user.familyId } }),
+    prisma.kid.findFirst({ where: { id: kidId, familyId: session.user.familyId } })
+  ])
+
+  if (!chore) {
+    throw new Error('Chore not found')
+  }
+  if (!kid) {
+    throw new Error('Kid not found')
+  }
+
   return await prisma.choreAssignment.create({
     data: {
       choreId,
@@ -113,6 +168,13 @@ export async function deleteChore(choreId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
+  }
+
+  const chore = await prisma.chore.findFirst({
+    where: { id: choreId, familyId: session.user.familyId }
+  })
+  if (!chore) {
+    throw new Error('Chore not found')
   }
 
   await prisma.chore.delete({ where: { id: choreId } })
@@ -132,6 +194,13 @@ export async function updateChore(choreId: string, data: Partial<{
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
+  }
+
+  const existing = await prisma.chore.findFirst({
+    where: { id: choreId, familyId: session.user.familyId }
+  })
+  if (!existing) {
+    throw new Error('Chore not found')
   }
 
   const chore = await prisma.chore.update({

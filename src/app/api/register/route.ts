@@ -48,6 +48,14 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Auto-create a family for the new parent
+    await prisma.family.create({
+      data: {
+        name: `${name}'s Family`,
+        parentId: parent.id,
+      }
+    })
+
     return NextResponse.json({
       success: true,
       parentId: parent.id,

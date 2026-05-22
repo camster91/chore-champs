@@ -39,8 +39,10 @@ export async function createFamilyInvite(email: string, role: string = 'MEMBER')
     }
   })
 
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  const inviteUrl = `${baseUrl}/invite/${token}`
+  if (!process.env.NEXTAUTH_URL) {
+    throw new Error('NEXTAUTH_URL is not configured')
+  }
+  const inviteUrl = `${process.env.NEXTAUTH_URL}/invite/${token}`
   return { 
     message: 'Invitation created!', 
     inviteUrl,
@@ -68,8 +70,26 @@ export async function acceptInvite(token: string) {
     throw new Error('Please sign in first to accept the invitation')
   }
 
-  // Update user's familyId (this field doesn't exist in DB but we need it for auth)
-  // For now, we'll update the Family table to include this parent
+  // Verify the invitee email matches the session user
+  const parent = await prisma.parent.findUnique({
+    where: { id: session.user.id },
+    select: { email: true }
+  })
+
+  if (!parent || parent.email.toLowerCase() !== invite.email.toLowerCase()) {
+    throw new Error('This invitation was sent to a different email address')
+  }
+
+  // Check if user already has a family (schema has parentId as @unique)
+  const existingFamily = await prisma.family.findUnique({
+    where: { parentId: session.user.id }
+  })
+
+  if (existingFamily) {
+    throw new Error('You already have a family. Leave your current family before accepting a new invitation.')
+  }
+
+  // Update Family table to include this parent
   await prisma.family.update({
     where: { id: invite.familyId },
     data: { parentId: session.user.id }
@@ -109,10 +129,12 @@ export async function cancelInvite(inviteId: string) {
     throw new Error('Unauthorized')
   }
 
-  await prisma.familyInvite.delete({
-    where: { 
-      id: inviteId,
-      familyId: session.user.familyId
-    }
+  const invite = await prisma.familyInvite.findFirst({
+    where: { id: inviteId, familyId: session.user.familyId }
   })
+  if (!invite) {
+    throw new Error('Invite not found')
+  }
+
+  await prisma.familyInvite.delete({ where: { id: inviteId } })
 }
