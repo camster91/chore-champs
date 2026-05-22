@@ -76,6 +76,7 @@ export const t = (key: string, locale: Locale = 'en'): string => {
 // --- Init function (used in useEffect / server setup) ---
 export function initI18n(_locale?: string): void {
   // No-op for now — English only, no async loading needed
+  void _locale;
 }
 
 // --- Sample data for onboarding (localised labels) ---
