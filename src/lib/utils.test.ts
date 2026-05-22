@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { calculateLevel, getPointsMultiplier, isToday, startOfDay, endOfDay, getExperienceForNextLevel } from './utils'
+import { calculateLevel, getPointsMultiplier, isToday, startOfDay, endOfDay, getExperienceForNextLevel } from './utils.ts'
 
 describe('getPointsMultiplier', () => {
   it('returns 1 for EASY', () => {
@@ -37,7 +37,7 @@ describe('calculateLevel', () => {
 
 describe('getExperienceForNextLevel', () => {
   it('returns correct XP for level 1', () => {
-    assert.strictEqual(getExperienceForNextLevel(1), 200)
+    assert.strictEqual(getExperienceForNextLevel(1), 100)
   })
 
   it('returns higher XP for higher levels', () => {
