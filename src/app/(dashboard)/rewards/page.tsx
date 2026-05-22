@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Gift, Loader2, CheckCircle } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
+import { Card, CardContent, Button, Modal, Input, CardSkeleton, EmptyState, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { getRewards, createReward, redeemReward } from '@/actions/rewards'
 import { initI18n, t as translate } from '@/lib/i18n'
@@ -22,6 +22,7 @@ const rewardIcons = ['🎁', '🎮', '🍦', '🎬', '📚', '🛍️', '🎯', 
 
 export default function RewardsPage() {
   const { currentKid } = useKidStore()
+  const { toast } = useToast()
   const [rewards, setRewards] = useState<UIReward[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -40,6 +41,7 @@ export default function RewardsPage() {
       setRewards(data as UIReward[])
     } catch (e) {
       console.error('Failed to load rewards:', e)
+      toast({ title: 'Error', description: 'Failed to load rewards. Please try again.', variant: 'error' })
     } finally {
       setIsLoading(false)
     }
@@ -97,16 +99,22 @@ export default function RewardsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <CardSkeleton key={i} />
+          ))}
         </div>
       ) : rewards.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Gift className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">{translate('rewards.noRewardsYet')}</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Gift}
+          title={translate('rewards.noRewardsYet')}
+          description={translate('rewards.motivateWithRewards')}
+          action={{
+            label: translate('rewards.addReward'),
+            onClick: () => setIsAddModalOpen(true),
+            icon: <Plus className="w-5 h-5" />,
+          }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rewards.map(reward => (

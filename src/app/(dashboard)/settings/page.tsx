@@ -20,7 +20,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react'
-import { Card, CardContent, Button, Input, Modal } from '@/components/ui'
+import { Card, CardContent, Button, Input, Modal, ListItemSkeleton, Skeleton, EmptyState, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { 
   getPendingInvites, 
@@ -216,8 +216,10 @@ export default function SettingsPage() {
               </div>
 
               {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <div className="space-y-3 py-4">
+                  {Array.from({ length: 2 }).map((_, i) => (
+                    <ListItemSkeleton key={i} />
+                  ))}
                 </div>
               ) : invites.length > 0 ? (
                 <div className="space-y-3">
@@ -242,9 +244,16 @@ export default function SettingsPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">
-                  No pending invitations
-                </p>
+                <EmptyState
+                  icon={Mail}
+                  title="No pending invitations"
+                  description="Send an invite to add family members to your account."
+                  action={{
+                    label: 'Send Invite',
+                    onClick: () => setShowInviteModal(true),
+                    icon: <UserPlus className="w-4 h-4" />,
+                  }}
+                />
               )}
             </CardContent>
           </Card>

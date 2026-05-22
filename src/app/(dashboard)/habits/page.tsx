@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Check, Loader2, Target, Calendar } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
+import { Card, CardContent, Button, Modal, Input, ListItemSkeleton, EmptyState, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { getHabits, logHabit, createHabit } from '@/actions/habits'
 import { initI18n, t as translate } from '@/lib/i18n'
@@ -23,6 +23,7 @@ const habitIcons = ['🧘', '💧', '🍎', '🏃', '📖', '🦷', '🧹', '�
 
 export default function HabitsPage() {
   const { currentKid } = useKidStore()
+  const { toast } = useToast()
   const [habits, setHabits] = useState<UIHabit[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -59,6 +60,7 @@ export default function HabitsPage() {
       setHabits(mapped)
     } catch (e) {
       console.error('Failed to load habits:', e)
+      toast({ title: 'Error', description: 'Failed to load habits. Please try again.', variant: 'error' })
     } finally {
       setIsLoading(false)
     }
@@ -135,16 +137,22 @@ export default function HabitsPage() {
 
       {/* Habits List */}
       {isLoading ? (
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <ListItemSkeleton key={i} />
+          ))}
         </div>
       ) : habits.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">{translate('habits.noHabitsYet')}</p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Calendar}
+          title={translate('habits.noHabitsYet')}
+          description={translate('habits.buildHealthyRoutines')}
+          action={{
+            label: translate('habits.addHabit'),
+            onClick: () => setIsAddModalOpen(true),
+            icon: <Plus className="w-5 h-5" />,
+          }}
+        />
       ) : (
         <div className="space-y-3">
           {habits.map(habit => (
