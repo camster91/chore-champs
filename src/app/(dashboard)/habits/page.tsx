@@ -160,6 +160,10 @@ export default function HabitsPage() {
                 habit.completed && 'opacity-60'
               )}
               onClick={() => handleLogHabit(habit)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !habit.completed) handleLogHabit(habit) }}
+              tabIndex={habit.completed ? -1 : 0}
+              role="button"
+              aria-label={`Log ${habit.title} for ${habit.points} points`}
             >
               <div className="flex items-center gap-4">
                 <div className={cn('w-12 h-12 rounded-full flex items-center justify-center text-2xl', habit.completed ? 'bg-green-100' : 'bg-purple-100')}>

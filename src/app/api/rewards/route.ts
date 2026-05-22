@@ -3,13 +3,18 @@ import prisma from '@/lib/db'
 import { getAuthenticatedFamily, unauthorized } from '@/lib/auth/helpers'
 
 export async function GET() {
-  const auth = await getAuthenticatedFamily()
-  if (!auth) return unauthorized()
+  try {
+    const auth = await getAuthenticatedFamily()
+    if (!auth) return unauthorized()
 
-  const rewards = await prisma.reward.findMany({
-    where: { familyId: auth.familyId },
-    orderBy: { cost: 'asc' }
-  })
+    const rewards = await prisma.reward.findMany({
+      where: { familyId: auth.familyId },
+      orderBy: { cost: 'asc' }
+    })
 
-  return NextResponse.json(rewards)
+    return NextResponse.json(rewards)
+  } catch (error) {
+    console.error('Rewards API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

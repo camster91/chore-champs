@@ -50,6 +50,17 @@ export default function SettingsPage() {
   // Notification settings
   const [pushEnabled, setPushEnabled] = useState(false)
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
+  const [notificationPrefs, setNotificationPrefs] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== 'undefined') {
+      return {
+        chore_completed: localStorage.getItem('notification_chore_completed') !== 'false',
+        reward_earned: localStorage.getItem('notification_reward_earned') !== 'false',
+        daily_reminder: localStorage.getItem('notification_daily_reminder') !== 'false',
+        family_goal: localStorage.getItem('notification_family_goal') !== 'false',
+      }
+    }
+    return { chore_completed: true, reward_earned: true, daily_reminder: true, family_goal: true }
+  })
   
   const { play } = useAudio()
 
@@ -126,10 +137,30 @@ export default function SettingsPage() {
     setPushEnabled(permission === 'granted')
 
     if (permission === 'granted') {
-      // Subscribe to push
       const { subscribeToPush } = await import('@/lib/push-notifications')
       await subscribeToPush()
     }
+  }
+
+  async function handleDisableNotifications() {
+    if (!('serviceWorker' in navigator)) return
+    try {
+      const registration = await navigator.serviceWorker.ready
+      const subscription = await registration.pushManager.getSubscription()
+      if (subscription) {
+        await subscription.unsubscribe()
+        // Also remove from server
+        await fetch('/api/notifications/subscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: subscription.endpoint })
+        })
+      }
+    } catch (error) {
+      console.error('Failed to disable notifications:', error)
+    }
+    setPushEnabled(false)
+    setNotificationPermission('default')
   }
 
   const tabs = [
@@ -279,7 +310,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full bg-green-500" />
                       <span className="text-green-700 font-medium">Notifications enabled</span>
-                      <Button variant="outline" size="sm" onClick={() => setPushEnabled(false)}>
+                      <Button variant="outline" size="sm" onClick={handleDisableNotifications}>
                         Disable
                       </Button>
                     </div>
@@ -308,7 +339,16 @@ export default function SettingsPage() {
                       <p className="font-medium">{item.label}</p>
                       <p className="text-sm text-gray-500">{item.desc}</p>
                     </div>
-                    <input type="checkbox" defaultChecked className="w-5 h-5" />
+                    <input
+                      type="checkbox"
+                      checked={notificationPrefs[item.id] ?? true}
+                      onChange={(e) => {
+                        const next = { ...notificationPrefs, [item.id]: e.target.checked }
+                        setNotificationPrefs(next)
+                        localStorage.setItem(`notification_${item.id}`, String(e.target.checked))
+                      }}
+                      className="w-5 h-5"
+                    />
                   </label>
                 ))}
               </div>

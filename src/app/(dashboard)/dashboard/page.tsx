@@ -66,40 +66,20 @@ export default function DashboardPage() {
   }, [currentKid])
 
   useEffect(() => {
-    loadData()
+    loadKids()
   }, [])
 
-  const loadData = async () => {
+  const loadKids = async () => {
     setIsLoading(true)
     try {
-      const [kidsData, choresData] = await Promise.all([
-        getKids(),
-        getChores()
-      ])
+      const kidsData = await getKids()
       setKids(kidsData)
       const firstKid = kidsData.length > 0 ? kidsData[0] : null
       if (firstKid && !currentKid) {
         setCurrentKid(firstKid)
       }
-      // Map chores against the first kid (or currentKid if already set)
-      const activeKidId = currentKid?.id || firstKid?.id
-      if (activeKidId && choresData) {
-        const mapped = choresData.map((chore) => {
-          const assignment = chore.assignments?.find((a) => a.kidId === activeKidId)
-          return {
-            id: assignment?.id || chore.id,
-            choreId: chore.id,
-            title: chore.title,
-            description: chore.description,
-            points: chore.basePoints || 5,
-            completed: assignment?.status === 'COMPLETED',
-            icon: chore.icon || '📋'
-          }
-        })
-        setChores(mapped)
-      }
     } catch (e) {
-      console.error('Failed to load data:', e)
+      console.error('Failed to load kids:', e)
     } finally {
       setIsLoading(false)
     }
@@ -135,7 +115,8 @@ export default function DashboardPage() {
       await createKid({ name: newKid.name, age: parseInt(newKid.age) })
       setIsAddKidModalOpen(false)
       setNewKid({ name: '', age: '' })
-      loadData()
+      loadKids()
+      loadChores()
     } catch (e) {
       console.error('Failed to add kid:', e)
     } finally {
@@ -146,7 +127,7 @@ export default function DashboardPage() {
   const handleAddSampleData = async () => {
     try {
       await addSampleData()
-      loadData()
+      loadKids()
       loadChores()
     } catch (e) {
       console.error('Failed to add sample data:', e)
@@ -279,6 +260,10 @@ export default function DashboardPage() {
                 )}
                 style={{ animationDelay: `${idx * 40}ms` }}
                 onClick={() => handleCompleteChore(chore)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !chore.completed) handleCompleteChore(chore) }}
+                tabIndex={chore.completed ? -1 : 0}
+                role="button"
+                aria-label={`Complete ${chore.title} for ${chore.points} points`}
               >
                 <div className="flex items-center gap-4">
                   <div className={cn('w-12 h-12 rounded-full flex items-center justify-center text-2xl', chore.completed ? 'bg-green-100' : 'bg-purple-100')}>

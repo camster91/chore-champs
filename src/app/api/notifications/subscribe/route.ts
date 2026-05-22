@@ -12,6 +12,13 @@ export async function POST(request: Request) {
   try {
     const { endpoint, keys } = await request.json()
 
+    if (!endpoint || typeof endpoint !== 'string') {
+      return NextResponse.json({ error: 'endpoint is required' }, { status: 400 })
+    }
+    if (!keys || typeof keys !== 'object') {
+      return NextResponse.json({ error: 'keys is required' }, { status: 400 })
+    }
+
     await prisma.pushSubscription.upsert({
       where: {
         userId_endpoint: {
@@ -45,6 +52,10 @@ export async function DELETE(request: Request) {
 
   try {
     const { endpoint } = await request.json()
+
+    if (!endpoint || typeof endpoint !== 'string') {
+      return NextResponse.json({ error: 'endpoint is required' }, { status: 400 })
+    }
 
     await prisma.pushSubscription.deleteMany({
       where: {

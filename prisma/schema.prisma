@@ -43,7 +43,7 @@ model Kid {
   age            Int
   avatarId       String   @default("default")
   familyId       String
-  family         Family   @relation(fields: [familyId], references: [id])
+  family         Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   points         Int      @default(0)
   totalPoints    Int      @default(0)
   gems           Int      @default(0)
@@ -62,6 +62,8 @@ model Kid {
   habitLogs       HabitLog[]
   redemptions     Redemption[]
   earnedBadges    EarnedBadge[]
+
+  @@index([familyId])
 }
 
 model Chore {
@@ -75,11 +77,13 @@ model Chore {
   timeOfDay   String      @default("ANYTIME")
   isActive    Boolean     @default(true)
   familyId    String
-  family      Family      @relation(fields: [familyId], references: [id])
+  family      Family      @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   
   assignments ChoreAssignment[]
+
+  @@index([familyId])
 }
 
 model ChoreAssignment {
@@ -107,11 +111,13 @@ model Reward {
   category    String?
   isActive    Boolean  @default(true)
   familyId    String
-  family      Family   @relation(fields: [familyId], references: [id])
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   redemptions Redemption[]
+
+  @@index([familyId])
 }
 
 model Redemption {
@@ -119,7 +125,7 @@ model Redemption {
   rewardId  String
   reward    Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
   kidId     String
-  kid       Kid      @relation(fields: [kidId], references: [id])
+  kid       Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
   points    Int
   createdAt DateTime @default(now())
 }
@@ -132,11 +138,13 @@ model Habit {
   points      Int      @default(5)
   isActive    Boolean  @default(true)
   familyId    String
-  family      Family   @relation(fields: [familyId], references: [id])
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   logs        HabitLog[]
+
+  @@index([familyId])
 }
 
 model HabitLog {
@@ -159,9 +167,11 @@ model FamilyGoal {
   reward       String?
   isActive     Boolean  @default(true)
   familyId     String
-  family       Family   @relation(fields: [familyId], references: [id])
+  family       Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([familyId])
 }
 
 model BadgeDefinition {

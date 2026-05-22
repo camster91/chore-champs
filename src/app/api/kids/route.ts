@@ -3,14 +3,19 @@ import prisma from '@/lib/db'
 import { getAuthenticatedFamily, unauthorized } from '@/lib/auth/helpers'
 
 export async function GET() {
-  const auth = await getAuthenticatedFamily()
-  if (!auth) return unauthorized()
+  try {
+    const auth = await getAuthenticatedFamily()
+    if (!auth) return unauthorized()
 
-  const kids = await prisma.kid.findMany({
-    where: { familyId: auth.familyId },
-    include: { choreAssignments: true, habitLogs: true },
-    orderBy: { createdAt: 'asc' }
-  })
+    const kids = await prisma.kid.findMany({
+      where: { familyId: auth.familyId },
+      include: { choreAssignments: true, habitLogs: true },
+      orderBy: { createdAt: 'asc' }
+    })
 
-  return NextResponse.json(kids)
+    return NextResponse.json(kids)
+  } catch (error) {
+    console.error('Kids API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

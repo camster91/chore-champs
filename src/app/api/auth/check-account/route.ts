@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       hasAccount: !!user,
     })
   } catch (error) {
-    return NextResponse.json({ hasAccount: false })
+    console.error('Check account error:', error)
+    return NextResponse.json({ error: 'Failed to check account' }, { status: 500 })
   }
 }
