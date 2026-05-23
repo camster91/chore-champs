@@ -26,34 +26,27 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Install libssl1.1 for Prisma runtime
+RUN wget -q -O /tmp/libssl1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/main/x86_64/libssl1.1-1.1.1w-r1.apk && \
+    wget -q -O /tmp/libcrypto1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/main/x86_64/libcrypto1.1-1.1.1w-r1.apk && \
+    apk add --no-cache --force-overwrite /tmp/libssl1.1.apk /tmp/libcrypto1.1.apk && \
+    rm /tmp/libssl1.1.apk /tmp/libcrypto1.1.apk
+
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Create the .next directory and set permissions for caching
 RUN mkdir .next
-RUN chown nextjs:nodejs .next
 
-# Copy standalone output from builder
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy ALL node_modules (not just @prisma and .prisma)
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-
-# Copy startup script (from context, not builder)
-COPY --chown=root:root entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-USER nextjs
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3000
-
 ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV HOSTNAME 0.0.0.0
 
-ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "server.js"]
