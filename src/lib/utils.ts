@@ -78,3 +78,30 @@ export function endOfDay(date: Date): Date {
   newDate.setHours(23, 59, 59, 999)
   return newDate
 }
+
+export function getWeekStart(date: Date = new Date()): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+export function getDayOfWeek(date: Date): number {
+  return date.getDay()
+}
+
+export function addDays(date: Date, days: number): Date {
+  const d = new Date(date)
+  d.setDate(d.getDate() + days)
+  return d
+}
+
+export function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getDate() === b.getDate() &&
+    a.getMonth() === b.getMonth() &&
+    a.getFullYear() === b.getFullYear()
+  )
+}

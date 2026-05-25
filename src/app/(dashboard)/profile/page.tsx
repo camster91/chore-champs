@@ -7,6 +7,8 @@ import { Card, CardContent, Button, ProfileCardSkeleton, Skeleton, useToast } fr
 import { useKidStore } from '@/stores/kid-store'
 import { initI18n, t as translate } from '@/lib/i18n'
 import { getChores } from '@/actions/chores'
+import { getWeeklySummary } from '@/actions/weeklySummary'
+import WeeklyConsistency from '@/components/WeeklyConsistency'
 
 const LEVELS = [
   { level: 1, minPoints: 0, title: 'Beginner', icon: '🌱' },
@@ -138,6 +140,11 @@ export default function ProfilePage() {
             </Card>
           )}
         </>
+      )}
+
+      {/* Weekly Consistency */}
+      {currentKid && (
+        <WeeklyConsistency kidId={currentKid.id} loadSummary={getWeeklySummary} />
       )}
 
       <Button className="w-full" onClick={() => window.location.href = '/settings'}>

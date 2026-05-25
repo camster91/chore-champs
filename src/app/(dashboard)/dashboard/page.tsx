@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils'
 import { getKids, createKid } from '@/actions/kids'
 import { getChores, completeChore, assignChore } from '@/actions/chores'
 import { addSampleData } from '@/actions/sampleData'
+import { getWeeklySummary } from '@/actions/weeklySummary'
+import WeeklyConsistency from '@/components/WeeklyConsistency'
 import { initI18n, t as translate } from '@/lib/i18n'
 
 interface DashboardChore {
@@ -289,6 +291,11 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Weekly Consistency */}
+      {currentKid && (
+        <WeeklyConsistency kidId={currentKid.id} loadSummary={getWeeklySummary} />
+      )}
 
       {/* Quick Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
