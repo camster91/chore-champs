@@ -33,6 +33,7 @@ export default function HabitsPage() {
   useEffect(() => {
     initI18n()
     loadHabits()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentKid])
 
   const loadHabits = async () => {

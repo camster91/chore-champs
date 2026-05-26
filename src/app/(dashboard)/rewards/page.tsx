@@ -32,6 +32,7 @@ export default function RewardsPage() {
   useEffect(() => {
     initI18n()
     loadRewards()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadRewards = async () => {

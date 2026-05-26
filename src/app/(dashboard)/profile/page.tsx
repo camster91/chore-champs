@@ -46,6 +46,7 @@ export default function ProfilePage() {
       }
     }
     loadStats()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentKid])
 
   if (!currentKid) {

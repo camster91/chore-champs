@@ -3,11 +3,10 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Users, Star, Trophy, CheckCircle, ArrowRight, Loader2, PartyPopper } from 'lucide-react'
-import { Button, Card, CardContent, Input, Modal } from '@/components/ui'
+import { Button, Card, CardContent } from '@/components/ui'
 import { useKidStore } from '@/stores/kid-store'
 import { useAudio } from '@/lib/audio-context'
-import { addSampleData, hasExistingData } from '@/actions/sampleData'
-import useSWR from 'swr'
+import { addSampleData } from '@/actions/sampleData'
 import { useRouter } from 'next/navigation'
 
 interface SetupWizardProps {

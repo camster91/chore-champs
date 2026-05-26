@@ -28,7 +28,6 @@ export default function DashboardPage() {
   const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
   const [chores, setChores] = useState<DashboardChore[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [choresLoading, setChoresLoading] = useState(false)
   const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [newKid, setNewKid] = useState({ name: '', age: '' })
@@ -43,7 +42,6 @@ export default function DashboardPage() {
       setChores([])
       return
     }
-    setChoresLoading(true)
     try {
       const dbChores = await getChores()
       if (!dbChores) return
@@ -62,13 +60,12 @@ export default function DashboardPage() {
       setChores(mapped)
     } catch (e) {
       console.error('Failed to load chores:', e)
-    } finally {
-      setChoresLoading(false)
     }
   }, [currentKid])
 
   useEffect(() => {
     loadKids()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadKids = async () => {

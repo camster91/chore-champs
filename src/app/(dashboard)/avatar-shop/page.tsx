@@ -45,6 +45,7 @@ export default function AvatarShopPage() {
     }).catch(() => {
       toast({ title: 'Failed to load shop', variant: 'error' })
     }).finally(() => setIsLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentKid?.id])
 
   const handlePurchase = async (item: AvatarItem) => {

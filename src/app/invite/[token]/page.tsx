@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Users, Mail, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react'
-import { Button, Card, CardContent, Input } from '@/components/ui'
+import { Users, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react'
+import { Button, Card, CardContent } from '@/components/ui'
 import { useKidStore } from '@/stores/kid-store'
 
 export default function InvitePage() {
@@ -28,7 +28,7 @@ export default function InvitePage() {
         if (!res.ok) {
           setError(data.error || 'Invalid invitation')
         }
-      } catch (e) {
+      } catch {
         setError('Failed to load invitation')
       } finally {
         setLoading(false)
@@ -73,7 +73,7 @@ export default function InvitePage() {
         router.push('/dashboard')
       }, 2000)
       
-    } catch (e) {
+    } catch {
       setError('Failed to accept invitation')
     } finally {
       setAccepting(false)

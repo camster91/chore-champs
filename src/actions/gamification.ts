@@ -30,6 +30,7 @@ export async function processGamification(kidId: string) {
   return { success: true }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function getEarnedBadges(_kidId: string) {
   return []
 }
