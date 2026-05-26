@@ -128,10 +128,16 @@ export default function DashboardPage() {
 
   const handleAddSampleData = async () => {
     try {
-      await addSampleData()
-      loadKids()
-      loadChores()
-    } catch (e) {
+      const result = await addSampleData()
+      if (result?.added) {
+        toast({ title: 'Sample data added!', description: `${result.kidsCount} kids, ${result.choresCount} chores`, variant: 'success', duration: 4000 })
+      } else {
+        toast({ title: 'Sample data not added', description: result?.message || 'Your family already has data.', variant: 'warning', duration: 4000 })
+      }
+      await loadKids()
+      await loadChores()
+    } catch (e: any) {
+      toast({ title: 'Failed to add sample data', description: e?.message || 'Please try again', variant: 'error' })
       console.error('Failed to add sample data:', e)
     }
   }
