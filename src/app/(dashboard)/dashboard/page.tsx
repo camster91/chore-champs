@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Star, CheckCircle, Clock, Loader2, Sparkles, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Modal, Input } from '@/components/ui'
+import { Card, CardContent, Button, Modal, Input, useToast } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { cn } from '@/lib/utils'
 import { getKids, createKid } from '@/actions/kids'
@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [newKid, setNewKid] = useState({ name: '', age: '' })
   const [loadingKids, setLoadingKids] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     initI18n()
@@ -108,15 +109,17 @@ export default function DashboardPage() {
   }
 
   const handleAddKid = async () => {
-    if (!newKid.name || !newKid.age) return
+    if (!newKid.name || !newKid.age || loadingKids) return
     setLoadingKids(true)
     try {
       await createKid({ name: newKid.name, age: parseInt(newKid.age) })
       setIsAddKidModalOpen(false)
       setNewKid({ name: '', age: '' })
-      loadKids()
-      loadChores()
-    } catch (e) {
+      toast({ title: `${newKid.name} added!`, variant: 'success', duration: 3000 })
+      await loadKids()
+      await loadChores()
+    } catch (e: any) {
+      toast({ title: 'Failed to add kid', description: e?.message || 'Please try again', variant: 'error' })
       console.error('Failed to add kid:', e)
     } finally {
       setLoadingKids(false)

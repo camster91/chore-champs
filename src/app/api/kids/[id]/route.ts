@@ -26,3 +26,28 @@ export async function GET(_request: Request, props: Props) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(_request: Request, props: Props) {
+  try {
+    const auth = await getAuthenticatedFamily()
+    if (!auth) return unauthorized()
+
+    const { id } = await props.params
+
+    const kid = await prisma.kid.findFirst({
+      where: { id, familyId: auth.familyId }
+    })
+    if (!kid) return notFound('Kid not found')
+
+    // Delete related records first to avoid FK constraint errors
+    await prisma.choreAssignment.deleteMany({ where: { kidId: id } })
+    await prisma.habitLog.deleteMany({ where: { kidId: id } })
+    await prisma.redemption.deleteMany({ where: { kidId: id } })
+    await prisma.kid.delete({ where: { id } })
+
+    return NextResponse.json({ success: true, deleted: id })
+  } catch (error) {
+    console.error('Kid DELETE error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
