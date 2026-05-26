@@ -1,6 +1,6 @@
 -- Create FamilyInvite table for magic link invites
 CREATE TABLE "FamilyInvite" (
-    "id" TEXT NOT NULL PRIMARY KEY DEFAULT cu_id(),
+    "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "familyId" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'MEMBER',
@@ -19,7 +19,7 @@ CREATE INDEX "FamilyInvite_email_idx" ON "FamilyInvite"("email");
 
 -- Create PasswordResetToken table
 CREATE TABLE "PasswordResetToken" (
-    "id" TEXT NOT NULL PRIMARY KEY DEFAULT cu_id(),
+    "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "expiresAt" DATETIME NOT NULL,
@@ -32,7 +32,7 @@ CREATE INDEX "PasswordResetToken_email_idx" ON "PasswordResetToken"("email");
 
 -- Create Notification table
 CREATE TABLE "Notification" (
-    "id" TEXT NOT NULL PRIMARY KEY DEFAULT cu_id(),
+    "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "body" TEXT NOT NULL,
@@ -48,7 +48,7 @@ CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt" DESC);
 
 -- Create PushSubscription table
 CREATE TABLE "PushSubscription" (
-    "id" TEXT NOT NULL PRIMARY KEY DEFAULT cu_id(),
+    "id" TEXT NOT NULL PRIMARY KEY,
     "userId" TEXT NOT NULL,
     "endpoint" TEXT NOT NULL,
     "keys" TEXT NOT NULL,
