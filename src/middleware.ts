@@ -18,6 +18,11 @@ export default withAuth(
     response.headers.set('X-Frame-Options', 'DENY')
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
+    // Disable HTML caching to prevent stale deploy chunk errors
+    if (!pathname.startsWith('/_next/') && !pathname.startsWith('/icons/') && !pathname.startsWith('/sounds/') && !pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|css|js)$/)) {
+      response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate, no-cache, no-store')
+    }
+
     return response
   },
   {
