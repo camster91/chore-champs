@@ -17,7 +17,7 @@ COPY . .
 RUN npx prisma generate
 
 # Disable telemetry during build
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Build the app
 RUN npm run build
@@ -32,8 +32,8 @@ RUN wget -q -O /tmp/libssl1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/ma
     apk add --no-cache --force-overwrite /tmp/libssl1.1.apk /tmp/libcrypto1.1.apk && \
     rm /tmp/libssl1.1.apk /tmp/libcrypto1.1.apk
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN mkdir .next
 
@@ -46,7 +46,7 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME 0.0.0.0
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
 CMD ["node", "server.js"]
