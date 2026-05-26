@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Plus, Gift, Loader2, CheckCircle } from 'lucide-react'
+import { Plus, Gift, Loader2 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Modal, Input, CardSkeleton, EmptyState, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'

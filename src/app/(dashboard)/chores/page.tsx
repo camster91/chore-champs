@@ -1,21 +1,18 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   Plus,
   CheckCircle,
   Clock,
-  Star,
   Sparkles,
-  Loader2,
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Badge, Modal, Input } from '@/components/ui'
 import { PointsEarned } from '@/components/gamification'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
-import { BadgeUnlockToast } from '@/components/BadgeUnlockToast'
 import { cn, calculateLevel } from '@/lib/utils'
 import { getChores, createChore, completeChore, assignChore } from '@/actions/chores'
 import { useAudio } from '@/lib/audio-context'

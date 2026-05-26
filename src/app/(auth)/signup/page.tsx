@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import { Sparkles, Loader2, CheckCircle } from 'lucide-react'
-import { Button, Input } from '@/components/ui'
+import { Input } from '@/components/ui'
 import { initI18n, t as translate } from '@/lib/i18n'
 import { useEffect } from 'react'
 
@@ -70,7 +70,7 @@ function SignupForm() {
       } else {
         router.push('/dashboard')
       }
-    } catch (e) {
+    } catch {
       setError(translate('auth.somethingWentWrong'))
       setStep('info')
     } finally {
