@@ -50,6 +50,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.5",
+    "playwright": "^1.60.0",
     "prisma": "^5.22.0",
     "tailwindcss": "^4",
     "typescript": "^5.9.3"

@@ -169,31 +169,11 @@ export default function WeeklyConsistency({ kidId, loadSummary }: WeeklyConsiste
             <span className="text-sm text-gray-500">Best: {summary.bestDay}</span>
           </div>
 
-          {/* Ring */}
-          <div className="relative w-14 h-14">
-            <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-              <circle
-                cx="18" cy="18" r="15.9"
-                fill="none" stroke="#e5e7eb" strokeWidth="3"
-              />
-              <circle
-                cx="18" cy="18" r="15.9"
-                fill="none"
-                stroke="url(#weeklyRing)"
-                strokeWidth="3"
-                strokeDasharray={`${summary.consistencyPercent}, 100`}
-                className="transition-all duration-700"
-              />
-              <defs>
-                <linearGradient id="weeklyRing">
-                  <stop offset="0%" stopColor={isPerfectWeek ? '#f97316' : summary.consistencyPercent >= 70 ? '#22c55e' : '#f59e0b'} />
-                  <stop offset="100%" stopColor={isPerfectWeek ? '#ef4444' : summary.consistencyPercent >= 70 ? '#10b981' : '#f97316'} />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-              {summary.consistencyPercent}%
-            </span>
+          {/* Ring with streakColor gradient */}
+          <div className={cn('relative w-14 h-14 rounded-full p-0.5 bg-gradient-to-br', streakColor)}>
+            <div className="bg-white rounded-full w-full h-full flex items-center justify-center">
+              <span className="text-sm font-bold">{summary.consistencyPercent}%</span>
+            </div>
           </div>
         </div>
       </CardContent>
