@@ -5,9 +5,9 @@ CREATE TABLE "FamilyInvite" (
     "familyId" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'MEMBER',
     "token" TEXT NOT NULL,
-    "expiresAt" DATETIME NOT NULL,
-    "acceptedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "acceptedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdById" TEXT,
     CONSTRAINT "FamilyInvite_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "Family" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "FamilyInvite_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "Parent" ("id") ON DELETE SET NULL ON UPDATE CASCADE
@@ -22,9 +22,9 @@ CREATE TABLE "PasswordResetToken" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "email" TEXT NOT NULL,
     "token" TEXT NOT NULL,
-    "expiresAt" DATETIME NOT NULL,
-    "usedAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE UNIQUE INDEX "PasswordResetToken_token_key" ON "PasswordResetToken"("token");
@@ -38,8 +38,8 @@ CREATE TABLE "Notification" (
     "body" TEXT NOT NULL,
     "icon" TEXT,
     "data" TEXT,
-    "readAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "readAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Parent" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -52,8 +52,8 @@ CREATE TABLE "PushSubscription" (
     "userId" TEXT NOT NULL,
     "endpoint" TEXT NOT NULL,
     "keys" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3),
     CONSTRAINT "PushSubscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "Parent" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
