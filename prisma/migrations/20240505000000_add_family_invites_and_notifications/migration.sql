@@ -61,5 +61,5 @@ CREATE UNIQUE INDEX "PushSubscription_userId_endpoint_key" ON "PushSubscription"
 
 -- Add parentRole to Family for ownership
 ALTER TABLE "Family" ADD COLUMN "ownerId" TEXT;
-UPDATE "Family" SET "ownerId" = (SELECT "id" FROM "Parent" WHERE "familyId" = "Family"."id" LIMIT 1);
+UPDATE "Family" SET "ownerId" = "parentId";
 ALTER TABLE "Family" ADD CONSTRAINT "Family_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "Parent" ("id") ON DELETE SET NULL;
