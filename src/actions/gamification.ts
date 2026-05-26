@@ -30,6 +30,6 @@ export async function processGamification(kidId: string) {
   return { success: true }
 }
 
-export async function getEarnedBadges(kidId: string) {
+export async function getEarnedBadges(_kidId: string) {
   return []
 }

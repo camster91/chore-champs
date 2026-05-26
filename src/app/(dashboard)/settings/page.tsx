@@ -12,15 +12,10 @@ import {
   Loader2, 
   Shield, 
   Smartphone,
-  Link as LinkIcon,
   UserPlus,
   Trash2,
-  ExternalLink,
-  KeyRound,
-  Eye,
-  EyeOff
 } from 'lucide-react'
-import { Card, CardContent, Button, Input, Modal, ListItemSkeleton, Skeleton, EmptyState, useToast } from '@/components/ui'
+import { Card, CardContent, Button, Input, Modal, ListItemSkeleton, EmptyState } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { 
   getPendingInvites, 

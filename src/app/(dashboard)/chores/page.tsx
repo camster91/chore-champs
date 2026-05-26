@@ -10,7 +10,6 @@ import {
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Badge, Modal, Input } from '@/components/ui'
-import { PointsEarned } from '@/components/gamification'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
 import { cn, calculateLevel } from '@/lib/utils'
