@@ -170,8 +170,8 @@ export default function DashboardPage() {
 
         <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title={translate('dashboard.addChild')}>
           <div className="space-y-4">
-            <Input label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
-            <Input label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
+            <Input id="add-kid-name" label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
+            <Input id="add-kid-age" label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
             <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
               {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
             </Button>
@@ -316,8 +316,8 @@ export default function DashboardPage() {
       {/* Add Kid Modal */}
       <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title={translate('dashboard.addChild')}>
         <div className="space-y-4">
-          <Input label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
-          <Input label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
+          <Input id="add-kid-name" label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
+          <Input id="add-kid-age" label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
           <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
             {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
           </Button>
