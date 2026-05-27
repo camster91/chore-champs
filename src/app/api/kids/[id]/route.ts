@@ -42,7 +42,9 @@ export async function DELETE(_request: Request, props: Props) {
     // Delete related records first to avoid FK constraint errors
     await prisma.choreAssignment.deleteMany({ where: { kidId: id } })
     await prisma.habitLog.deleteMany({ where: { kidId: id } })
-    await prisma.redemption.deleteMany({ where: { kidId: id } })
+    await prisma.redeemedReward.deleteMany({ where: { kidId: id } })
+    await prisma.earnedBadge.deleteMany({ where: { kidId: id } })
+    await prisma.plannerItem.deleteMany({ where: { kidId: id } })
     await prisma.kid.delete({ where: { id } })
 
     return NextResponse.json({ success: true, deleted: id })

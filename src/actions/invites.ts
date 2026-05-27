@@ -113,14 +113,22 @@ export async function getPendingInvites() {
     return []
   }
 
-  return await prisma.familyInvite.findMany({
-    where: {
-      familyId: session.user.familyId,
-      acceptedAt: null,
-      expiresAt: { gt: new Date() }
-    },
-    orderBy: { createdAt: 'desc' }
-  })
+  try {
+    return await prisma.familyInvite.findMany({
+      where: {
+        familyId: session.user.familyId,
+        acceptedAt: null,
+        expiresAt: { gt: new Date() }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  } catch (error: any) {
+    // If FamilyInvite table doesn't exist (P2021), return empty array
+    if (error?.code === 'P2021' || error?.message?.includes('does not exist in the current database')) {
+      return []
+    }
+    throw error
+  }
 }
 
 export async function cancelInvite(inviteId: string) {
