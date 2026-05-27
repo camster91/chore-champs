@@ -29,6 +29,19 @@ interface UIChore {
   completed: boolean
 }
 
+const suggestedChores = [
+  { title: 'Make my bed', description: 'Straighten sheets and arrange pillows', points: 10 },
+  { title: 'Brush teeth', description: 'Brush for 2 minutes, morning and night', points: 10 },
+  { title: 'Feed the dog', description: 'Give food and fresh water', points: 15 },
+  { title: 'Clean my room', description: 'Pick up toys and put clothes away', points: 30 },
+  { title: 'Take out trash', description: 'Empty bins and replace bags', points: 15 },
+  { title: 'Set the table', description: 'Plates, utensils, and napkins for everyone', points: 10 },
+  { title: 'Water plants', description: 'Check soil and water as needed', points: 10 },
+  { title: 'Do homework', description: 'Finish school assignments before play', points: 20 },
+  { title: 'Walk the dog', description: '15-minute walk around the block', points: 25 },
+  { title: 'Load dishwasher', description: 'Rinse and stack dishes properly', points: 15 },
+]
+
 export default function ChoresPage() {
   const { currentKid } = useKidStore()
   const { play } = useAudio()
@@ -207,6 +220,27 @@ export default function ChoresPage() {
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={translate('chores.addNewChore')}>
         <div className="space-y-4">
+          {/* Suggested Chores */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">{translate('chores.suggestedChores') || 'Suggested Chores'}</label>
+            <div className="flex flex-wrap gap-2">
+              {suggestedChores.map((chore) => (
+                <button
+                  key={chore.title}
+                  onClick={() => setNewChore({ title: chore.title, description: chore.description, points: chore.points })}
+                  className={cn(
+                    'px-3 py-2 rounded-lg border-2 text-sm transition-all',
+                    newChore.title === chore.title
+                      ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 text-[var(--color-primary)]'
+                      : 'border-gray-100 hover:border-gray-200 text-gray-600'
+                  )}
+                >
+                  {chore.title} ({chore.points} pts)
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Input label={translate('chores.choreName')} placeholder={translate('chores.e.gCleanBedroom')} value={newChore.title} onChange={e => setNewChore({ ...newChore, title: e.target.value })} />
           <Input label={translate('chores.descriptionOptional')} placeholder={translate('chores.tidyUpToys')} value={newChore.description} onChange={e => setNewChore({ ...newChore, description: e.target.value })} />
           <div className="space-y-1.5">

@@ -76,8 +76,8 @@ export default function LandingPage() {
             <div className="bg-white rounded-3xl shadow-2xl p-8 border-4 border-[var(--color-primary)]/20">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-2xl">🦄</div>
-                  <div className="text-left"><p className="font-bold text-lg">Emma</p><p className="text-sm text-gray-500">Level 5 ChoreChamp</p></div>
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center text-2xl">⭐</div>
+                  <div className="text-left"><p className="font-bold text-lg">Jamie</p><p className="text-sm text-gray-500">Level 1 ChoreChamp</p></div>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1"><Flame className="w-6 h-6 text-orange-500"/><span className="font-bold text-orange-500">7</span></div>
