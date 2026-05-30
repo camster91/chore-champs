@@ -122,9 +122,10 @@ export async function getPendingInvites() {
       },
       orderBy: { createdAt: 'desc' }
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     // If FamilyInvite table doesn't exist (P2021), return empty array
-    if (error?.code === 'P2021' || error?.message?.includes('does not exist in the current database')) {
+    const err = error as { code?: string; message?: string }
+    if (err?.code === 'P2021' || err?.message?.includes('does not exist in the current database')) {
       return []
     }
     throw error
