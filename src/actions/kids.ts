@@ -12,22 +12,24 @@ export async function getKids(): Promise<Kid[]> {
     return []
   }
 
+  // Optimization: Removed include for choreAssignments and habitLogs
+  // since they are entirely discarded in the map function below,
+  // preventing unbounded data fetching as logs grow over time.
   const kids = await prisma.kid.findMany({
     where: { familyId: session.user.familyId },
-    select: {
-      id: true,
-      name: true,
-      age: true,
-      avatarId: true,
-      points: true,
-      themeMode: true,
-      primaryColor: true,
-      secondaryColor: true,
-    },
     orderBy: { createdAt: 'asc' }
   })
 
-  return kids
+  return kids.map(k => ({
+    id: k.id,
+    name: k.name,
+    age: k.age,
+    avatarId: k.avatarId,
+    points: k.points,
+    themeMode: k.themeMode,
+    primaryColor: k.primaryColor,
+    secondaryColor: k.secondaryColor,
+  }))
 }
 
 export async function createKid(data: {
