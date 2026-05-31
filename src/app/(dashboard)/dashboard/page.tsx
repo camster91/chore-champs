@@ -118,8 +118,8 @@ export default function DashboardPage() {
       toast({ title: `${newKid.name} added!`, variant: 'success', duration: 3000 })
       await loadKids()
       await loadChores()
-    } catch (e: any) {
-      toast({ title: 'Failed to add kid', description: e?.message || 'Please try again', variant: 'error' })
+    } catch (e: unknown) {
+      toast({ title: 'Failed to add kid', description: e instanceof Error ? e.message : 'Please try again', variant: 'error' })
       console.error('Failed to add kid:', e)
     } finally {
       setLoadingKids(false)
@@ -136,8 +136,8 @@ export default function DashboardPage() {
       }
       await loadKids()
       await loadChores()
-    } catch (e: any) {
-      toast({ title: 'Failed to add sample data', description: e?.message || 'Please try again', variant: 'error' })
+    } catch (e: unknown) {
+      toast({ title: 'Failed to add sample data', description: e instanceof Error ? e.message : 'Please try again', variant: 'error' })
       console.error('Failed to add sample data:', e)
     }
   }

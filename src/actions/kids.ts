@@ -14,23 +14,20 @@ export async function getKids(): Promise<Kid[]> {
 
   const kids = await prisma.kid.findMany({
     where: { familyId: session.user.familyId },
-    include: {
-      choreAssignments: true,
-      habitLogs: true
+    select: {
+      id: true,
+      name: true,
+      age: true,
+      avatarId: true,
+      points: true,
+      themeMode: true,
+      primaryColor: true,
+      secondaryColor: true,
     },
     orderBy: { createdAt: 'asc' }
   })
 
-  return kids.map(k => ({
-    id: k.id,
-    name: k.name,
-    age: k.age,
-    avatarId: k.avatarId,
-    points: k.points,
-    themeMode: k.themeMode,
-    primaryColor: k.primaryColor,
-    secondaryColor: k.secondaryColor,
-  }))
+  return kids
 }
 
 export async function createKid(data: {
