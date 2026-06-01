@@ -23,6 +23,24 @@ export async function getChores() {
   })
 }
 
+export async function getCompletedChoresCount(kidId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  // OPTIMIZATION: Database-level aggregation instead of fetching entire history to client
+  return await prisma.choreAssignment.count({
+    where: {
+      kidId,
+      status: 'COMPLETED',
+      kid: {
+        familyId: session.user.familyId
+      }
+    }
+  })
+}
+
 export async function getChoreById(id: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
