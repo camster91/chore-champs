@@ -59,8 +59,8 @@ ChoreChamps transforms household tasks into exciting quests for children. Parent
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/camster91/kids-chore-app.git
-   cd kids-chore-app
+   git clone https://github.com/camster91/chore-champs.git
+   cd chore-champs
    ```
 
 2. **Install dependencies**
@@ -117,7 +117,7 @@ npm run seed         # Seed database with sample data
 ## Project Structure
 
 ```
-kids-chore-app/
+chore-champs/
 ├── src/
 │   ├── app/               # Next.js App Router
 │   │   ├── (auth)/        # Authentication routes (login, signup)
