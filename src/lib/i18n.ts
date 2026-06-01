@@ -36,6 +36,7 @@ export const translations = {
       joinFamily: "Join Family",
       joiningFamily: "Joining your family...",
       password: "Password",
+      emailPlaceholder: "you@example.com",
       settingUpFamily: "Setting up your family...",
       signIn: "Sign In",
       signInToContinue: "Sign in to continue",

@@ -103,7 +103,7 @@ function LoginForm() {
               <Input
                 label={translate('auth.email')}
                 type="email"
-                placeholder="parent@example.com"
+                placeholder={translate('auth.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 leftIcon={<Mail className="w-5 h-5" />}
@@ -161,13 +161,6 @@ function LoginForm() {
           transition={{ duration: 4, repeat: Infinity }}
         >
           🌟
-        </motion.div>
-        <motion.div
-          className="absolute bottom-20 right-10 text-4xl opacity-20 hidden sm:block"
-          animate={{ y: [0, 10, 0], rotate: [0, -5, 5, 0] }}
-          transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-        >
-          🏆
         </motion.div>
       </motion.div>
     </div>

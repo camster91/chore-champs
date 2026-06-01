@@ -16,7 +16,14 @@ const nunito = Nunito({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'http://localhost:3000'),
+  // Use NEXTAUTH_URL (set in deploy to https://chores.ashbi.ca) so og:image
+  // and other absolute social URLs resolve to production, not localhost.
+  // Fallback to NEXT_PUBLIC_SITE_URL, then production URL, then localhost for dev.
+  metadataBase: new URL(
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.NODE_ENV === 'production' ? 'https://chores.ashbi.ca' : 'http://localhost:3000')
+  ),
   title: 'ChoreChamps - Make Chores Fun!',
   description: 'A fun, gamified chore and habit tracker for kids. Turn household responsibilities into exciting adventures with points, rewards, and family goals!',
   manifest: '/manifest.json',

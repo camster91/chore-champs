@@ -130,7 +130,7 @@ function SignupForm() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input id="name" label={translate('common.name') || 'Your Name'} type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Mom, Dad, Guardian..." />
-              <Input id="email" label={translate('auth.email')} type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="parent@example.com" />
+              <Input id="email" label={translate('auth.email')} type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder={translate('auth.emailPlaceholder')} />
               <Input id="password" label={translate('auth.password')} type="password" required minLength={8} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder={translate('common.passwordMin')} />
 
               {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
