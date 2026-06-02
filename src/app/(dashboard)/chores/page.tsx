@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   Plus,
@@ -67,22 +67,36 @@ export default function ChoresPage() {
     points: 10,
   })
 
-  useEffect(() => {
-    if (dbChores && currentKid) {
-      const mappedChores: UIChore[] = dbChores.map(chore => {
-        const assignment = chore.assignments.find(a => a.kidId === currentKid.id)
-        return {
-          id: assignment?.id || chore.id,
-          choreId: chore.id,
-          title: chore.title,
-          description: chore.description || '',
-          points: chore.basePoints,
-          completed: assignment?.status === 'COMPLETED',
-        }
-      })
-      setChores(mappedChores)
+  // Hook must be called unconditionally — placed before any early returns
+  const { run: runCreateChore, isPending: isCreatingChore } = useServerAction(
+    createChore,
+    {
+      success: { title: 'Chore created!' },
+      error: { title: 'Failed to create chore' },
     }
+  )
+
+  // Derive chores via useMemo so we don't trigger a cascading render.
+  // Reads the same dbChores + currentKid inputs and returns a stable
+  // reference when nothing relevant changed.
+  const mappedChores = useMemo<UIChore[]>(() => {
+    if (!dbChores || !currentKid) return []
+    return dbChores.map(chore => {
+      const assignment = chore.assignments.find(a => a.kidId === currentKid.id)
+      return {
+        id: assignment?.id || chore.id,
+        choreId: chore.id,
+        title: chore.title,
+        description: chore.description || '',
+        points: chore.basePoints,
+        completed: assignment?.status === 'COMPLETED',
+      }
+    })
   }, [dbChores, currentKid])
+
+  useEffect(() => {
+    setChores(mappedChores)
+  }, [mappedChores])
 
   if (!currentKid) {
     return (
@@ -96,14 +110,6 @@ export default function ChoresPage() {
       </div>
     )
   }
-
-  const { run: runCreateChore, isPending: isCreatingChore } = useServerAction(
-    createChore,
-    {
-      success: { title: 'Chore created!' },
-      error: { title: 'Failed to create chore' },
-    }
-  )
 
   const handleCreateChore = async () => {
     if (!newChore.title) return

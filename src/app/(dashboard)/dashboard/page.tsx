@@ -123,10 +123,13 @@ export default function DashboardPage() {
     {
       success: {
         title: 'Sample data added!',
-        getDescription: (r: any) =>
-          r?.added
-            ? `${r.kidsCount} kids, ${r.choresCount} chores`
-            : r?.message || 'Your family already has data.',
+        getDescription: (r) => {
+          const result = r as { added?: boolean; kidsCount?: number; choresCount?: number; message?: string } | undefined
+          if (!result) return undefined
+          return result.added
+            ? `${result.kidsCount ?? 0} kids, ${result.choresCount ?? 0} chores`
+            : result.message || 'Your family already has data.'
+        },
       },
       error: { title: 'Failed to add sample data' },
     }

@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
-import { signOut } from 'next-auth/react'
 
 /**
  * Permanently delete the current user's account, family, and all
