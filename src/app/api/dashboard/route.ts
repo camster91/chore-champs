@@ -19,9 +19,10 @@ export async function GET(request: Request) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    // Optimization: Removed include for choreAssignments
+    // since we fetch today's assignments separately and the full history is not needed here.
     const kid = await prisma.kid.findFirst({
-      where: { id: kidId, familyId: auth.familyId },
-      include: { choreAssignments: true }
+      where: { id: kidId, familyId: auth.familyId }
     })
 
     if (!kid) return notFound('Kid not found')
