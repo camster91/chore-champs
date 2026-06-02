@@ -190,6 +190,25 @@ export default function DashboardPage() {
               {translate('dashboard.addSampleData')}
             </Button>
           </div>
+
+          {/* 3-step explainer — gives a new user context beyond the two CTAs */}
+          <ol className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
+            <li className="rounded-xl bg-white/60 p-4 border border-gray-100">
+              <span className="inline-flex w-7 h-7 rounded-full bg-purple-100 text-purple-600 items-center justify-center font-bold text-sm mb-2">1</span>
+              <p className="font-semibold text-sm text-gray-800">Add your kids</p>
+              <p className="text-xs text-gray-500 mt-1">One profile per child. Each gets their own points, chores, and avatar.</p>
+            </li>
+            <li className="rounded-xl bg-white/60 p-4 border border-gray-100">
+              <span className="inline-flex w-7 h-7 rounded-full bg-purple-100 text-purple-600 items-center justify-center font-bold text-sm mb-2">2</span>
+              <p className="font-semibold text-sm text-gray-800">Create chores</p>
+              <p className="text-xs text-gray-500 mt-1">Daily, weekly, or one-time. Set point values for the reward kids earn.</p>
+            </li>
+            <li className="rounded-xl bg-white/60 p-4 border border-gray-100">
+              <span className="inline-flex w-7 h-7 rounded-full bg-purple-100 text-purple-600 items-center justify-center font-bold text-sm mb-2">3</span>
+              <p className="font-semibold text-sm text-gray-800">Approve & reward</p>
+              <p className="text-xs text-gray-500 mt-1">Kids mark chores done. You approve. They spend points in the reward shop.</p>
+            </li>
+          </ol>
         </div>
 
         <Modal isOpen={isAddKidModalOpen} onClose={() => setIsAddKidModalOpen(false)} title={translate('dashboard.addChild')}>

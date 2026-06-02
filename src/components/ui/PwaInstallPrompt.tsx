@@ -24,13 +24,44 @@ export function PwaInstallPrompt() {
   const isIOS = getIsIOS()
   const isStandalone = getIsStandalone()
 
+  // Persist the user's "no thanks" so we never pester them again.
+  // They can re-enable install via the browser's native install menu.
+  const DISMISS_KEY = 'cc-pwa-install-dismissed-at'
+  const wasRecentlyDismissed = (): boolean => {
+    if (typeof window === 'undefined') return false
+    try {
+      const ts = window.localStorage.getItem(DISMISS_KEY)
+      if (!ts) return false
+      // Remind again in 30 days
+      return Date.now() - Number(ts) < 30 * 24 * 60 * 60 * 1000
+    } catch {
+      return false
+    }
+  }
+  const dismissFor30Days = () => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(DISMISS_KEY, String(Date.now()))
+    } catch {
+      // localStorage disabled; just hide for this session
+    }
+  }
+
   useEffect(() => {
     if (isStandalone) return
+    if (wasRecentlyDismissed()) return
+
+    // Auto-dismiss after 12s if the user doesn't interact.
+    let autoDismiss: ReturnType<typeof setTimeout> | null = null
+    const showAndArmAuto = () => {
+      setShowPrompt(true)
+      autoDismiss = setTimeout(() => setShowPrompt(false), 12000)
+    }
 
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      const t = setTimeout(() => setShowPrompt(true), 3000)
+      const t = setTimeout(showAndArmAuto, 3000)
       return () => clearTimeout(t)
     }
 
@@ -38,12 +69,13 @@ export function PwaInstallPrompt() {
 
     let t: ReturnType<typeof setTimeout> | null = null
     if (isIOS) {
-      t = setTimeout(() => setShowPrompt(true), 5000)
+      t = setTimeout(showAndArmAuto, 5000)
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler)
       if (t) clearTimeout(t)
+      if (autoDismiss) clearTimeout(autoDismiss)
     }
   }, [isIOS, isStandalone])
 
@@ -91,13 +123,24 @@ export function PwaInstallPrompt() {
                     Add to Home
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => setShowPrompt(false)} className="text-xs px-2 py-1 h-auto">
-                  Later
-                </Button>
+                <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  dismissFor30Days()
+                  setShowPrompt(false)
+                }}
+                className="text-xs px-2 py-1 h-auto"
+              >
+                Later
+              </Button>
               </div>
             </div>
             <button
-              onClick={() => setShowPrompt(false)}
+              onClick={() => {
+                dismissFor30Days()
+                setShowPrompt(false)
+              }}
               className="flex-shrink-0 p-0.5 hover:bg-gray-100 rounded"
               aria-label="Dismiss install prompt"
             >

@@ -23,6 +23,9 @@ import {
   createFamilyInvite 
 } from '@/actions/invites'
 import { useAudio } from '@/lib/audio-context'
+import { deleteAccount } from '@/actions/account'
+import { signOut } from 'next-auth/react'
+import { AlertTriangle } from 'lucide-react'
 
 interface PendingInvite {
   id: string
@@ -41,6 +44,10 @@ export default function SettingsPage() {
   const [isSending, setIsSending] = useState(false)
   const [inviteResult, setInviteResult] = useState<{ message: string; inviteUrl?: string; direct?: boolean } | null>(null)
   const [copied, setCopied] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   
   // Notification settings
   const [pushEnabled, setPushEnabled] = useState(false)
@@ -134,6 +141,26 @@ export default function SettingsPage() {
     if (permission === 'granted') {
       const { subscribeToPush } = await import('@/lib/push-notifications')
       await subscribeToPush()
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError(null)
+    setIsDeleting(true)
+    try {
+      const result = await deleteAccount(deleteConfirmEmail)
+      if (result.success) {
+        setShowDeleteModal(false)
+        // Sign out and redirect to landing. The session cookie is now
+        // invalid because the Parent row was deleted.
+        await signOut({ callbackUrl: '/?deleted=1' })
+      } else {
+        setDeleteError(result.error || 'Delete failed')
+      }
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -379,8 +406,90 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Danger Zone — permanent account deletion */}
+          <Card className="border-2 border-red-200 bg-red-50/30">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-red-700 mb-1">Danger Zone</h2>
+                  <p className="text-sm text-gray-700 mb-3">
+                    Permanently delete your account, family, and all associated data — kids, chores, habits, rewards, invites. This action cannot be undone.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                    onClick={() => setShowDeleteModal(true)}
+                    leftIcon={<Trash2 className="w-4 h-4" />}
+                  >
+                    Delete my account
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
+
+      {/* Delete Account Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          if (!isDeleting) {
+            setShowDeleteModal(false)
+            setDeleteConfirmEmail('')
+            setDeleteError(null)
+          }
+        }}
+        title="Delete your account?"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+            <strong>This is permanent.</strong> All your family&apos;s data will be erased. There is no undo and no recovery.
+          </div>
+          <p className="text-sm text-gray-700">
+            To confirm, type your email address below:
+          </p>
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={deleteConfirmEmail}
+            onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+            autoComplete="off"
+          />
+          {deleteError && (
+            <p className="text-sm text-red-600">{deleteError}</p>
+          )}
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="ghost"
+              className="flex-1"
+              onClick={() => {
+                setShowDeleteModal(false)
+                setDeleteConfirmEmail('')
+                setDeleteError(null)
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || !deleteConfirmEmail}
+            >
+              {isDeleting ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Deleting...</>
+              ) : (
+                'Yes, delete everything'
+              )}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Invite Modal */}
       <Modal isOpen={showInviteModal} onClose={() => { setShowInviteModal(false); setInviteResult(null) }} title="Invite Family Member">
