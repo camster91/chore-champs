@@ -78,7 +78,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toasts, toast, dismiss, dismissAll }}>
       {children}
       <div
-        className="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+        className="fixed top-4 right-4 z-[200] flex flex-col gap-2 max-w-sm w-full pointer-events-none"
         aria-live="polite"
         aria-label="Notifications"
       >
@@ -136,4 +136,65 @@ export function tryOrToast<T>(
     })
     return undefined
   })
+}
+
+/**
+ * useServerAction — wraps any server-action call with unified loading,
+ * success, and error toast feedback. Replaces the duplicated try/catch +
+ * manual toast blocks that were scattered across pages.
+ *
+ * Usage:
+ *   const run = useServerAction(addSampleData, {
+ *     success: { title: 'Sample data added!', getDescription: (r) => r?.message },
+ *     error: { title: 'Failed to add sample data' },
+ *   })
+ *   await run()  // fires the action, shows toasts automatically
+ */
+export function useServerAction<TArgs extends unknown[], TResult>(
+  action: (...args: TArgs) => Promise<TResult>,
+  options: {
+    success?:
+      | { title: string; description?: string; getDescription?: (result: TResult) => string | undefined }
+      | false
+    error?: { title?: string; getMessage?: (err: unknown) => string }
+  } = {}
+) {
+  const { toast } = useToast()
+  const [isPending, setIsPending] = useState(false)
+
+  const run = useCallback(
+    async (...args: TArgs): Promise<TResult | undefined> => {
+      setIsPending(true)
+      try {
+        const result = await action(...args)
+        if (options.success !== false) {
+          const desc =
+            options.success?.description ??
+            options.success?.getDescription?.(result) ??
+            undefined
+          toast({
+            title: options.success?.title ?? 'Done',
+            description: desc,
+            variant: 'success',
+          })
+        }
+        return result
+      } catch (err) {
+        const msg =
+          options.error?.getMessage?.(err) ??
+          (err instanceof Error ? err.message : String(err))
+        toast({
+          title: options.error?.title ?? 'Something went wrong',
+          description: msg,
+          variant: 'error',
+        })
+        return undefined
+      } finally {
+        setIsPending(false)
+      }
+    },
+    [action, toast, options]
+  )
+
+  return { run, isPending }
 }

@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Badge, Modal, Input } from '@/components/ui'
+import { Card, CardContent, Button, Badge, Modal, Input, useServerAction } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
 import { cn, calculateLevel } from '@/lib/utils'
@@ -97,33 +97,35 @@ export default function ChoresPage() {
     )
   }
 
+  const { run: runCreateChore, isPending: isCreatingChore } = useServerAction(
+    createChore,
+    {
+      success: { title: 'Chore created!' },
+      error: { title: 'Failed to create chore' },
+    }
+  )
+
   const handleCreateChore = async () => {
     if (!newChore.title) return
-    setIsSubmitting(true)
-    try {
-      await createChore({
-        title: newChore.title,
-        description: newChore.description,
-        basePoints: newChore.points,
-        assignToKids: [currentKid.id],
-        icon: 'star',
-        difficulty: 'EASY'
-      })
+    const result = await runCreateChore({
+      title: newChore.title,
+      description: newChore.description,
+      basePoints: newChore.points,
+      assignToKids: [currentKid.id],
+      icon: 'star',
+      difficulty: 'EASY'
+    })
+    if (!result) return // hook already toasted the error
 
-      mutate(`chores-${currentKid.id}`)
-      setIsAddModalOpen(false)
-      setNewChore({ title: '', description: '', points: 10 })
-      play('pop')
+    mutate(`chores-${currentKid.id}`)
+    setIsAddModalOpen(false)
+    setNewChore({ title: '', description: '', points: 10 })
+    play('pop')
 
-      trackEvent(EVENTS.CHORE_CREATED, {
-        title: newChore.title,
-        points: newChore.points,
-      })
-    } catch (error) {
-      console.error('Failed to create chore:', error)
-    } finally {
-      setIsSubmitting(false)
-    }
+    trackEvent(EVENTS.CHORE_CREATED, {
+      title: newChore.title,
+      points: newChore.points,
+    })
   }
 
   const handleCompleteChore = async (chore: UIChore) => {
@@ -253,7 +255,7 @@ export default function ChoresPage() {
               ))}
             </div>
           </div>
-          <Button className="w-full mt-4" onClick={handleCreateChore} disabled={isSubmitting}>{isSubmitting ? translate('chores.creating') : translate('chores.createChore')}</Button>
+          <Button className="w-full mt-4" onClick={handleCreateChore} disabled={isCreatingChore}>{isCreatingChore ? translate('chores.creating') : translate('chores.createChore')}</Button>
         </div>
       </Modal>
     </div>

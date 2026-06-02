@@ -19,7 +19,7 @@ export type { ModalProps } from './Modal'
 export { Progress, CircularProgress } from './Progress'
 export type { ProgressProps, CircularProgressProps } from './Progress'
 
-export { ToastProvider, useToast, tryOrToast } from './Toast'
+export { ToastProvider, useToast, tryOrToast, useServerAction } from './Toast'
 export type { Toast, ToastVariant } from './Toast'
 
 export { ErrorState } from './ErrorState'

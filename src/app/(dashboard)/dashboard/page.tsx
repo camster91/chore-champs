@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Star, CheckCircle, Clock, Loader2, Sparkles, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Modal, Input, useToast } from '@/components/ui'
+import { Card, CardContent, Button, Modal, Input, useServerAction } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { cn } from '@/lib/utils'
 import { getKids, createKid } from '@/actions/kids'
@@ -40,8 +40,6 @@ export default function DashboardPage() {
   const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [newKid, setNewKid] = useState({ name: '', age: '' })
-  const [loadingKids, setLoadingKids] = useState(false)
-  const { toast } = useToast()
 
   useEffect(() => {
     initI18n()
@@ -113,43 +111,49 @@ export default function DashboardPage() {
       setTimeout(() => setShowConfetti(false), 2000)
       loadChores()
     } catch (e) {
+      // Surfaced via the global error boundary toast; logged for debugging.
       console.error('Failed to complete chore:', e)
     }
   }
 
-  const handleAddKid = async () => {
-    if (!newKid.name || !newKid.age || loadingKids) return
-    setLoadingKids(true)
-    try {
-      await createKid({ name: newKid.name, age: parseInt(newKid.age) })
-      setIsAddKidModalOpen(false)
-      setNewKid({ name: '', age: '' })
-      toast({ title: `${newKid.name} added!`, variant: 'success', duration: 3000 })
-      await loadKids()
-      await loadChores()
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Please try again'
-      toast({ title: 'Failed to add kid', description: msg, variant: 'error' })
-      console.error('Failed to add kid:', e)
-    } finally {
-      setLoadingKids(false)
+  // Wire server actions through the unified feedback hook so failures always
+  // surface to the user instead of failing silently.
+  const { run: runAddSampleData, isPending: isAddingSample } = useServerAction(
+    addSampleData,
+    {
+      success: {
+        title: 'Sample data added!',
+        getDescription: (r: any) =>
+          r?.added
+            ? `${r.kidsCount} kids, ${r.choresCount} chores`
+            : r?.message || 'Your family already has data.',
+      },
+      error: { title: 'Failed to add sample data' },
     }
-  }
+  )
 
   const handleAddSampleData = async () => {
-    try {
-      const result = await addSampleData()
-      if (result?.added) {
-        toast({ title: 'Sample data added!', description: `${result.kidsCount} kids, ${result.choresCount} chores`, variant: 'success', duration: 4000 })
-      } else {
-        toast({ title: 'Sample data not added', description: result?.message || 'Your family already has data.', variant: 'warning', duration: 4000 })
-      }
+    await runAddSampleData()
+    await loadKids()
+    await loadChores()
+  }
+
+  const { run: runCreateKid, isPending: isCreatingKid } = useServerAction(
+    createKid,
+    {
+      success: { title: 'Added!' },
+      error: { title: 'Failed to add kid' },
+    }
+  )
+
+  const handleAddKid = async () => {
+    if (!newKid.name || !newKid.age || isCreatingKid) return
+    const result = await runCreateKid({ name: newKid.name, age: parseInt(newKid.age) })
+    if (result) {
+      setIsAddKidModalOpen(false)
+      setNewKid({ name: '', age: '' })
       await loadKids()
       await loadChores()
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Please try again'
-      toast({ title: 'Failed to add sample data', description: msg, variant: 'error' })
-      console.error('Failed to add sample data:', e)
     }
   }
 
@@ -182,7 +186,7 @@ export default function DashboardPage() {
             <Button onClick={() => setIsAddKidModalOpen(true)} leftIcon={<Plus className="w-5 h-5" />}>
               {translate('dashboard.addFirstKid')}
             </Button>
-            <Button variant="outline" onClick={handleAddSampleData}>
+            <Button variant="outline" onClick={handleAddSampleData} disabled={isAddingSample}>
               {translate('dashboard.addSampleData')}
             </Button>
           </div>
@@ -192,8 +196,8 @@ export default function DashboardPage() {
           <div className="space-y-4">
             <Input id="add-kid-name" label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
             <Input id="add-kid-age" label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
-            <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
-              {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
+            <Button className="w-full" onClick={handleAddKid} disabled={isCreatingKid}>
+              {isCreatingKid ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
             </Button>
           </div>
         </Modal>
@@ -264,7 +268,7 @@ export default function DashboardPage() {
             <CardContent className="p-8 text-center">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
               <p className="text-gray-500">{translate('dashboard.noChoresYet')}</p>
-              <Button variant="outline" className="mt-4" onClick={handleAddSampleData}>{translate('dashboard.addSampleData')}</Button>
+              <Button variant="outline" className="mt-4" onClick={handleAddSampleData} disabled={isAddingSample}>{translate('dashboard.addSampleData')}</Button>
             </CardContent>
           </Card>
         ) : (
@@ -338,8 +342,8 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <Input id="add-kid-name" label={translate('common.name') || 'Name'} value={newKid.name} onChange={(e) => setNewKid({ ...newKid, name: e.target.value })} placeholder={translate('common.name') || 'Enter name'} />
           <Input id="add-kid-age" label={translate('common.age') || 'Age'} type="number" value={newKid.age} onChange={(e) => setNewKid({ ...newKid, age: e.target.value })} placeholder={translate('common.age') || 'Enter age'} />
-          <Button className="w-full" onClick={handleAddKid} disabled={loadingKids}>
-            {loadingKids ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
+          <Button className="w-full" onClick={handleAddKid} disabled={isCreatingKid}>
+            {isCreatingKid ? <Loader2 className="w-5 h-5 animate-spin" /> : translate('common.add')}
           </Button>
         </div>
       </Modal>
