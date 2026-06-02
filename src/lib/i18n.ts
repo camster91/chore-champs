@@ -166,8 +166,8 @@ export function getLocalizedSampleData(locale: Locale = 'en') {
   const tl = (k: string) => t(k, locale);
   return {
     kids: [
-      { name: 'Emma', age: 7, emoji: '🌟' },
-      { name: 'Noah', age: 5, emoji: '🚀' },
+      { name: 'Emma', age: 7, avatarId: 'star' },
+      { name: 'Noah', age: 5, avatarId: 'rocket' },
     ],
     chores: [
       { title: tl('dashboard.todaysChores') + ': Make Bed', description: 'Make your bed every morning', basePoints: 5, icon: '🛏️', difficulty: 'EASY' as const, key: 'make_bed' },

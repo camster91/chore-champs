@@ -105,3 +105,28 @@ export function isSameDay(a: Date, b: Date): boolean {
     a.getFullYear() === b.getFullYear()
   )
 }
+
+// Map a kid's avatarId to a display emoji.
+// avatarId can be:
+//   - empty/undefined → fallback emoji
+//   - "default" (schema default for new kids) → fallback emoji (not the literal "default")
+//   - a known avatar ID (star, rocket, unicorn, robot, cat, dog, dinosaur, dragon)
+//   - a purchased avatar ID from the avatar shop (handled separately)
+const KID_AVATAR_EMOJI: Record<string, string> = {
+  star: '⭐',
+  rocket: '🚀',
+  unicorn: '🦄',
+  robot: '🤖',
+  cat: '🐱',
+  dog: '🐶',
+  dinosaur: '🦕',
+  dragon: '🐉',
+}
+
+export function kidAvatarEmoji(avatarId: string | null | undefined, fallback: string = '👧'): string {
+  if (!avatarId || avatarId === 'default') return fallback
+  // If it looks like a comma-separated list of purchased item IDs, fall through
+  // (callers handling the avatar shop should use AVATAR_ITEMS lookup instead).
+  if (avatarId.includes(',')) return fallback
+  return KID_AVATAR_EMOJI[avatarId] || fallback
+}
