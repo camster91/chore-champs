@@ -113,6 +113,7 @@ export const translations = {
       creating: "Creating...",
       descriptionOptional: "Description (Optional)",
       eGCleanBedroom: "e.g. Clean Bedroom",
+      suggestedChores: "Suggested Chores",
       goToProfiles: "Go to Profiles",
       noChoresYetCreate: "No chores yet",
       pointsReward: "Points Reward",
