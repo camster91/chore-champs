@@ -43,11 +43,17 @@ export const metadata: Metadata = {
     images: ['/og-image.png'],
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'ChoreChamps - Make Chores Fun!',
     description: 'A fun, gamified chore and habit tracker for kids.',
     images: ['/og-image.png'],
   },
+  alternates: {
+    canonical: '/',
+  },
+  applicationName: 'ChoreChamps',
+  category: 'productivity',
+  keywords: ['chores', 'kids', 'family', 'gamified', 'habit tracker', 'rewards', 'parenting'],
 }
 
 export const viewport: Viewport = {
@@ -67,6 +73,26 @@ export default function RootLayout({
     <html lang="en" className={`${spaceGrotesk.variable} ${nunito.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebApplication',
+              name: 'ChoreChamps',
+              url: 'https://chores.ashbi.ca',
+              description: 'A fun, gamified chore and habit tracker for kids. Turn household responsibilities into exciting adventures with points, rewards, and family goals!',
+              applicationCategory: 'LifestyleApplication',
+              operatingSystem: 'Any (PWA)',
+              offers: {
+                '@type': 'Offer',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              author: { '@type': 'Organization', name: 'Ashbi Design' },
+            }),
+          }}
+        />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ChoreChamps" />
