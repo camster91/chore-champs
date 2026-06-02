@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   const userId = session.user.id
-  const { allowed, retryAfter } = checkRateLimit(userId, 'invite-create', 10, 15 * 60 * 1000)
+  const { allowed, retryAfter } = await checkRateLimit(userId, 'invite-create', 10, 15 * 60 * 1000)
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many attempts. Try again later.' },

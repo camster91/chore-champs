@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const email = credentials.email.toLowerCase().trim()
-        const { allowed } = checkRateLimit(email, 'login', 5, 15 * 60 * 1000)
+        const { allowed } = await checkRateLimit(email, 'login', 5, 15 * 60 * 1000)
         if (!allowed) {
           throw new Error('Too many login attempts. Please try again in 15 minutes.')
         }

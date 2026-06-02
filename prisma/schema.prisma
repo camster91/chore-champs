@@ -304,3 +304,20 @@ model RecoveryCode {
   @@index([parentId])
   @@index([codeHash])
 }
+
+// Persistent rate-limit counter. Replaces the in-memory Map that previously
+// reset on every container restart, which let an attacker bypass limits by
+// waiting for deploys. Each (identifier, action) pair keeps a rolling
+// window; a cleanup query prunes expired rows.
+model RateLimit {
+  id         String   @id @default(cuid())
+  identifier String   // IP, email, user id, etc.
+  action     String   // 'login', 'register', 'forgot-password', etc.
+  count      Int      @default(1)
+  resetAt    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, action])
+  @@index([resetAt])
+}

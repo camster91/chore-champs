@@ -15,6 +15,13 @@ export interface Kid {
 interface KidState {
   currentKid: Kid | null
   kids: Kid[]
+  /**
+   * Identifier of the user session this store was populated for. Used to
+   * detect cross-user contamination (two users on the same browser) — if
+   * the persisted hash on load differs from the current session hash,
+   * the persisted state is discarded and the store starts fresh.
+   */
+  sessionHash: string | null
 
   setCurrentKid: (kid: Kid | null) => void
   setKids: (kids: Kid[]) => void
@@ -22,6 +29,8 @@ interface KidState {
   updateKid: (kidId: string, updates: Partial<Kid>) => void
   removeKid: (kidId: string) => void
   syncFromServer: (kids: Kid[]) => void
+  setSessionHash: (hash: string | null) => void
+  clearStore: () => void
 }
 
 export const useKidStore = create<KidState>()(
@@ -29,6 +38,7 @@ export const useKidStore = create<KidState>()(
     (set, get) => ({
       currentKid: null,
       kids: [],
+      sessionHash: null,
 
       setCurrentKid: (kid) => set({ currentKid: kid }),
 
@@ -53,9 +63,23 @@ export const useKidStore = create<KidState>()(
       removeKid: (kidId) =>
         set((state) => ({
           kids: state.kids.filter((k) => k.id !== kidId),
-          currentKid:
-            state.currentKid?.id === kidId ? null : state.currentKid,
+          currentKid: state.currentKid?.id === kidId ? null : state.currentKid,
         })),
+
+      setSessionHash: (hash) => set({ sessionHash: hash }),
+
+      // Wipe all kid state. Used on logout and on session-hash mismatch.
+      // Also removes the localStorage entry so the next user starts clean.
+      clearStore: () => {
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.removeItem('kids-chore-kid')
+          } catch {
+            // localStorage may be disabled in some browsers; safe to ignore
+          }
+        }
+        set({ currentKid: null, kids: [], sessionHash: null })
+      },
 
       // Sync local store with server data, auto-selecting first kid if none selected
       syncFromServer: (serverKids) => {
@@ -93,6 +117,7 @@ export const useKidStore = create<KidState>()(
       partialize: (state) => ({
         currentKid: state.currentKid,
         kids: state.kids,
+        sessionHash: state.sessionHash,
       }),
     }
   )

@@ -11,7 +11,7 @@ type Props = {
 
 export async function POST(request: Request, { params }: Props) {
   const ip = getClientIp(request)
-  const { allowed, retryAfter } = checkRateLimit(ip, 'invite-accept', 10, 15 * 60 * 1000)
+  const { allowed, retryAfter } = await checkRateLimit(ip, 'invite-accept', 10, 15 * 60 * 1000)
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many attempts. Try again later.' },

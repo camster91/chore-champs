@@ -37,12 +37,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
-  const { currentKid } = useKidStore()
+  const { currentKid, setSessionHash, clearStore } = useKidStore()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
+  // Persist the kid store per-session. If the persisted sessionHash on
+  // load differs from the current session (e.g. user signed out and a
+  // different user signed in on the same browser), wipe the store so we
+  // don't leak the previous user's kids.
   useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const userId = session.user.id || session.user.email || 'unknown'
+      const state = useKidStore.getState()
+      if (state.sessionHash && state.sessionHash !== userId) {
+        state.clearStore()
+      }
+      state.setSessionHash(userId)
+    }
     if (status === 'unauthenticated') router.push('/login')
-  }, [status, router])
+  }, [status, router, session])
 
   if (status === 'loading') return (
     <div className="min-h-screen flex items-center justify-center">
@@ -106,7 +118,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className="p-4 border-t">
-          <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => signOut({ callbackUrl: '/login' })} leftIcon={<LogOut className="w-4 h-4" />}>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+            onClick={() => {
+              clearStore()
+              signOut({ callbackUrl: '/login' })
+            }}
+            leftIcon={<LogOut className="w-4 h-4" />}
+          >
             Sign Out
           </Button>
         </div>
