@@ -241,7 +241,7 @@ export default function ChoresPage() {
             </div>
           </div>
 
-          <Input label={translate('chores.choreName')} placeholder={translate('chores.e.gCleanBedroom')} value={newChore.title} onChange={e => setNewChore({ ...newChore, title: e.target.value })} />
+          <Input label={translate('chores.choreName')} placeholder={translate('chores.eGCleanBedroom')} value={newChore.title} onChange={e => setNewChore({ ...newChore, title: e.target.value })} />
           <Input label={translate('chores.descriptionOptional')} placeholder={translate('chores.tidyUpToys')} value={newChore.description} onChange={e => setNewChore({ ...newChore, description: e.target.value })} />
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-gray-700">{translate('chores.pointsReward')}</label>

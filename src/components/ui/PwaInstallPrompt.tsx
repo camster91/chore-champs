@@ -70,43 +70,38 @@ export function PwaInstallPrompt() {
           initial={{ opacity: 0, y: 80 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 80 }}
-          className="fixed bottom-4 left-4 right-4 z-50 max-w-md mx-auto"
+          className="fixed bottom-4 right-4 z-50 max-w-xs"
         >
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-4 flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
-              <Download className="w-5 h-5 text-white" />
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-3 flex items-start gap-2">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-secondary)] flex items-center justify-center">
+              <Download className="w-4 h-4 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-gray-900 text-sm">
+              <p className="font-semibold text-gray-900 text-xs">
                 Install ChoreChamps
               </p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {isIOS
-                  ? 'Tap the Share button then "Add to Home Screen"'
-                  : 'Get quick access on your home screen'}
-              </p>
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-1.5 mt-1.5">
                 {!isIOS && deferredPrompt && (
-                  <Button size="sm" onClick={handleInstall}>
+                  <Button size="sm" onClick={handleInstall} className="text-xs px-2 py-1 h-auto">
                     Install
                   </Button>
                 )}
                 {isIOS && (
-                  <Button size="sm" variant="outline" disabled leftIcon={<Smartphone className="w-4 h-4" />}>
-                    Add to Home Screen
+                  <Button size="sm" variant="outline" disabled leftIcon={<Smartphone className="w-3 h-3" />} className="text-xs px-2 py-1 h-auto">
+                    Add to Home
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => setShowPrompt(false)}>
-                  Maybe later
+                <Button size="sm" variant="ghost" onClick={() => setShowPrompt(false)} className="text-xs px-2 py-1 h-auto">
+                  Later
                 </Button>
               </div>
             </div>
             <button
               onClick={() => setShowPrompt(false)}
-              className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-lg"
+              className="flex-shrink-0 p-0.5 hover:bg-gray-100 rounded"
               aria-label="Dismiss install prompt"
             >
-              <X className="w-4 h-4 text-gray-400" />
+              <X className="w-3 h-3 text-gray-400" />
             </button>
           </div>
         </motion.div>

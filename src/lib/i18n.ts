@@ -7,7 +7,7 @@ export const translations = {
       ctaPrimary: "Get Started",
       ctaSecondary: "Learn More",
       ctaCreate: "Create Free Account",
-      ctaJoin: "Join thousands of families making chores fun!",
+      ctaJoin: "Join families making chores fun every day.",
       ctaLogIn: "Log In",
       ctaReady: "Ready to become a ChoreChamp?",
       ctaStart: "Start",
@@ -16,7 +16,7 @@ export const translations = {
       trackChores: "Track Chores",
       trackChoresDesc: "Make daily chores fun with colorful cards and satisfying check-offs!",
       earnPoints: "Earn Points",
-      earnPointsDesc: "Complete tasks to earn coins and climb the leaderboard!",
+      earnPointsDesc: "Complete tasks to earn stars and climb the leaderboard!",
       winBadges: "Win Badges",
       winBadgesDesc: "Unlock cool achievements and show off your progress!",
       buildStreaks: "Build Streaks",
@@ -166,8 +166,8 @@ export function getLocalizedSampleData(locale: Locale = 'en') {
   const tl = (k: string) => t(k, locale);
   return {
     kids: [
-      { name: 'Emma', age: 7, avatarId: 'star' },
-      { name: 'Noah', age: 5, avatarId: 'rocket' },
+      { name: 'Emma', age: 7, avatarId: '🌟' },
+      { name: 'Noah', age: 5, avatarId: '🚀' },
     ],
     chores: [
       { title: tl('dashboard.todaysChores') + ': Make Bed', description: 'Make your bed every morning', basePoints: 5, icon: '🛏️', difficulty: 'EASY' as const, key: 'make_bed' },

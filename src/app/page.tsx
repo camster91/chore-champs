@@ -66,7 +66,7 @@ export default function LandingPage() {
             <Link href="/signup" className="inline-flex items-center justify-center font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 gap-2 px-8 py-4 text-xl bg-[var(--color-primary)] text-white hover:opacity-90 focus:ring-[var(--color-primary)]">
               {t('landing.ctaPrimary')} <ArrowRight className="w-5 h-5" />
             </Link>
-            <Link href="/login" className="inline-flex items-center justify-center font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 gap-2 px-8 py-4 text-xl border-2 border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white">
+            <Link href="#features" className="inline-flex items-center justify-center font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 gap-2 px-8 py-4 text-xl border-2 border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white">
               {t('landing.ctaSecondary')}
             </Link>
           </motion.div>
@@ -103,7 +103,8 @@ export default function LandingPage() {
         </div>
 
         {/* Features */}
-        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-24" initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:1.2 }}>
+        <section id="features" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-24 scroll-mt-8" aria-labelledby="features-title">
+          <h2 id="features-title" className="sr-only">{t('landing.featuresTitle')}</h2>
           {features.map((f,i)=> (
             <motion.div key={f.title} className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow"
               initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay: 1.2+i*0.1 }} whileHover={{ y:-5 }}>
@@ -114,7 +115,7 @@ export default function LandingPage() {
               <p className="text-gray-500 text-sm">{t(f.desc)}</p>
             </motion.div>
           ))}
-        </motion.div>
+        </section>
 
         {/* CTA */}
         <motion.div className="text-center mt-24" initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:1.6 }}>
