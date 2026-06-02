@@ -128,8 +128,8 @@ export default function AvatarShopPage() {
             <p className="text-white/80 text-sm">Current Avatar</p>
             <p className="text-5xl mt-1">
               {equipped
-                ? AVATAR_ITEMS.find(i => i.id === equipped)?.emoji || currentKid.avatarId || '👧'
-                : currentKid.avatarId || '👧'}
+                ? AVATAR_ITEMS.find(i => i.id === equipped)?.emoji || '👧'
+                : '👧'}
             </p>
             {equipped && (
               <p className="text-white/80 text-sm mt-1">

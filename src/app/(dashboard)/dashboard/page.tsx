@@ -24,6 +24,15 @@ interface DashboardChore {
   icon: string
 }
 
+// avatarId field is overloaded: it's used both for an emoji (legacy) and for
+// a comma-separated list of purchased avatar-shop item IDs. Only treat it as
+// a display emoji if it actually looks like one.
+function isEmojiString(value: string | null | undefined): boolean {
+  if (!value) return false
+  // 1-4 chars, all in the emoji unicode block (incl. variation selectors + ZWJ)
+  return /^[\p{Extended_Pictographic}\u200D\uFE0F]{1,4}$/u.test(value)
+}
+
 export default function DashboardPage() {
   const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
   const [chores, setChores] = useState<DashboardChore[]>([])
@@ -209,7 +218,7 @@ export default function DashboardPage() {
                 : 'bg-white text-gray-700 hover:bg-gray-50'
             )}
           >
-            <span className="text-xl">{kid.avatarId || '👧'}</span>
+            <span className="text-xl">{isEmojiString(kid.avatarId) ? kid.avatarId : '👧'}</span>
             <span className="font-medium">{kid.name}</span>
           </button>
         ))}

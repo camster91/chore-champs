@@ -10,6 +10,13 @@ import { getChores } from '@/actions/chores'
 import { getWeeklySummary } from '@/actions/weeklySummary'
 import WeeklyConsistency from '@/components/WeeklyConsistency'
 
+// avatarId is overloaded: emoji string OR comma-separated purchased-item IDs.
+// Only treat as a display emoji if it actually looks like one.
+function isEmojiString(value: string | null | undefined): boolean {
+  if (!value) return false
+  return /^[\p{Extended_Pictographic}\u200D\uFE0F]{1,4}$/u.test(value)
+}
+
 const LEVELS = [
   { level: 1, minPoints: 0, title: 'Beginner', icon: '🌱' },
   { level: 2, minPoints: 50, title: 'Helper', icon: '🤝' },
@@ -82,7 +89,7 @@ export default function ProfilePage() {
           >
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl">
-                {currentKid.avatarId || '🧒'}
+                {isEmojiString(currentKid.avatarId) ? currentKid.avatarId : '🧒'}
               </div>
               <div>
                 <h1 className="text-2xl font-bold">{currentKid.name}</h1>
@@ -131,7 +138,7 @@ export default function ProfilePage() {
                         kid.id === currentKid.id ? 'bg-purple-100 border-2 border-purple-500' : 'bg-gray-50 hover:bg-gray-100'
                       }`}
                     >
-                      <span className="text-2xl">{kid.avatarId || '🧒'}</span>
+                      <span className="text-2xl">{isEmojiString(kid.avatarId) ? kid.avatarId : '🧒'}</span>
                       <span className="font-medium">{kid.name}</span>
                       {kid.id === currentKid.id && <span className="ml-auto text-purple-600 font-medium">{translate('profile.active')}</span>}
                     </button>
