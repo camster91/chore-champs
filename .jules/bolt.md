@@ -1,3 +1,7 @@
 ## 2024-05-18 - Prevent Unbounded Relational Over-fetching in Prisma Queries
 **Learning:** Prisma queries that `include` large, unbounded one-to-many relationships (like logs, histories, or assignments) can cause significant backend performance and memory bottlenecks if that data isn't actually returned to the client or used in business logic. In `getKids`, the database was tasked with retrieving and serializing all historical chore assignments and habit logs for every child on every page load, only for the application to immediately discard that data before returning the array of `Kid` profiles to the client.
 **Action:** Always verify if `include` relations in Prisma queries are actually mapped or consumed by the returned object, and remove them if they are silently discarded to prevent hidden O(N) memory scaling issues as user histories grow.
+
+## 2026-06-03 - Prevent Unbounded Relational Over-fetching in Prisma API Endpoints
+**Learning:** Similar to `getKids`, API endpoints like `/api/kids` and `/api/dashboard` were using `include` for large, unbounded one-to-many relationships (`choreAssignments`, `habitLogs`). This relational data is not used by the client-side store when fetching basic kid profiles, leading to hidden O(N) memory scaling issues as user histories grow.
+**Action:** Strip unused `include` relations in Prisma queries on API endpoints returning basic model data to avoid unbounded memory usage.
