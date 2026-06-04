@@ -5,6 +5,25 @@ import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 
+// ⚡ Bolt Optimization: Added dedicated server action for counting completed chores
+// This replaces an inefficient pattern where the entire history of a family's chores
+// and assignments were fetched into memory just to filter and count them on the client.
+// Using a database-level COUNT reduces memory overhead, network transfer, and DB load.
+export async function getCompletedChoresCount(kidId: string): Promise<number> {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  return await prisma.choreAssignment.count({
+    where: {
+      kidId,
+      status: 'COMPLETED',
+      kid: { familyId: session.user.familyId }
+    }
+  })
+}
+
 export async function getChores() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
