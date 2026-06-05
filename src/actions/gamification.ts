@@ -12,12 +12,9 @@ export async function processGamification(kidId: string) {
   }
 
   const kid = await prisma.kid.findUnique({
-    where: { id: kidId },
-    include: {
-      choreAssignments: {
-        where: { status: 'COMPLETED' }
-      }
-    }
+    where: { id: kidId }
+    // Bolt Optimization: removed unused 'include' fetching of unbounded choreAssignments
+    // to prevent memory scaling issues.
   })
 
   if (!kid) {

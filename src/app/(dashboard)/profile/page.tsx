@@ -6,7 +6,7 @@ import { Trophy, Settings } from 'lucide-react'
 import { Card, CardContent, Button, ProfileCardSkeleton, Skeleton, useToast } from '@/components/ui'
 import { useKidStore } from '@/stores/kid-store'
 import { initI18n, t as translate } from '@/lib/i18n'
-import { getChores } from '@/actions/chores'
+import { getCompletedChoreCount } from '@/actions/chores'
 import { getWeeklySummary } from '@/actions/weeklySummary'
 import WeeklyConsistency from '@/components/WeeklyConsistency'
 
@@ -40,10 +40,9 @@ export default function ProfilePage() {
       }
       setIsLoading(true)
       try {
-        const chores = await getChores()
-        const completed = chores.filter((chore) =>
-          chore.assignments?.some((a) => a.kidId === currentKid.id && a.status === 'COMPLETED')
-        ).length
+        // Bolt Optimization: Replace O(N) client-side filtering fetching all rows
+        // with O(1) direct database aggregate count to eliminate memory bottlenecks.
+        const completed = await getCompletedChoreCount(currentKid.id)
         setCompletedChores(completed)
       } catch (e) {
         console.error('Failed to load profile stats:', e)
