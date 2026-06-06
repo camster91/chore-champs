@@ -19,9 +19,10 @@ export async function GET(request: Request) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    // Optimization: Removed include for choreAssignments
+    // since it's not mapped to the API response.
     const kid = await prisma.kid.findFirst({
       where: { id: kidId, familyId: auth.familyId },
-      include: { choreAssignments: true }
     })
 
     if (!kid) return notFound('Kid not found')
