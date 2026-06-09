@@ -217,3 +217,20 @@ export async function updateChore(choreId: string, data: Partial<{
   revalidatePath('/chores')
   return chore
 }
+
+export async function getCompletedChoresCount(kidId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  // Optimize: directly count completed assignments for the kid at the database level
+  // to avoid large payloads and in-memory counting of historical data.
+  return await prisma.choreAssignment.count({
+    where: {
+      kidId,
+      kid: { familyId: session.user.familyId },
+      status: 'COMPLETED'
+    }
+  })
+}

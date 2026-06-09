@@ -1,3 +1,6 @@
 ## 2024-05-18 - Prevent Unbounded Relational Over-fetching in Prisma Queries
 **Learning:** Prisma queries that `include` large, unbounded one-to-many relationships (like logs, histories, or assignments) can cause significant backend performance and memory bottlenecks if that data isn't actually returned to the client or used in business logic. In `getKids`, the database was tasked with retrieving and serializing all historical chore assignments and habit logs for every child on every page load, only for the application to immediately discard that data before returning the array of `Kid` profiles to the client.
 **Action:** Always verify if `include` relations in Prisma queries are actually mapped or consumed by the returned object, and remove them if they are silently discarded to prevent hidden O(N) memory scaling issues as user histories grow.
+## 2024-05-19 - Replace Client-Side Filtering with Database Aggregation
+**Learning:** Fetching an entire relation's dataset to count a specific subset (e.g., fetching all chores to count completed ones) causes unnecessary large payloads and O(N) client-side filtering.
+**Action:** Replace `findMany` + JS array `.filter().length` with Prisma's native `.count()` with a `where` clause to shift computation to the database level and reduce data transfer.
