@@ -23,6 +23,29 @@ export async function getChores() {
   })
 }
 
+export async function getCompletedChoresCount(kidId: string): Promise<number> {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  // Ensure the kid belongs to this family
+  const kid = await prisma.kid.findFirst({
+    where: { id: kidId, familyId: session.user.familyId }
+  })
+
+  if (!kid) {
+    return 0
+  }
+
+  return await prisma.choreAssignment.count({
+    where: {
+      kidId,
+      status: 'COMPLETED'
+    }
+  })
+}
+
 export async function getChoreById(id: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
