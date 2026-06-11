@@ -19,9 +19,11 @@ export async function GET(request: Request) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    // Optimization: Removed include for choreAssignments from kid query
+    // since the client response only uses id, name, age, and avatarId.
+    // Unbounded fetching of all assignments hurts performance.
     const kid = await prisma.kid.findFirst({
-      where: { id: kidId, familyId: auth.familyId },
-      include: { choreAssignments: true }
+      where: { id: kidId, familyId: auth.familyId }
     })
 
     if (!kid) return notFound('Kid not found')
