@@ -7,9 +7,11 @@ export async function GET() {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
 
+    // Optimization: Removed include for choreAssignments and habitLogs
+    // to prevent unbounded O(N) data fetching as user histories grow.
+    // The related data is not utilized by clients of this endpoint.
     const kids = await prisma.kid.findMany({
       where: { familyId: auth.familyId },
-      include: { choreAssignments: true, habitLogs: true },
       orderBy: { createdAt: 'asc' }
     })
 

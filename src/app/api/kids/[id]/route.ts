@@ -13,9 +13,11 @@ export async function GET(_request: Request, props: Props) {
 
     const { id } = await props.params
 
+    // Optimization: Removed include for completed choreAssignments
+    // to prevent unbounded O(N) data fetching as user histories grow.
+    // This relation data is silently discarded by clients.
     const kid = await prisma.kid.findFirst({
-      where: { id, familyId: auth.familyId },
-      include: { choreAssignments: { where: { status: 'COMPLETED' } } }
+      where: { id, familyId: auth.familyId }
     })
 
     if (!kid) return notFound('Kid not found')
