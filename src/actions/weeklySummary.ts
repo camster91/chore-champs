@@ -40,45 +40,47 @@ export async function getWeeklySummary(
   const weekStart = getWeekStart(addDays(now, weekOffset * 7))
 
   // Build day ranges
-  const days: Array<{ label: string; completed: number; total: number; date: string }> = []
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-  for (let i = 0; i < 7; i++) {
+  const dayPromises = Array.from({ length: 7 }, async (_, i) => {
     const dayDate = addDays(weekStart, i)
     const dayStart = startOfDay(dayDate)
     const dayEnd = endOfDay(dayDate)
 
-    const total = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    // Optimization: Run queries concurrently instead of sequentially
+    // This turns 21 sequential queries (7 days * 3 queries) into 1 parallelized batch
+    const [total, completed, habitLogs] = await Promise.all([
+      prisma.choreAssignment.count({
+        where: {
+          kidId,
+          dueDate: { gte: dayStart, lte: dayEnd },
+        }
+      }),
+      prisma.choreAssignment.count({
+        where: {
+          kidId,
+          dueDate: { gte: dayStart, lte: dayEnd },
+          status: 'COMPLETED',
+        }
+      }),
+      prisma.habitLog.count({
+        where: {
+          kidId,
+          loggedAt: { gte: dayStart, lte: dayEnd },
+        }
+      })
+    ])
 
-    const completed = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-        status: 'COMPLETED',
-      }
-    })
-
-    // Also count habit logs for this date
-    const habitLogs = await prisma.habitLog.count({
-      where: {
-        kidId,
-        loggedAt: { gte: dayStart, lte: dayEnd },
-      }
-    })
-
-    days.push({
+    return {
       label: dayLabels[(weekStart.getDay() + i) % 7],
       completed: completed + habitLogs,
       total,
       date: dayDate.toISOString().split('T')[0],
-    })
-  }
+    }
+  })
+
+  const days = await Promise.all(dayPromises)
 
   const weeklyTotal = days.reduce((sum, d) => sum + d.completed, 0)
   const weeklyGoal = days.reduce((sum, d) => sum + d.total, 0)
