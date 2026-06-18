@@ -40,45 +40,71 @@ export async function getWeeklySummary(
   const weekStart = getWeekStart(addDays(now, weekOffset * 7))
 
   // Build day ranges
-  const days: Array<{ label: string; completed: number; total: number; date: string }> = []
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
-  for (let i = 0; i < 7; i++) {
+  const weekEnd = endOfDay(addDays(weekStart, 6))
+
+  // Optimization: Fetch all data for the week in 3 queries, then group in memory
+  const [allAssignments, completedAssignments, allHabitLogs] = await Promise.all([
+    prisma.choreAssignment.groupBy({
+      by: ['dueDate'],
+      where: {
+        kidId,
+        dueDate: { gte: startOfDay(weekStart), lte: weekEnd }
+      },
+      _count: { _all: true }
+    }),
+    prisma.choreAssignment.groupBy({
+      by: ['dueDate'],
+      where: {
+        kidId,
+        dueDate: { gte: startOfDay(weekStart), lte: weekEnd },
+        status: 'COMPLETED'
+      },
+      _count: { _all: true }
+    }),
+    prisma.habitLog.groupBy({
+      by: ['loggedAt'],
+      where: {
+        kidId,
+        loggedAt: { gte: startOfDay(weekStart), lte: weekEnd }
+      },
+      _count: { _all: true }
+    })
+  ])
+
+  // Process data in memory
+  const days = Array.from({ length: 7 }).map((_, i) => {
     const dayDate = addDays(weekStart, i)
     const dayStart = startOfDay(dayDate)
     const dayEnd = endOfDay(dayDate)
 
-    const total = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    // Filter matching records for this day
+    const matchDay = (dateStr: Date | string) => {
+      const d = new Date(dateStr)
+      return d >= dayStart && d <= dayEnd
+    }
 
-    const completed = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-        status: 'COMPLETED',
-      }
-    })
+    const total = allAssignments
+      .filter(a => matchDay(a.dueDate))
+      .reduce((sum, a) => sum + a._count._all, 0)
 
-    // Also count habit logs for this date
-    const habitLogs = await prisma.habitLog.count({
-      where: {
-        kidId,
-        loggedAt: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    const completed = completedAssignments
+      .filter(a => matchDay(a.dueDate))
+      .reduce((sum, a) => sum + a._count._all, 0)
 
-    days.push({
+    const habitLogsCount = allHabitLogs
+      .filter(l => matchDay(l.loggedAt))
+      .reduce((sum, l) => sum + l._count._all, 0)
+
+    return {
       label: dayLabels[(weekStart.getDay() + i) % 7],
-      completed: completed + habitLogs,
+      completed: completed + habitLogsCount,
       total,
       date: dayDate.toISOString().split('T')[0],
-    })
-  }
+    }
+  })
 
   const weeklyTotal = days.reduce((sum, d) => sum + d.completed, 0)
   const weeklyGoal = days.reduce((sum, d) => sum + d.total, 0)
