@@ -23,6 +23,21 @@ export async function getChores() {
   })
 }
 
+// Optimization: Replaced O(N) full relational data fetch + in-memory filtering
+// with a direct O(1) database aggregate count.
+// Impact: Reduces network payload size and client memory usage significantly as assignment history grows.
+export async function getCompletedChoresCount(kidId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  // Verify the kid belongs to this family to prevent IDOR
+  return await prisma.choreAssignment.count({
+    where: { kidId, status: 'COMPLETED', kid: { familyId: session.user.familyId } }
+  })
+}
+
 export async function getChoreById(id: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
