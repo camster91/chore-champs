@@ -4,3 +4,6 @@
 ## 2024-06-12 - Prevent Unbounded Relational Over-fetching in Prisma Queries
 **Learning:** Found an unbounded query issue where Prisma fetches all historical relations (`choreAssignments`, `habitLogs`) when querying `Kid` records on several APIs (`api/dashboard`, `api/kids`, `api/kids/[id]`). The data is later discarded and never used, resulting in an O(N) memory and performance bottleneck as the history data size increases.
 **Action:** Always make sure `include` relations in Prisma queries are actually consumed by the response payload or frontend before keeping them, to prevent unnecessary memory and database load.
+## 2024-06-15 - Fast In-Memory Aggregation for N+1 Counting Loop
+**Learning:** Found a common N+1 query pattern where the code executed multiple Prisma `.count()` queries inside a date loop (e.g., 7 days x 3 queries = 21 sequential database calls per load in `src/actions/weeklySummary.ts`). This exhausts the database connection pool unnecessarily since the underlying dataset size per week for a kid is very small.
+**Action:** Replace small-scale sequential `.count()` operations inside loops with a few broad concurrent `.findMany()` queries executed upfront via `Promise.all()`, and compute the counts or aggregations using fast in-memory array filtering.
