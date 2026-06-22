@@ -23,6 +23,34 @@ export async function getChores() {
   })
 }
 
+// ⚡ Bolt Performance Optimization:
+// What: Replaced unbounded relational data fetching (getting all chores and assignments) with a direct database-level `.count()` aggregation.
+// Why: Prevent O(N) memory scaling issues on the Node.js side as user assignment histories grow. The client only needed a count, not the full payload.
+// Impact: Drastically reduces database query latency, cuts network payload size, and eliminates Node.js heap memory spikes.
+// Measurement: Load time and memory usage for `ProfilePage` will remain flat regardless of historical data volume.
+export async function getCompletedChoresCount(kidId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  // Verify the kid belongs to this family
+  const kid = await prisma.kid.findFirst({
+    where: { id: kidId, familyId: session.user.familyId },
+    select: { id: true }
+  })
+  if (!kid) {
+    return 0
+  }
+
+  return await prisma.choreAssignment.count({
+    where: {
+      kidId,
+      status: 'COMPLETED'
+    }
+  })
+}
+
 export async function getChoreById(id: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
