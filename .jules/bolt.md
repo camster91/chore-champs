@@ -4,3 +4,6 @@
 ## 2024-06-12 - Prevent Unbounded Relational Over-fetching in Prisma Queries
 **Learning:** Found an unbounded query issue where Prisma fetches all historical relations (`choreAssignments`, `habitLogs`) when querying `Kid` records on several APIs (`api/dashboard`, `api/kids`, `api/kids/[id]`). The data is later discarded and never used, resulting in an O(N) memory and performance bottleneck as the history data size increases.
 **Action:** Always make sure `include` relations in Prisma queries are actually consumed by the response payload or frontend before keeping them, to prevent unnecessary memory and database load.
+## 2024-06-23 - Prevent Unbounded Relational Over-fetching for Daily Status Checks
+**Learning:** Found a pattern where Prisma `include` clauses fetch an entire history of relations (e.g., `include: { logs: true }` in `getHabits`) even when the client only needs to check the status for the current day. This causes O(N) database and memory usage as the number of records grows.
+**Action:** When the client only requires relation records for a specific time range (like "today"), always apply a `where` date filter directly inside the `include` clause (e.g., `include: { logs: { where: { loggedAt: { gte: today } } } }`). This ensures the query execution time and payload size remain bounded O(1) regardless of historical data size.

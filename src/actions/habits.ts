@@ -11,10 +11,20 @@ export async function getHabits() {
     return []
   }
 
+  // Optimization: Only fetch habit logs from today since the frontend
+  // only uses them to determine daily completion status. This prevents
+  // unbounded O(N) database reads and memory allocation as history grows.
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      logs: {
+        where: {
+          loggedAt: { gte: today }
+        }
+      }
     }
   })
 }
