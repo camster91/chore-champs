@@ -4,3 +4,6 @@
 ## 2024-06-12 - Prevent Unbounded Relational Over-fetching in Prisma Queries
 **Learning:** Found an unbounded query issue where Prisma fetches all historical relations (`choreAssignments`, `habitLogs`) when querying `Kid` records on several APIs (`api/dashboard`, `api/kids`, `api/kids/[id]`). The data is later discarded and never used, resulting in an O(N) memory and performance bottleneck as the history data size increases.
 **Action:** Always make sure `include` relations in Prisma queries are actually consumed by the response payload or frontend before keeping them, to prevent unnecessary memory and database load.
+## 2026-06-27 - Database-Level Aggregation for Profile Stats
+**Learning:** In the profile page, fetching all historical chores with their assignments and then filtering in-memory to count the completed ones is extremely inefficient and scales linearly (O(N)) as user histories grow. This can cause high Node.js memory usage and slow response times.
+**Action:** Use database-level aggregations (like `prisma.chore.count`) directly instead of fetching large amounts of relational data to memory for client-side filtering.

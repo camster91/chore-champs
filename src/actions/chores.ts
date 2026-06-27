@@ -5,6 +5,22 @@ import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 
+export async function getCompletedChoresCount(kidId: string) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    return 0
+  }
+
+  // Count uniquely completed chores for this kid using database aggregation.
+  // We count the number of *distinct chores* that have *at least one* completed assignment for this kid.
+  return await prisma.chore.count({
+    where: {
+      familyId: session.user.familyId,
+      assignments: { some: { kidId, status: 'COMPLETED' } }
+    }
+  })
+}
+
 export async function getChores() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {

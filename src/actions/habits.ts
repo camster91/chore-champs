@@ -11,10 +11,15 @@ export async function getHabits() {
     return []
   }
 
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      logs: {
+        where: { loggedAt: { gte: today } }
+      }
     }
   })
 }
