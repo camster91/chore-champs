@@ -11,10 +11,20 @@ export async function getHabits() {
     return []
   }
 
+  // Optimization: Only fetch recent habit logs (last 48 hours to account for timezone drift).
+  // The client only checks for logs that occurred "today". Fetching the entire history
+  // scales O(N) over time and leads to massive over-fetching and memory issues.
+  const twoDaysAgo = new Date()
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      logs: {
+        where: {
+          loggedAt: { gte: twoDaysAgo }
+        }
+      }
     }
   })
 }

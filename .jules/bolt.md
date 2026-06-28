@@ -1,0 +1,3 @@
+## 2024-06-28 - [Prisma Unbounded Relational Over-fetching on Logs]
+**Learning:** Fetching historical log relations unconditionally (e.g. `include: { logs: true }`) creates a severe O(N) performance and memory bottleneck that scales linearly with the age of the user's account, even if the client only needs to check recent records (e.g., to determine if an action was completed "today").
+**Action:** When a UI exclusively requires relation records for a specific, recent time window (like 'today' for habit completion status), always apply a `where` date filter directly inside the Prisma `include` clause (e.g., `where: { loggedAt: { gte: recentDate } }`). Keep timezone drift in mind by expanding the window slightly (e.g., 48 hours).
