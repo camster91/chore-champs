@@ -11,10 +11,21 @@ export async function getHabits() {
     return []
   }
 
+  // Optimize: Avoid O(N) over-fetching of all historical habit logs.
+  // The client only needs to know if the habit was logged today.
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      logs: {
+        where: {
+          loggedAt: {
+            gte: todayStart
+          }
+        }
+      }
     }
   })
 }

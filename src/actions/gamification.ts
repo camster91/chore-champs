@@ -11,13 +11,10 @@ export async function processGamification(kidId: string) {
     throw new Error('Unauthorized')
   }
 
+  // Optimize: Avoid O(N) over-fetching of all historical completed chore assignments.
+  // The data was being silently discarded and caused memory scale issues.
   const kid = await prisma.kid.findUnique({
-    where: { id: kidId },
-    include: {
-      choreAssignments: {
-        where: { status: 'COMPLETED' }
-      }
-    }
+    where: { id: kidId }
   })
 
   if (!kid) {
