@@ -1,0 +1,3 @@
+## 2025-02-23 - N+1 Sequential Query Loop in Dashboards
+**Learning:** Performing multiple sequential `prisma.*.count()` queries within a loop (like generating daily stats over a 7-day period) leads to an N+1 query bottleneck (21 queries per summary in this case) that can exhaust connection pools under heavy load.
+**Action:** Always pre-fetch the entire date range of data using broad, concurrent queries (e.g., `Promise.all` with `findMany`) outside the loop, and perform the day-by-day filtering and counting in-memory on the server.
