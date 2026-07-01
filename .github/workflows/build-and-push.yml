@@ -62,15 +62,23 @@ jobs:
           REPO_NAME="${{ github.event.repository.name }}"
           if [ -n "${{ inputs.image_name }}" ]; then REPO_NAME="${{ inputs.image_name }}"; fi
           REF="${{ github.ref }}"
+
+          # Sanitize tag for docker: replace '/' with '-'
+          # Valid tag format: [a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}
           if [[ "$REF" == refs/tags/* ]]; then
             TAG="${REF#refs/tags/}"
           elif [[ "$REF" == refs/heads/main || "$REF" == refs/heads/master ]]; then
             TAG="main"
+          elif [[ "$REF" == refs/pull/* ]]; then
+            # Extract PR number e.g. from refs/pull/149/merge -> pr-149
+            PR_NUM=$(echo "$REF" | awk -F'/' '{print $3}')
+            TAG="pr-${PR_NUM}"
           else
             TAG="${REF#refs/heads/}"
+            TAG=$(echo "$TAG" | tr '/' '-')
           fi
-          SHA_SHORT="${{ github.event.pull_request.head.sha || github.sha }}" | head -c 7
-          SHA_SHORT=$(echo "${{ github.sha }}" | head -c 7)
+
+          SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha || github.sha }}" | head -c 7)
           echo "image=ghcr.io/camster91/${REPO_NAME}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "sha=${SHA_SHORT}" >> $GITHUB_OUTPUT
