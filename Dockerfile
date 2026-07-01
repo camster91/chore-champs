@@ -26,11 +26,11 @@ RUN npm run build
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Install libssl1.1 for Prisma runtime
-RUN wget -q -O /tmp/libssl1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/main/x86_64/libssl1.1-1.1.1w-r1.apk && \
-    wget -q -O /tmp/libcrypto1.1.apk https://dl-cdn.alpinelinux.org/alpine/v3.16/main/x86_64/libcrypto1.1-1.1.1w-r1.apk && \
-    apk add --no-cache --force-overwrite /tmp/libssl1.1.apk /tmp/libcrypto1.1.apk && \
-    rm /tmp/libssl1.1.apk /tmp/libcrypto1.1.apk
+# Install openssl + libc6-compat for Prisma runtime
+# (Earlier versions downloaded libssl1.1 from alpine v3.16/main, but
+# that package was moved to community and is no longer in main.
+# node:20-alpine ships libssl3 by default which Prisma 5+ supports.)
+RUN apk add --no-cache libc6-compat openssl
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
