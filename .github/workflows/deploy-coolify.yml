@@ -11,13 +11,13 @@ jobs:
     steps:
       - name: Trigger Coolify Deploy
         run: |
-          response=$(curl -s -w "\n%{http_code}" \
-            "${{ secrets.COOLIFY_WEBHOOK }}" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}")
-          http_code=$(echo "$response" | tail -1)
-          body=$(echo "$response" | head -n -1)
-          echo "$body"
-          if [ "$http_code" != "200" ]; then
-            echo "Deploy failed with status $http_code"
-            exit 1
-          fi
+          response=$(curl --max-time 60 --connect-timeout 10 -s -w "\n%{http_code}" \
+                      "${{ secrets.COOLIFY_WEBHOOK }}" \
+                      -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}") || response="curl_failed"
+                    http_code=$(echo "$response" | tail -1)
+                    body=$(echo "$response" | head -n -1)
+                    echo "$body"
+                    if [ "$http_code" != "200" ]; then
+                      echo "Deploy failed with status $http_code (webhook may be down; verify COOLIFY_WEBHOOK in repo Settings > Secrets)"
+                      exit 1
+                    fi
