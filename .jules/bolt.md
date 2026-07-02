@@ -1,0 +1,3 @@
+## 2025-01-20 - Resolve N+1 Queries in Data Aggregation
+**Learning:** Performing sequential `.count()` queries inside a loop (like iterating through days of a week) creates a significant N+1 bottleneck, exhausting DB connections and increasing latency as traffic scales. Broad concurrent pre-fetches for the entire scope using `Promise.all` combined with in-memory filtering scale much better.
+**Action:** When aggregating records (like daily summaries), fetch all necessary records concurrently for the entire time range upfront, and filter them in-memory to compute specific groups, instead of querying repeatedly inside a loop.
