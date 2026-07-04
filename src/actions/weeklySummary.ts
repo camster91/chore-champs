@@ -44,33 +44,43 @@ export async function getWeeklySummary(
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+  // Fetch all data for the week upfront to avoid N+1 queries in the loop
+  const weekEnd = endOfDay(addDays(weekStart, 6))
+  const [weeklyAssignments, weeklyHabitLogs] = await Promise.all([
+    prisma.choreAssignment.findMany({
+      where: {
+        kidId,
+        dueDate: { gte: startOfDay(weekStart), lte: weekEnd },
+      },
+      select: { dueDate: true, status: true }
+    }),
+    prisma.habitLog.findMany({
+      where: {
+        kidId,
+        loggedAt: { gte: startOfDay(weekStart), lte: weekEnd },
+      },
+      select: { loggedAt: true }
+    })
+  ])
+
   for (let i = 0; i < 7; i++) {
     const dayDate = addDays(weekStart, i)
-    const dayStart = startOfDay(dayDate)
-    const dayEnd = endOfDay(dayDate)
+    const dayStart = startOfDay(dayDate).getTime()
+    const dayEnd = endOfDay(dayDate).getTime()
 
-    const total = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-      }
+    // Aggregate in-memory
+    const dayAssignments = weeklyAssignments.filter(a => {
+      const time = a.dueDate.getTime()
+      return time >= dayStart && time <= dayEnd
     })
 
-    const completed = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-        status: 'COMPLETED',
-      }
-    })
+    const total = dayAssignments.length
+    const completed = dayAssignments.filter(a => a.status === 'COMPLETED').length
 
-    // Also count habit logs for this date
-    const habitLogs = await prisma.habitLog.count({
-      where: {
-        kidId,
-        loggedAt: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    const habitLogs = weeklyHabitLogs.filter(l => {
+      const time = l.loggedAt.getTime()
+      return time >= dayStart && time <= dayEnd
+    }).length
 
     days.push({
       label: dayLabels[(weekStart.getDay() + i) % 7],
