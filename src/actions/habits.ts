@@ -11,10 +11,17 @@ export async function getHabits() {
     return []
   }
 
+  const twoDaysAgo = new Date()
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      // Optimization: Only fetch recent logs to avoid unbounded O(N) memory scaling
+      // since the client only checks if the habit was completed today.
+      logs: {
+        where: { loggedAt: { gte: twoDaysAgo } }
+      }
     }
   })
 }
