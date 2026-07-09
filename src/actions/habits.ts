@@ -11,10 +11,26 @@ export async function getHabits() {
     return []
   }
 
+  // ⚡ Bolt: Optimize query by filtering habit logs to only fetch today's logs
+  // instead of pulling all historical logs. Prevents O(N) memory scaling as logs grow.
+  // We use server's today logic here. To avoid timezone issues, we can just grab logs
+  // from the last 24 hours or since midnight local. The frontend only checks the
+  // date string of the log against the client's today string anyway.
+  // Let's grab logs from the last 48 hours to be safe against timezone differences,
+  // which will still bound the query to a tiny O(1) subset instead of O(N).
+  const twoDaysAgo = new Date()
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      logs: {
+        where: {
+          loggedAt: {
+            gte: twoDaysAgo
+          }
+        }
+      }
     }
   })
 }
