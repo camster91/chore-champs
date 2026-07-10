@@ -19,6 +19,14 @@ export interface WeeklySummary {
   consistencyPercent: number
 }
 
+// Format local date component as YYYY-MM-DD to avoid timezone bugs
+function toLocalDateString(date: Date): string {
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
 export async function getWeeklySummary(
   kidId: string,
   weekOffset: number = 0
@@ -44,39 +52,52 @@ export async function getWeeklySummary(
   const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+  const weekEnd = endOfDay(addDays(weekStart, 6))
+
+  // Optimization: reduced 21 sequential queries inside the loop to 2 concurrent queries for the entire week
+  const [weeklyAssignments, weeklyHabitLogs] = await Promise.all([
+    prisma.choreAssignment.findMany({
+      where: {
+        kidId,
+        dueDate: { gte: startOfDay(weekStart), lte: weekEnd },
+      },
+      select: {
+        dueDate: true,
+        status: true,
+      }
+    }),
+    prisma.habitLog.findMany({
+      where: {
+        kidId,
+        loggedAt: { gte: startOfDay(weekStart), lte: weekEnd },
+      },
+      select: {
+        loggedAt: true,
+      }
+    })
+  ])
+
   for (let i = 0; i < 7; i++) {
     const dayDate = addDays(weekStart, i)
     const dayStart = startOfDay(dayDate)
     const dayEnd = endOfDay(dayDate)
 
-    const total = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    const dayAssignments = weeklyAssignments.filter(a =>
+      a.dueDate >= dayStart && a.dueDate <= dayEnd
+    )
+    const dayHabits = weeklyHabitLogs.filter(h =>
+      h.loggedAt >= dayStart && h.loggedAt <= dayEnd
+    )
 
-    const completed = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-        status: 'COMPLETED',
-      }
-    })
-
-    // Also count habit logs for this date
-    const habitLogs = await prisma.habitLog.count({
-      where: {
-        kidId,
-        loggedAt: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    const total = dayAssignments.length
+    const completedAssignments = dayAssignments.filter(a => a.status === 'COMPLETED').length
+    const habitLogsCount = dayHabits.length
 
     days.push({
       label: dayLabels[(weekStart.getDay() + i) % 7],
-      completed: completed + habitLogs,
+      completed: completedAssignments + habitLogsCount,
       total,
-      date: dayDate.toISOString().split('T')[0],
+      date: toLocalDateString(dayDate),
     })
   }
 
@@ -90,7 +111,7 @@ export async function getWeeklySummary(
     : 0
 
   return {
-    startDate: weekStart.toISOString().split('T')[0],
+    startDate: toLocalDateString(weekStart),
     days,
     weeklyTotal,
     weeklyGoal,

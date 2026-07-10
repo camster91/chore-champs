@@ -1,0 +1,3 @@
+## 2024-07-10 - O(N) Sequential Query Reduction & Memory Aggregation Date Bug
+**Learning:** When resolving N+1 queries by pulling multiple date-bounded DB counts into a single concurrent query (`Promise.all` + `findMany`) and aggregating in memory, you MUST be careful to preserve proper timezone bounds when grouping items back to specific days. Doing simple `.toISOString().split('T')[0]` strips local timezone information, which causes functional bugs by grouping some data to wrong days.
+**Action:** Always use local component date formatting functions (like building `YYYY-MM-DD` from `.getFullYear()`, `.getMonth()`, `.getDate()`) or helper functions when doing in-memory timezone-sensitive logic instead of simple UTC `.toISOString()` string parsing.
