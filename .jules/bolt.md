@@ -1,0 +1,3 @@
+## 2025-07-11 - [Optimize database relation overfetching on dates]
+ **Learning:** When a UI only requires a slice of history (like 'today') for a given relation, doing a full relational `include` (e.g. `logs: true`) is unbounded O(N) memory scaling over time. Simple UTC string splitting in Javascript causes regressions on timezone boundaries for non-UTC clients.
+ **Action:** Fix bounded over-fetching queries by embedding rolling window filtering (`where: { loggedAt: { gte: twoDaysAgo } }`) inside `include` blocks. Use Javascript Date helpers on the server instead of string formatting to maintain timezone fidelity. Eliminate unneeded nested includes completely (e.g., removing `kid: true` from `assignments` fetched inside `chores` when scalar `kidId` suffices).
