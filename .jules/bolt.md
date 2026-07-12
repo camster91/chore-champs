@@ -1,0 +1,3 @@
+## 2024-05-24 - N+1 Count Queries with Dates
+**Learning:** Found a pattern of running `prisma.count` sequentially within loops over dates (e.g., getting counts for each day of the week), resulting in many sequential queries (N*3). When resolving this by batching into a single `findMany`, you must carefully re-apply the same local timezone boundary checks (using helpers like `startOfDay`) during the in-memory reduction, rather than naive date string comparison.
+**Action:** When migrating from sequential daily DB queries to single batched queries, explicitly verify the in-memory filtering maintains identical timezone bounds check behavior.
