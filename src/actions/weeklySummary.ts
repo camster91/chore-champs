@@ -38,6 +38,34 @@ export async function getWeeklySummary(
 
   const now = new Date()
   const weekStart = getWeekStart(addDays(now, weekOffset * 7))
+  const weekEnd = endOfDay(addDays(weekStart, 6))
+
+  // ⚡ Bolt: Performance Optimization - Resolve N+1 query bottleneck.
+  // Instead of doing 21 sequential .count() queries inside a 7-day loop (3 queries per day),
+  // we fetch all relevant assignments and habit logs for the entire week upfront concurrently.
+  // This drastically reduces database roundtrips and connection pool exhaustion.
+  // We then aggregate the totals in-memory while strictly preserving timezones via local date helpers.
+  const [weeklyAssignments, weeklyHabitLogs] = await Promise.all([
+    prisma.choreAssignment.findMany({
+      where: {
+        kidId,
+        dueDate: { gte: startOfDay(weekStart), lte: weekEnd },
+      },
+      select: {
+        dueDate: true,
+        status: true,
+      }
+    }),
+    prisma.habitLog.findMany({
+      where: {
+        kidId,
+        loggedAt: { gte: startOfDay(weekStart), lte: weekEnd },
+      },
+      select: {
+        loggedAt: true,
+      }
+    })
+  ])
 
   // Build day ranges
   const days: Array<{ label: string; completed: number; total: number; date: string }> = []
@@ -49,28 +77,9 @@ export async function getWeeklySummary(
     const dayStart = startOfDay(dayDate)
     const dayEnd = endOfDay(dayDate)
 
-    const total = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-      }
-    })
-
-    const completed = await prisma.choreAssignment.count({
-      where: {
-        kidId,
-        dueDate: { gte: dayStart, lte: dayEnd },
-        status: 'COMPLETED',
-      }
-    })
-
-    // Also count habit logs for this date
-    const habitLogs = await prisma.habitLog.count({
-      where: {
-        kidId,
-        loggedAt: { gte: dayStart, lte: dayEnd },
-      }
-    })
+    const total = weeklyAssignments.filter(a => a.dueDate >= dayStart && a.dueDate <= dayEnd).length
+    const completed = weeklyAssignments.filter(a => a.status === 'COMPLETED' && a.dueDate >= dayStart && a.dueDate <= dayEnd).length
+    const habitLogs = weeklyHabitLogs.filter(h => h.loggedAt >= dayStart && h.loggedAt <= dayEnd).length
 
     days.push({
       label: dayLabels[(weekStart.getDay() + i) % 7],
