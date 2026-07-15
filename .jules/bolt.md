@@ -1,0 +1,3 @@
+## 2023-10-27 - [Weekly Summary N+1 Query Resolution]
+**Learning:** Sequential Prisma queries within a daily loop for aggregated views (like weekly summaries) generate extreme N+1 queries. Specifically, 3 queries per day over a week translates to 21 sequential queries, introducing latency bottlenecks and blocking NextJS server actions.
+**Action:** When aggregating date-based metrics for multiple days (like a week), always fetch the full date range upfront using concurrent queries (e.g., `Promise.all([findMany, findMany])`) and perform the daily grouping in-memory using local date boundaries like `.getTime()`.
