@@ -11,10 +11,20 @@ export async function getHabits() {
     return []
   }
 
+  // ⚡ Bolt: Performance Optimization
+  // Replaced unconstrained `logs: true` fetch with a 48-hour rolling window.
+  // The UI only needs to know if a habit was completed today, so fetching full history
+  // resulted in unbounded O(N) memory scaling over time as logs accumulated.
+  // Using a safe 48-hour window on the server avoids timezone regressions for non-UTC clients.
+  const twoDaysAgo = new Date()
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
+
   return await prisma.habit.findMany({
     where: { familyId: session.user.familyId },
     include: {
-      logs: true
+      logs: {
+        where: { loggedAt: { gte: twoDaysAgo } }
+      }
     }
   })
 }
