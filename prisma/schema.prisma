@@ -253,24 +253,6 @@ model PushSubscription {
   @@unique([userId, endpoint])
 }
 
-model AvatarItem {
-  id          String   @id @default(cuid())
-  name        String
-  emoji       String
-  category    String
-  unlockCost  Int
-  imageUrl    String
-  createdAt   DateTime @default(now())
-}
-
-model RedeemedReward {
-  id        String   @id @default(cuid())
-  rewardId  String
-  kidId     String
-  points    Int
-  createdAt DateTime @default(now())
-}
-
 model PlannerItem {
   id          String   @id @default(cuid())
   title       String

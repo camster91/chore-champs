@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Gift, Loader2 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
@@ -29,13 +29,7 @@ export default function RewardsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newReward, setNewReward] = useState({ title: '', description: '', cost: 50, icon: '🎁', category: 'General' })
 
-  useEffect(() => {
-    initI18n()
-    loadRewards()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const loadRewards = async () => {
+  const loadRewards = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await getRewards()
@@ -46,7 +40,13 @@ export default function RewardsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [toast])
+
+  useEffect(() => {
+    initI18n()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+    loadRewards()
+  }, [loadRewards])
 
   const handleCreateReward = async () => {
     if (!newReward.title) return

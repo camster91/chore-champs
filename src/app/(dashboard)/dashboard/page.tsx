@@ -71,12 +71,7 @@ export default function DashboardPage() {
     }
   }, [currentKid])
 
-  useEffect(() => {
-    loadKids()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const loadKids = async () => {
+  const loadKids = useCallback(async () => {
     setIsLoading(true)
     try {
       const kidsData = await getKids()
@@ -90,10 +85,16 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [currentKid, setCurrentKid, setKids])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+    loadKids()
+  }, [loadKids])
 
   useEffect(() => {
     if (currentKid) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Standard data-fetching pattern via useCallback
       loadChores()
     }
   }, [currentKid, loadChores])

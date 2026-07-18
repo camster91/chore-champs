@@ -56,9 +56,7 @@ export default function ChoresPage() {
     { refreshInterval: 30000 }
   )
 
-  const [chores, setChores] = useState<UIChore[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
   const [newChore, setNewChore] = useState({
@@ -93,10 +91,6 @@ export default function ChoresPage() {
       }
     })
   }, [dbChores, currentKid])
-
-  useEffect(() => {
-    setChores(mappedChores)
-  }, [mappedChores])
 
   if (!currentKid) {
     return (
@@ -190,8 +184,8 @@ export default function ChoresPage() {
               <div className="h-32 bg-gray-100 rounded-xl" />
             </Card>
           ))
-        ) : chores.length > 0 ? (
-          chores.map((chore, index) => (
+        ) : mappedChores.length > 0 ? (
+          mappedChores.map((chore, index) => (
             <motion.div key={chore.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
               <Card
                 className={cn('h-full cursor-pointer transition-all hover:scale-[1.02]', chore.completed ? 'bg-green-50 border-green-200' : 'hover:border-[var(--color-primary)]')}

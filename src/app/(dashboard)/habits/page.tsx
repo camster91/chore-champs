@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Check, Loader2, Target, Calendar } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
@@ -30,13 +30,7 @@ export default function HabitsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newHabit, setNewHabit] = useState({ title: '', description: '', icon: '🧘', points: 5 })
 
-  useEffect(() => {
-    initI18n()
-    loadHabits()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentKid])
-
-  const loadHabits = async () => {
+  const loadHabits = useCallback(async () => {
     if (!currentKid) return
     setIsLoading(true)
     try {
@@ -65,7 +59,13 @@ export default function HabitsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [currentKid, toast])
+
+  useEffect(() => {
+    initI18n()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+    loadHabits()
+  }, [loadHabits])
 
   const handleLogHabit = async (habit: UIHabit) => {
     if (!currentKid || habit.completed) return
