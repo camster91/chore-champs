@@ -40,16 +40,25 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // Find the family by parentId
+        // Find the family by ownership OR membership
         const family = await prisma.family.findFirst({
           where: { parentId: parent.id }
         })
+
+        const membership = family
+          ? null
+          : await prisma.familyMember.findFirst({
+              where: { parentId: parent.id },
+              include: { family: true }
+            })
+
+        const familyId = family?.id ?? membership?.familyId
 
         return {
           id: parent.id,
           email: parent.email,
           name: parent.name,
-          familyId: family?.id,
+          familyId: familyId,
         }
       },
     }),

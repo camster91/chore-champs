@@ -8,20 +8,34 @@ export async function getAuthenticatedFamily() {
     return null
   }
 
-  // Find family by parentId
+  // Check ownership first
   const family = await prisma.family.findFirst({
     where: { parentId: session.user.id }
   })
 
-  if (!family) {
-    return null
+  if (family) {
+    return {
+      userId: session.user.id,
+      familyId: family.id,
+      family,
+    }
   }
 
-  return {
-    userId: session.user.id,
-    familyId: family.id,
-    family,
+  // Check membership
+  const membership = await prisma.familyMember.findFirst({
+    where: { parentId: session.user.id },
+    include: { family: true }
+  })
+
+  if (membership) {
+    return {
+      userId: session.user.id,
+      familyId: membership.familyId,
+      family: membership.family,
+    }
   }
+
+  return null
 }
 
 export function unauthorized() {

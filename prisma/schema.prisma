@@ -20,6 +20,20 @@ model Family {
   familyGoals   FamilyGoal[]
   badges        BadgeDefinition[]
   invites       FamilyInvite[]
+  members       FamilyMember[]
+}
+
+model FamilyMember {
+  id        String   @id @default(cuid())
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  parentId  String
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  role      String   @default('MEMBER') // OWNER, MEMBER
+  createdAt DateTime @default(now())
+  
+  @@unique([familyId, parentId])
+  @@index([parentId])
 }
 
 model Parent {
@@ -34,6 +48,7 @@ model Parent {
   notifications Notification[]
   subscriptions PushSubscription[]
   invites       FamilyInvite[]
+  familyMemberships FamilyMember[]
 }
 
 model Kid {
