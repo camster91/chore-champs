@@ -122,15 +122,3 @@ self.addEventListener('notificationclick', (event) => {
     })
   )
 })
-
-// Background sync for offline actions
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-chores') {
-    event.waitUntil(syncChores())
-  }
-})
-
-async function syncChores() {
-  // This would sync any offline chore completions
-  // Implementation depends on your offline storage strategy
-}
