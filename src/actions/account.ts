@@ -33,12 +33,24 @@ export async function deleteAccount(
   const parentId = session.user.id
 
   try {
-    // Delete the family first (cascades to kids, chores, habits, rewards,
-    // invites, etc). Then delete the parent.
-    await prisma.$transaction([
-      prisma.family.delete({ where: { id: familyId } }),
-      prisma.parent.delete({ where: { id: parentId } }),
-    ])
+    // Check if user is the family owner
+    const family = await prisma.family.findFirst({
+      where: { id: familyId, parentId }
+    })
+
+    if (family) {
+      // Owner deleting account — delete the entire family (cascades to all data)
+      await prisma.$transaction([
+        prisma.family.delete({ where: { id: familyId } }),
+        prisma.parent.delete({ where: { id: parentId } }),
+      ])
+    } else {
+      // Member deleting account — just remove membership and parent
+      await prisma.$transaction([
+        prisma.familyMember.deleteMany({ where: { parentId } }),
+        prisma.parent.delete({ where: { id: parentId } }),
+      ])
+    }
 
     revalidatePath('/')
     return { success: true }

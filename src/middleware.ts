@@ -72,8 +72,7 @@ export default withAuth(
         if (
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/register') ||
-          pathname.startsWith('/api/health') ||
-          pathname.startsWith('/api/test-auth')
+          pathname.startsWith('/api/health')
         ) {
           return true
         }

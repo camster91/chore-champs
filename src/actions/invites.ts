@@ -80,19 +80,26 @@ export async function acceptInvite(token: string) {
     throw new Error('This invitation was sent to a different email address')
   }
 
-  // Check if user already has a family (schema has parentId as @unique)
+  // Check if user already belongs to a family (owner or member)
   const existingFamily = await prisma.family.findUnique({
     where: { parentId: session.user.id }
   })
 
-  if (existingFamily) {
-    throw new Error('You already have a family. Leave your current family before accepting a new invitation.')
+  const existingMembership = await prisma.familyMember.findFirst({
+    where: { parentId: session.user.id }
+  })
+
+  if (existingFamily || existingMembership) {
+    throw new Error('You already belong to a family. Leave your current family before accepting a new invitation.')
   }
 
-  // Update Family table to include this parent
-  await prisma.family.update({
-    where: { id: invite.familyId },
-    data: { parentId: session.user.id }
+  // Add user as a family member (do NOT replace the owner)
+  await prisma.familyMember.create({
+    data: {
+      familyId: invite.familyId,
+      parentId: session.user.id,
+      role: invite.role || 'MEMBER'
+    }
   })
 
   // Mark invite as accepted

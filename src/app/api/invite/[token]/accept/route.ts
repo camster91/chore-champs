@@ -55,10 +55,13 @@ export async function POST(request: Request, { params }: Props) {
     )
   }
 
-  // Update Family to set this parent as the member
-  await prisma.family.update({
-    where: { id: invite.familyId },
-    data: { parentId: session.user.id }
+  // Add user as a family member (do NOT replace the owner)
+  await prisma.familyMember.create({
+    data: {
+      familyId: invite.familyId,
+      parentId: session.user.id,
+      role: invite.role || 'MEMBER'
+    }
   })
 
   // Mark invite as accepted

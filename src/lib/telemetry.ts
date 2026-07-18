@@ -1,14 +1,17 @@
-import posthog from 'posthog-js'
-
+/** Analytics stub — replace with real analytics provider when ready.
+ *  Currently logs events to console in development only.
+ */
 export const trackEvent = (eventName: string, properties?: Record<string, unknown>) => {
-  if (typeof window !== 'undefined') {
-    posthog.capture(eventName, properties)
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log('[Analytics]', eventName, properties)
   }
 }
 
 export const identifyUser = (userId: string, properties?: Record<string, unknown>) => {
-  if (typeof window !== 'undefined') {
-    posthog.identify(userId, properties)
+  if (process.env.NODE_ENV === 'development') {
+    // eslint-disable-next-line no-console
+    console.log('[Analytics] identify', userId, properties)
   }
 }
 
