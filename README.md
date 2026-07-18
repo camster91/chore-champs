@@ -132,8 +132,11 @@ cp .env.example .env.local
 npx prisma generate
 npx prisma db push
 npm run seed   # creates sample parent account, 2 children, chores, rewards
+```
 
-# Develop
+> **Note for existing deployments:** After pulling schema changes (e.g., the `FamilyMember` multi-parent support), run `npx prisma migrate dev` to apply new migrations instead of `db push`.
+
+## Develop
 npm run dev
 # → http://localhost:3000
 ```
