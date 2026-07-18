@@ -11,11 +11,13 @@ export async function getChores() {
     return []
   }
 
+  // ⚡ Bolt: Performance Optimization
+  // Removed `include: { kid: true }` from assignments as the client only maps the `kidId` to match the current kid
+  // and discards the nested kid relation, avoiding O(N) relational over-fetching on large lists.
   return await prisma.chore.findMany({
     where: { familyId: session.user.familyId },
     include: {
       assignments: {
-        include: { kid: true },
         orderBy: { dueDate: 'asc' }
       }
     },
@@ -29,9 +31,11 @@ export async function getChoreById(id: string) {
     return null
   }
 
+  // ⚡ Bolt: Performance Optimization
+  // Removed `include: { kid: true }` as the full kid object is silently discarded.
   return await prisma.chore.findFirst({
     where: { id, familyId: session.user.familyId },
-    include: { assignments: { include: { kid: true } } }
+    include: { assignments: true }
   })
 }
 
@@ -102,22 +106,22 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
     where: {
       id: assignmentId,
       kid: { familyId: session.user.familyId }
-    },
-    include: { kid: true }
+    }
   })
 
   if (!existing) {
     throw new Error('Assignment not found')
   }
 
+  // ⚡ Bolt: Performance Optimization
+  // Removed `include: { chore: true }` from update as the full chore object is not utilized downstream.
   const [assignment] = await prisma.$transaction([
     prisma.choreAssignment.update({
       where: { id: assignmentId },
       data: { 
         status: 'COMPLETED',
         completedAt: new Date()
-      },
-      include: { chore: true }
+      }
     }),
     prisma.kid.update({
       where: { id: kidId },
