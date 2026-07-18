@@ -49,7 +49,10 @@ const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
           )}
         >
           {src ? (
-            <img src={src} alt={alt || name || 'Avatar'} className="w-full h-full object-cover" />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- Avatar uses plain img for PWA compatibility */}
+              <img src={src} alt={alt || name || 'Avatar'} className="w-full h-full object-cover" />
+            </>
           ) : (
             <span>{name ? getInitials(name) : '?'}</span>
           )}

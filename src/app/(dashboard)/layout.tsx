@@ -37,7 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
-  const { currentKid, setSessionHash, clearStore } = useKidStore()
+  const { currentKid, clearStore } = useKidStore()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // Persist the kid store per-session. If the persisted sessionHash on

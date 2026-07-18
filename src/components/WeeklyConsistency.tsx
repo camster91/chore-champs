@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Flame, Target, Trophy, Check } from 'lucide-react'
 import { Card, CardContent, Button, Skeleton } from '@/components/ui'
@@ -17,12 +17,7 @@ export default function WeeklyConsistency({ kidId, loadSummary }: WeeklyConsiste
   const [isLoading, setIsLoading] = useState(false)
   const [weekOffset, setWeekOffset] = useState(0)
 
-  useEffect(() => {
-    loadData()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kidId, weekOffset])
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await loadSummary(kidId, weekOffset)
@@ -32,7 +27,12 @@ export default function WeeklyConsistency({ kidId, loadSummary }: WeeklyConsiste
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [kidId, weekOffset, loadSummary])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+    loadData()
+  }, [loadData])
 
   const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 

@@ -38,7 +38,6 @@ export default function AvatarShopPage() {
   // Load purchased items and points for current kid
   useEffect(() => {
     if (!currentKid) return
-    setIsLoading(true)
     getPurchasedAvatarItems(currentKid.id).then((owned) => {
       setPurchased(owned)
       if (owned.length > 0) setEquipped(owned[0])
