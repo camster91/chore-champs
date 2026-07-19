@@ -137,6 +137,7 @@ export function PwaInstallPrompt() {
               </div>
             </div>
             <button
+              type="button"
               onClick={() => {
                 dismissFor30Days()
                 setShowPrompt(false)

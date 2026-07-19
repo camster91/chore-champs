@@ -54,11 +54,16 @@ export default function SettingsPage() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default')
   const [notificationPrefs, setNotificationPrefs] = useState<Record<string, boolean>>(() => {
     if (typeof window !== 'undefined') {
-      return {
-        chore_completed: localStorage.getItem('notification_chore_completed') !== 'false',
-        reward_earned: localStorage.getItem('notification_reward_earned') !== 'false',
-        daily_reminder: localStorage.getItem('notification_daily_reminder') !== 'false',
-        family_goal: localStorage.getItem('notification_family_goal') !== 'false',
+      try {
+        return {
+          chore_completed: localStorage.getItem('notification_chore_completed') !== 'false',
+          reward_earned: localStorage.getItem('notification_reward_earned') !== 'false',
+          daily_reminder: localStorage.getItem('notification_daily_reminder') !== 'false',
+          family_goal: localStorage.getItem('notification_family_goal') !== 'false',
+        }
+      } catch {
+        // localStorage may be disabled (e.g. Safari private mode)
+        return { chore_completed: true, reward_earned: true, daily_reminder: true, family_goal: true }
       }
     }
     return { chore_completed: true, reward_earned: true, daily_reminder: true, family_goal: true }
@@ -376,7 +381,11 @@ export default function SettingsPage() {
                       onChange={(e) => {
                         const next = { ...notificationPrefs, [item.id]: e.target.checked }
                         setNotificationPrefs(next)
-                        localStorage.setItem(`notification_${item.id}`, String(e.target.checked))
+                        try {
+                          localStorage.setItem(`notification_${item.id}`, String(e.target.checked))
+                        } catch {
+                          // localStorage may be disabled; safe to ignore
+                        }
                       }}
                       className="w-5 h-5"
                     />
