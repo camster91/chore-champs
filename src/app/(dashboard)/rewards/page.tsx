@@ -153,7 +153,7 @@ export default function RewardsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">{translate('rewards.icon')}</label>
             <div className="flex gap-2 flex-wrap">
               {rewardIcons.map(icon => (
-                <button key={icon} onClick={() => setNewReward({ ...newReward, icon })} className={cn('w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all', newReward.icon === icon ? 'bg-purple-100 ring-2 ring-purple-500' : 'bg-gray-100 hover:bg-gray-200')}>
+                <button type="button" key={icon} onClick={() => setNewReward({ ...newReward, icon })} className={cn('w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all', newReward.icon === icon ? 'bg-purple-100 ring-2 ring-purple-500' : 'bg-gray-100 hover:bg-gray-200')}>
                   {icon}
                 </button>
               ))}

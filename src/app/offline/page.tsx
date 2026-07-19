@@ -11,7 +11,7 @@ export default function OfflinePage() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">You&apos;re Offline</h1>
         <p className="text-gray-500 mb-6">Please check your internet connection and try again.</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90">
+        <button type="button" onClick={() => window.location.reload()} className="px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90">
           Try Again
         </button>
       </div>

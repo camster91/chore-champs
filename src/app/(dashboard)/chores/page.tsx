@@ -52,7 +52,7 @@ export default function ChoresPage() {
 
   const { data: dbChores, isLoading: choresLoading } = useSWR(
     currentKid ? `chores-${currentKid.id}` : null,
-    () => getChores(),
+    getChores,
     { refreshInterval: 30000 }
   )
 
@@ -249,7 +249,7 @@ export default function ChoresPage() {
             <label className="text-sm font-medium text-gray-700">{translate('chores.pointsReward')}</label>
             <div className="flex gap-2">
               {[5, 10, 15, 20, 50].map(p => (
-                <button key={p} onClick={() => setNewChore({ ...newChore, points: p })} className={cn('flex-1 py-2 px-3 rounded-lg border-2 transition-all font-bold', newChore.points === p ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 text-[var(--color-primary)]' : 'border-gray-100 hover:border-gray-200')}>
+                <button type="button" key={p} onClick={() => setNewChore({ ...newChore, points: p })} className={cn('flex-1 py-2 px-3 rounded-lg border-2 transition-all font-bold', newChore.points === p ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 text-[var(--color-primary)]' : 'border-gray-100 hover:border-gray-200')}>
                   {p}
                 </button>
               ))}

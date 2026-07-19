@@ -249,7 +249,7 @@ export default function DashboardPage() {
             <span className="font-medium">{kid.name}</span>
           </button>
         ))}
-        <button onClick={() => setIsAddKidModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">
+        <button type="button" onClick={() => setIsAddKidModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200">
           <Plus className="w-4 h-4" /> {translate('dashboard.addKid')}
         </button>
       </div>

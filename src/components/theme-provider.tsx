@@ -31,8 +31,13 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('theme') as Theme | null
-      return stored ?? defaultTheme
+      try {
+        const stored = localStorage.getItem('theme') as Theme | null
+        return stored ?? defaultTheme
+      } catch {
+        // localStorage may be disabled (e.g. Safari private mode)
+        return defaultTheme
+      }
     }
     return defaultTheme
   })
@@ -55,7 +60,11 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (newTheme: Theme) => {
-      localStorage.setItem('theme', newTheme)
+      try {
+        localStorage.setItem('theme', newTheme)
+      } catch {
+        // localStorage may be disabled; safe to ignore
+      }
       setTheme(newTheme)
     },
   }
