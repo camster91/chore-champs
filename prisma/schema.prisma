@@ -29,7 +29,7 @@ model FamilyMember {
   family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   parentId  String
   parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  role      String   @default('MEMBER') // OWNER, MEMBER
+  role      String   @default("MEMBER") // OWNER, MEMBER
   createdAt DateTime @default(now())
   
   @@unique([familyId, parentId])
@@ -266,6 +266,30 @@ model PushSubscription {
   updatedAt DateTime?
 
   @@unique([userId, endpoint])
+}
+
+// NOTE: AvatarItem and RedeemedReward still exist as tables in the database
+// (created by 0001_init, never dropped by a migration). They were removed
+// from this schema in #179 without a migration, which would make the next
+// `prisma migrate dev` generate DROP TABLE statements for them. Restored
+// here to keep the schema in sync with the migration history. If these
+// models are truly dead, drop them via a proper migration PR instead.
+model AvatarItem {
+  id          String   @id @default(cuid())
+  name        String
+  emoji       String
+  category    String
+  unlockCost  Int
+  imageUrl    String
+  createdAt   DateTime @default(now())
+}
+
+model RedeemedReward {
+  id        String   @id @default(cuid())
+  rewardId  String
+  kidId     String
+  points    Int
+  createdAt DateTime @default(now())
 }
 
 model PlannerItem {
