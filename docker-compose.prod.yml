@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: kids-chore-app-fixed:latest
+    image: chore-champs:latest
     container_name: kids-chore-app
     restart: always
     ports:
