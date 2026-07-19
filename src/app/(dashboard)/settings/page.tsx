@@ -501,6 +501,7 @@ export default function SettingsPage() {
           <Input 
             label="Email Address" 
             type="email" 
+            autoComplete="email"
             placeholder="spouse@example.com"
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}

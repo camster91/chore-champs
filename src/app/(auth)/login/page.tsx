@@ -103,6 +103,7 @@ function LoginForm() {
               <Input
                 label={translate('auth.email')}
                 type="email"
+                autoComplete="email"
                 placeholder={translate('auth.emailPlaceholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -113,6 +114,7 @@ function LoginForm() {
               <Input
                 label={translate('auth.password')}
                 type="password"
+                autoComplete="current-password"
                 placeholder={translate('auth.password')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
