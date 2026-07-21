@@ -116,13 +116,12 @@ export default function ProfilePage() {
                   const isCurrentLevel = currentKid.points >= lvl.minPoints && 
                     (lvl.level === LEVELS.length || currentKid.points < LEVELS[lvl.level].minPoints)
                   return (
-                    <div key={lvl.level} className={cn(
-                      'p-3 rounded-lg flex items-center gap-3',
+                    <div key={lvl.level} className={`p-3 rounded-lg flex items-center gap-3 ${
                       isCurrentLevel ? 'bg-yellow-50 border-2 border-yellow-400' : 'bg-gray-50'
-                    )}>
+                    }`}>
                       <span className="text-2xl">{lvl.icon}</span>
                       <div>
-                        <p className={cn('font-medium', isCurrentLevel && 'text-yellow-800')}>
+                        <p className={`font-medium ${isCurrentLevel ? 'text-yellow-800' : ''}`}>
                           {lvl.title}
                           {isCurrentLevel && <span className="ml-1 text-xs">★</span>}
                         </p>
