@@ -258,6 +258,11 @@ export default function ChoresPage() {
           <Button className="w-full mt-4" onClick={handleCreateChore} disabled={isCreatingChore}>{isCreatingChore ? translate('chores.creating') : translate('chores.createChore')}</Button>
         </div>
       </Modal>
+      {/* Celebration Modal */}
+      <CelebrationModal
+        data={celebrationData}
+        onClose={() => setCelebrationData(null)}
+      />
     </div>
   )
 }
