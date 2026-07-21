@@ -166,7 +166,9 @@ export default function WeeklyConsistency({ kidId, loadSummary }: WeeklyConsiste
                 <span className="font-bold">{summary.weeklyTotal}/{summary.weeklyGoal}</span> completed
               </span>
             </div>
-            <span className="text-sm text-gray-500">Best: {summary.bestDay}</span>
+            <span className="text-sm text-gray-500">
+              {summary.weeklyTotal > 0 ? `Best: ${summary.bestDay}` : 'No data yet'}
+            </span>
           </div>
 
           {/* Ring with streakColor gradient */}

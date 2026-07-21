@@ -6,19 +6,13 @@ services:
     container_name: kids-chore-app
     restart: always
     ports:
-      - "3000:3000"
+      - "3055:3000"
     env_file:
       - .env.production
     environment:
       - NODE_ENV=production
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.kids-chore.rule=Host(`kids-chore-app.ashbi.ca`) || Host(`kidschore.ashbi.ca`)"
-      - "traefik.http.routers.kids-chore.tls=true"
-      - "traefik.http.routers.kids-chore.tls.certresolver=letsencrypt"
-      - "traefik.http.services.kids-chore.loadbalancer.server.port=3000"
     networks:
-      - coolify
+      - proxy
     depends_on:
       - kids-chore-postgres
 
@@ -31,10 +25,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - coolify
+      - proxy
 
 networks:
-  coolify:
+  proxy:
     external: true
 
 volumes:

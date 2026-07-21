@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useCallback, useRef } from 'react'
+import React, { createContext, useContext, useCallback, useRef, useEffect } from 'react'
 
 interface AudioContextType {
   play: (soundName: 'pop' | 'tada' | 'click' | 'unlock' | 'levelUp') => void
@@ -19,6 +19,18 @@ const SOUNDS = {
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRefs = useRef<Record<string, HTMLAudioElement>>({})
 
+  useEffect(() => {
+    return () => {
+      // Clean up audio elements on unmount to prevent memory leaks
+      Object.values(audioRefs.current).forEach((audio) => {
+        audio.pause()
+        audio.src = ''
+        audio.load()
+      })
+      audioRefs.current = {}
+    }
+  }, [])
+
   const play = useCallback((soundName: keyof typeof SOUNDS) => {
     if (typeof window === 'undefined') return
 
@@ -31,7 +43,6 @@ export function AudioProvider({ children }: { children: React.ReactNode }) {
     audio.currentTime = 0
     audio.play().catch(() => {
       // Ignore errors (usually due to user not interacting with page yet)
-      console.log(`Audio play failed for ${soundName} - interactions required first.`)
     })
   }, [])
 

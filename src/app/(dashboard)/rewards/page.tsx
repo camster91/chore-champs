@@ -146,7 +146,7 @@ export default function RewardsPage() {
 
       <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title={translate('rewards.createReward')}>
         <div className="space-y-4">
-          <Input label={translate('rewards.rewardName')} value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} placeholder={translate('rewards.e.gExtraScreenTime')} />
+          <Input label={translate('rewards.rewardName')} value={newReward.title} onChange={(e) => setNewReward({ ...newReward, title: e.target.value })} placeholder={translate('rewards.eGExtraScreenTime')} />
           <Input label={translate('common.description')} value={newReward.description} onChange={(e) => setNewReward({ ...newReward, description: e.target.value })} placeholder={translate('rewards.optional')} />
           <Input label={translate('rewards.pointsCost')} type="number" min={1} value={newReward.cost} onChange={(e) => setNewReward({ ...newReward, cost: parseInt(e.target.value) || 1 })} />
           <div>

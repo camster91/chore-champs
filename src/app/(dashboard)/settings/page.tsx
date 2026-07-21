@@ -293,28 +293,10 @@ export default function SettingsPage() {
                 Share Link
               </h2>
               <p className="text-gray-600 mb-4">
-                Share this link with family members to invite them:
+                Invite family members by email above. Each invite gets a unique secure link valid for 7 days.
               </p>
-              <div className="flex gap-2">
-                <Input 
-                  label="Invite Link"
-                  value={typeof window !== 'undefined' ? `${window.location.origin}/signup` : ''} 
-                  readOnly 
-                  className="flex-1"
-                />
-                <Button 
-                  variant="outline"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(`${window.location.origin}/signup`)
-                    setCopied(true)
-                    setTimeout(() => setCopied(false), 2000)
-                  }}
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Anyone with this link can create an account and will be added to your family automatically.
+              <p className="text-sm text-gray-500">
+                For security, invites must be sent to a specific email address. Generic share links are not supported.
               </p>
             </CardContent>
           </Card>
