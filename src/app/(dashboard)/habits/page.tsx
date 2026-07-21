@@ -207,7 +207,7 @@ export default function HabitsPage() {
             label={translate('habits.habitName')}
             value={newHabit.title}
             onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
-            placeholder={translate('habits.e.gDrinkWater')}
+            placeholder={translate('habits.eGDrinkWater')}
           />
           <Input
             label={translate('common.description')}
