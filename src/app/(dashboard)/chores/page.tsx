@@ -12,6 +12,8 @@ import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Badge, Modal, Input, useServerAction } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
+import { CelebrationModal } from '@/components/CelebrationModal'
+import { useCelebration } from '@/hooks/useCelebration'
 import { cn, calculateLevel } from '@/lib/utils'
 import { getChores, createChore, completeChore, assignChore } from '@/actions/chores'
 import { useAudio } from '@/lib/audio-context'
@@ -59,6 +61,8 @@ export default function ChoresPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
+  const [celebrationData, setCelebrationData] = useState<import('@/hooks/useCelebration').GamificationData | null>(null)
+  const { celebrate } = useCelebration()
   const [newChore, setNewChore] = useState({
     title: '',
     description: '',
@@ -151,6 +155,14 @@ export default function ChoresPage() {
         if (newLevel > oldLevel) {
           setLevelUpLevel(newLevel)
         }
+      }
+
+      // Surface the celebration modal + confetti bursts whenever the server
+      // returns a non-null gamification payload (level up / streak milestone /
+      // any non-trivial streak bonus).
+      if (result.gamification) {
+        setCelebrationData(result.gamification)
+        celebrate(result.gamification)
       }
 
       mutate(`chores-${currentKid.id}`)

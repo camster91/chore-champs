@@ -44,7 +44,7 @@ export default function RewardsPage() {
 
   useEffect(() => {
     initI18n()
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+     
     loadRewards()
   }, [loadRewards])
 

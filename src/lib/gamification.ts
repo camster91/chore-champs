@@ -1,12 +1,12 @@
-import { LEVELS } from './constants'
+import { LEVELS, type Level } from './constants'
 
 export interface GamificationResult {
   pointsEarned: number
   streakBonus: number
   currentStreak: number
   leveledUp: boolean
-  newLevel?: typeof LEVELS[number]
-  oldLevel?: typeof LEVELS[number]
+  newLevel?: Level
+  oldLevel?: Level
   milestone?: string
 }
 
@@ -70,7 +70,7 @@ export function calculatePoints(
 /**
  * Get level info from total points.
  */
-export function getLevelFromPoints(totalPoints: number): typeof LEVELS[number] {
+export function getLevelFromPoints(totalPoints: number): Level {
   for (let i = LEVELS.length - 1; i >= 0; i--) {
     if (totalPoints >= LEVELS[i].minPoints) {
       return LEVELS[i]
@@ -85,7 +85,7 @@ export function getLevelFromPoints(totalPoints: number): typeof LEVELS[number] {
 export function checkLevelUp(
   oldTotal: number,
   newTotal: number
-): { leveledUp: boolean; oldLevel: typeof LEVELS[number]; newLevel: typeof LEVELS[number] } {
+): { leveledUp: boolean; oldLevel: Level; newLevel: Level } {
   const oldLevel = getLevelFromPoints(oldTotal)
   const newLevel = getLevelFromPoints(newTotal)
   return {

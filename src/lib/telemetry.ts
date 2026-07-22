@@ -3,14 +3,14 @@
  */
 export const trackEvent = (eventName: string, properties?: Record<string, unknown>) => {
   if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
+     
     console.log('[Analytics]', eventName, properties)
   }
 }
 
 export const identifyUser = (userId: string, properties?: Record<string, unknown>) => {
   if (process.env.NODE_ENV === 'development') {
-    // eslint-disable-next-line no-console
+     
     console.log('[Analytics] identify', userId, properties)
   }
 }
