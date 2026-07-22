@@ -9,6 +9,7 @@ import { initI18n, t as translate } from '@/lib/i18n'
 import { getChores } from '@/actions/chores'
 import { getWeeklySummary } from '@/actions/weeklySummary'
 import WeeklyConsistency from '@/components/WeeklyConsistency'
+import { LEVELS } from '@/lib/constants'
 
 // avatarId is overloaded: emoji string OR comma-separated purchased-item IDs.
 // Only treat as a display emoji if it actually looks like one.
@@ -16,14 +17,6 @@ function isEmojiString(value: string | null | undefined): boolean {
   if (!value) return false
   return /^[\p{Extended_Pictographic}\u200D\uFE0F]{1,4}$/u.test(value)
 }
-
-const LEVELS = [
-  { level: 1, minPoints: 0, title: 'Beginner', icon: '🌱' },
-  { level: 2, minPoints: 50, title: 'Helper', icon: '🤝' },
-  { level: 3, minPoints: 150, title: 'Achiever', icon: '⭐' },
-  { level: 4, minPoints: 300, title: 'Champion', icon: '🏆' },
-  { level: 5, minPoints: 500, title: 'Legend', icon: '👑' },
-]
 
 export default function ProfilePage() {
   const { currentKid, setCurrentKid, kids } = useKidStore()

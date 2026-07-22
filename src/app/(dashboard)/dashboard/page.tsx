@@ -88,13 +88,13 @@ export default function DashboardPage() {
   }, [currentKid, setCurrentKid, setKids])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+     
     loadKids()
   }, [loadKids])
 
   useEffect(() => {
     if (currentKid) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Standard data-fetching pattern via useCallback
+       
       loadChores()
     }
   }, [currentKid, loadChores])

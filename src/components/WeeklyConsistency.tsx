@@ -30,7 +30,7 @@ export default function WeeklyConsistency({ kidId, loadSummary }: WeeklyConsiste
   }, [kidId, weekOffset, loadSummary])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Data fetch via useCallback
+     
     loadData()
   }, [loadData])
 

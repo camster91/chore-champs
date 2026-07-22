@@ -17,27 +17,33 @@ const SOUNDS = {
 }
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
-  const audioRefs = useRef<Record<string, HTMLAudioElement>>({})
+  // Stable per-provider audio cache. We mutate Map contents (set/clear), never
+  // reassign `.current`, so the linter's `react-hooks/immutability` rule
+  // (which only flags `ref.current = X` mutations inside effects) stays happy.
+  const audioCache = useRef<Map<keyof typeof SOUNDS, HTMLAudioElement>>(new Map())
 
   useEffect(() => {
+    const cache = audioCache.current
     return () => {
-      // Clean up audio elements on unmount to prevent memory leaks
-      Object.values(audioRefs.current).forEach((audio) => {
+      // Pause + clear every cached audio element to release decoder resources
+      // when the provider unmounts (e.g. SPA teardown, route change).
+      cache.forEach((audio) => {
         audio.pause()
         audio.src = ''
         audio.load()
       })
-      audioRefs.current = {}
+      cache.clear()
     }
   }, [])
 
   const play = useCallback((soundName: keyof typeof SOUNDS) => {
     if (typeof window === 'undefined') return
 
-    let audio = audioRefs.current[soundName]
+    const cache = audioCache.current
+    let audio = cache.get(soundName)
     if (!audio) {
       audio = new Audio(SOUNDS[soundName])
-      audioRefs.current[soundName] = audio
+      cache.set(soundName, audio)
     }
 
     audio.currentTime = 0

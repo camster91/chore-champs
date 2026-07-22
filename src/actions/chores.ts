@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { processGamification } from '@/lib/gamification'
 
 export async function getChores() {
   const session = await getServerSession(authOptions)
@@ -106,19 +107,39 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
     where: {
       id: assignmentId,
       kid: { familyId: session.user.familyId }
-    }
+    },
+    include: { chore: true },
   })
 
   if (!existing) {
     throw new Error('Assignment not found')
   }
 
+  // Fetch the kid before the update so we can compute the streak bonus
+  // (needs the previous totalPoints, currentStreak, longestStreak, lastCompletedAt).
+  const kidBefore = await prisma.kid.findUnique({
+    where: { id: kidId },
+    select: { totalPoints: true, currentStreak: true, longestStreak: true, lastCompletedAt: true },
+  })
+  if (!kidBefore) {
+    throw new Error('Kid not found')
+  }
+
+  // Compute gamification server-side so the client can't game streaks/points.
+  const gamification = processGamification(
+    pointsEarned,
+    kidBefore.totalPoints,
+    kidBefore.currentStreak,
+    kidBefore.longestStreak,
+    kidBefore.lastCompletedAt,
+  )
+
   // ⚡ Bolt: Performance Optimization
   // Removed `include: { chore: true }` from update as the full chore object is not utilized downstream.
   const [assignment] = await prisma.$transaction([
     prisma.choreAssignment.update({
       where: { id: assignmentId },
-      data: { 
+      data: {
         status: 'COMPLETED',
         completedAt: new Date()
       }
@@ -126,8 +147,11 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
     prisma.kid.update({
       where: { id: kidId },
       data: {
-        points: { increment: pointsEarned },
-        totalPoints: { increment: pointsEarned }
+        points: { increment: gamification.pointsEarned },
+        totalPoints: { increment: gamification.pointsEarned },
+        currentStreak: gamification.currentStreak,
+        longestStreak: Math.max(kidBefore.longestStreak, gamification.currentStreak),
+        lastCompletedAt: new Date(),
       }
     })
   ])
@@ -142,7 +166,12 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
   revalidatePath('/dashboard')
   revalidatePath('/profile')
 
-  return { assignment, kidPoints: updatedKid?.points || 0, kidTotalPoints: updatedKid?.totalPoints || 0 }
+  return {
+    assignment,
+    kidPoints: updatedKid?.points || 0,
+    kidTotalPoints: updatedKid?.totalPoints || 0,
+    gamification,
+  }
 }
 
 export async function assignChore(choreId: string, kidId: string, dueDate: Date) {
