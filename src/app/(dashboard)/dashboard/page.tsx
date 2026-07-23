@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useKidStore } from '@/stores/kid-store'
 import { Card, CardContent, Button, Modal, Input, useServerAction } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
+import { StreakWidget } from '@/components/StreakWidget'
 import { cn } from '@/lib/utils'
 import { getKids, createKid } from '@/actions/kids'
 import { getChores, completeChore, assignChore } from '@/actions/chores'
@@ -253,6 +254,11 @@ export default function DashboardPage() {
           <Plus className="w-4 h-4" /> {translate('dashboard.addKid')}
         </button>
       </div>
+
+      {/* Streak Widget — surfaces the gamification engine's per-kid streak */}
+      {currentKid && (
+        <StreakWidget kid={currentKid} />
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">

@@ -7,6 +7,24 @@ export interface Kid {
   age: number
   avatarId: string
   points: number
+  /**
+   * Current consecutive-day streak. Reset to 0 when a day is missed,
+   * incremented by 1 on each daily completion. Used by the dashboard
+   * streak widget + the celebration modal milestones.
+   */
+  currentStreak: number
+  /**
+   * All-time longest streak. Never decreases. Used to display "best ever"
+   * alongside the live streak.
+   */
+  longestStreak: number
+  /**
+   * ISO timestamp of the kid's most recent chore completion. Used by the
+   * streak engine to compute whether the next completion is same-day,
+   * consecutive-day, or a streak-breaking gap. Null if the kid has never
+   * completed a chore.
+   */
+  lastCompletedAt: string | null
   themeMode: string
   primaryColor: string
   secondaryColor: string
@@ -82,18 +100,21 @@ export const useKidStore = create<KidState>()(
       },
 
       // Sync local store with server data, auto-selecting first kid if none selected
-      syncFromServer: (serverKids) => {
-        const state = get()
-        const kids: Kid[] = serverKids.map((sk) => ({
-          id: sk.id,
-          name: sk.name,
-          age: sk.age,
-          avatarId: sk.avatarId,
-          points: sk.points || 0,
-          themeMode: sk.themeMode,
-          primaryColor: sk.primaryColor,
-          secondaryColor: sk.secondaryColor,
-        }))
+            syncFromServer: (serverKids) => {
+              const state = get()
+              const kids: Kid[] = serverKids.map((sk) => ({
+                id: sk.id,
+                name: sk.name,
+                age: sk.age,
+                avatarId: sk.avatarId,
+                points: sk.points || 0,
+                currentStreak: sk.currentStreak ?? 0,
+                longestStreak: sk.longestStreak ?? 0,
+                lastCompletedAt: sk.lastCompletedAt ?? null,
+                themeMode: sk.themeMode,
+                primaryColor: sk.primaryColor,
+                secondaryColor: sk.secondaryColor,
+              }))
 
         // Auto-select first kid if currentKid is null and kids exist
         let currentKid = state.currentKid
@@ -113,12 +134,37 @@ export const useKidStore = create<KidState>()(
       },
     }),
     {
-      name: 'kids-chore-kid',
-      partialize: (state) => ({
-        currentKid: state.currentKid,
-        kids: state.kids,
-        sessionHash: state.sessionHash,
-      }),
-    }
-  )
+          name: 'kids-chore-kid',
+          // Bump version on every schema change so the `migrate` callback runs
+          // once per upgrade and backfills missing fields without losing user data.
+          version: 2,
+          migrate: (persistedState: unknown, version: number): unknown => {
+            // v1 → v2: streak fields were added. Backfill defaults so the
+            // persisted shape matches the current Kid interface.
+            if (version < 2 && persistedState && typeof persistedState === 'object') {
+              const state = persistedState as {
+                kids?: Array<Record<string, unknown>>
+                currentKid?: Record<string, unknown> | null
+              }
+              const backfill = (k: Record<string, unknown>) => ({
+                currentStreak: 0,
+                longestStreak: 0,
+                lastCompletedAt: null,
+                ...k,
+              })
+              return {
+                ...state,
+                kids: state.kids?.map(backfill),
+                currentKid: state.currentKid ? backfill(state.currentKid) : null,
+              }
+            }
+            return persistedState
+          },
+          partialize: (state) => ({
+            currentKid: state.currentKid,
+            kids: state.kids,
+            sessionHash: state.sessionHash,
+          }),
+        }
+      )
 )
