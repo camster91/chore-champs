@@ -20,6 +20,7 @@ export async function getFamilyGoals() {
     orderBy: {
       createdAt: 'desc',
     },
+    take: 50,
   })
 }
 

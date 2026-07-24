@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Users, 
@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const [isSending, setIsSending] = useState(false)
   const [inviteResult, setInviteResult] = useState<{ message: string; inviteUrl?: string; direct?: boolean } | null>(null)
   const [copied, setCopied] = useState(false)
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
@@ -73,9 +74,21 @@ export default function SettingsPage() {
   const { play } = useAudio()
 
   useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
     loadInvites()
     checkNotificationPermission()
   }, [])
+
+  function flashCopied() {
+    setCopied(true)
+    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current)
+    copiedTimeoutRef.current = setTimeout(() => setCopied(false), 2000)
+  }
 
   async function loadInvites() {
     try {
@@ -112,8 +125,7 @@ export default function SettingsPage() {
       if (result.inviteUrl && !result.direct) {
         // Copy link to clipboard
         await navigator.clipboard.writeText(result.inviteUrl)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        flashCopied()
       }
       
       setInviteEmail('')
@@ -521,8 +533,7 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={async () => {
                         await navigator.clipboard.writeText(inviteResult.inviteUrl!)
-                        setCopied(true)
-                        setTimeout(() => setCopied(false), 2000)
+                        flashCopied()
                       }}
                     >
                       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

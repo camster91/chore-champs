@@ -9,7 +9,8 @@ export async function GET() {
 
     const rewards = await prisma.reward.findMany({
       where: { familyId: auth.familyId },
-      orderBy: { cost: 'asc' }
+      orderBy: { cost: 'asc' },
+      take: 100,
     })
 
     return NextResponse.json(rewards)

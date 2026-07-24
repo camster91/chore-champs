@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, Users, Star, Trophy, CheckCircle, ArrowRight, Loader2, PartyPopper } from 'lucide-react'
 import { Button, Card, CardContent } from '@/components/ui'
@@ -46,6 +46,13 @@ function SetupSteps({ onComplete }: { onComplete: () => void }) {
   const { play } = useAudio()
   const router = useRouter()
   const { syncFromServer } = useKidStore()
+  const completeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (completeTimeoutRef.current) clearTimeout(completeTimeoutRef.current)
+    }
+  }, [])
 
   const steps = [
     { title: 'Add Your Kids', icon: Users, description: 'Create profiles for each child in your family' },
@@ -68,7 +75,8 @@ function SetupSteps({ onComplete }: { onComplete: () => void }) {
         const kids = await kidsRes.json()
         syncFromServer(kids)
         
-        setTimeout(() => {
+        if (completeTimeoutRef.current) clearTimeout(completeTimeoutRef.current)
+        completeTimeoutRef.current = setTimeout(() => {
           onComplete()
           router.refresh()
         }, 2000)

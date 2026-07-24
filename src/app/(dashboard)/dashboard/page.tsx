@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Trophy, Star, CheckCircle, Clock, Loader2, Sparkles, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useKidStore } from '@/stores/kid-store'
@@ -41,6 +41,13 @@ export default function DashboardPage() {
   const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [newKid, setNewKid] = useState({ name: '', age: '' })
+  const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     initI18n()
@@ -110,7 +117,8 @@ export default function DashboardPage() {
       }
       await completeChore(assignmentId)
       setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 2000)
+      if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current)
+      confettiTimeoutRef.current = setTimeout(() => setShowConfetti(false), 2000)
       loadChores()
     } catch (e) {
       // Surfaced via the global error boundary toast; logged for debugging.

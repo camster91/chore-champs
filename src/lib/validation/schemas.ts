@@ -53,6 +53,26 @@ export const createInviteSchema = z.object({
   role: z.literal('MEMBER').default('MEMBER'),
 })
 
+export const updateRewardSchema = z
+  .object({
+    title: z.string().min(1).max(200).optional(),
+    description: z.string().max(1000).nullable().optional(),
+    cost: z.number().int().min(1).max(100000).optional(),
+    category: z.string().min(1).max(100).optional(),
+    icon: z.string().max(32).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .strict()
+
+export const assignChoreSchema = z.object({
+  choreId: idSchema,
+  kidIds: z.array(idSchema).min(1).max(20),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD')
+    .optional(),
+})
+
 export const createRewardSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
   description: z.string().max(1000, 'Description too long').optional(),
@@ -115,6 +135,8 @@ export type CreateChoreInput = z.infer<typeof createChoreSchema>
 export type UpdateChoreInput = z.infer<typeof updateChoreSchema>
 export type UpdateKidInput = z.infer<typeof updateKidSchema>
 export type CreateInviteInput = z.infer<typeof createInviteSchema>
+export type UpdateRewardInput = z.infer<typeof updateRewardSchema>
+export type AssignChoreInput = z.infer<typeof assignChoreSchema>
 export type CreateRewardInput = z.infer<typeof createRewardSchema>
 export type RedeemRewardInput = z.infer<typeof redeemRewardSchema>
 export type CreateKidInput = z.infer<typeof createKidSchema>

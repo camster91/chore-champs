@@ -17,6 +17,7 @@ export async function getKids(): Promise<Kid[]> {
   const kids = await prisma.kid.findMany({
     where: { familyId: session.user.familyId },
     orderBy: { createdAt: 'asc' },
+    take: 20,
   })
 
   return kids.map((k) => ({

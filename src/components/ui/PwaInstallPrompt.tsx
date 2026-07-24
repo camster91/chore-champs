@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Download, X, Smartphone } from 'lucide-react'
 import { Button } from './Button'
@@ -23,16 +23,15 @@ export function PwaInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false)
   const isIOS = getIsIOS()
   const isStandalone = getIsStandalone()
+  const delayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Persist the user's "no thanks" so we never pester them again.
-  // They can re-enable install via the browser's native install menu.
   const DISMISS_KEY = 'cc-pwa-install-dismissed-at'
   const wasRecentlyDismissed = (): boolean => {
     if (typeof window === 'undefined') return false
     try {
       const ts = window.localStorage.getItem(DISMISS_KEY)
       if (!ts) return false
-      // Remind again in 30 days
       return Date.now() - Number(ts) < 30 * 24 * 60 * 60 * 1000
     } catch {
       return false
@@ -51,31 +50,29 @@ export function PwaInstallPrompt() {
     if (isStandalone) return
     if (wasRecentlyDismissed()) return
 
-    // Auto-dismiss after 12s if the user doesn't interact.
-    let autoDismiss: ReturnType<typeof setTimeout> | null = null
     const showAndArmAuto = () => {
       setShowPrompt(true)
-      autoDismiss = setTimeout(() => setShowPrompt(false), 12000)
+      if (autoDismissRef.current) clearTimeout(autoDismissRef.current)
+      autoDismissRef.current = setTimeout(() => setShowPrompt(false), 12000)
     }
 
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      const t = setTimeout(showAndArmAuto, 3000)
-      return () => clearTimeout(t)
+      if (delayTimeoutRef.current) clearTimeout(delayTimeoutRef.current)
+      delayTimeoutRef.current = setTimeout(showAndArmAuto, 3000)
     }
 
     window.addEventListener('beforeinstallprompt', handler)
 
-    let t: ReturnType<typeof setTimeout> | null = null
     if (isIOS) {
-      t = setTimeout(showAndArmAuto, 5000)
+      delayTimeoutRef.current = setTimeout(showAndArmAuto, 5000)
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler)
-      if (t) clearTimeout(t)
-      if (autoDismiss) clearTimeout(autoDismiss)
+      if (delayTimeoutRef.current) clearTimeout(delayTimeoutRef.current)
+      if (autoDismissRef.current) clearTimeout(autoDismissRef.current)
     }
   }, [isIOS, isStandalone])
 

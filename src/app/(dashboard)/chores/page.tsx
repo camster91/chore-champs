@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   Plus,
@@ -63,11 +63,18 @@ export default function ChoresPage() {
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null)
   const [celebrationData, setCelebrationData] = useState<import('@/hooks/useCelebration').GamificationData | null>(null)
   const { celebrate } = useCelebration()
+  const confettiTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [newChore, setNewChore] = useState({
     title: '',
     description: '',
     points: 10,
   })
+
+  useEffect(() => {
+    return () => {
+      if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current)
+    }
+  }, [])
 
   // Hook must be called unconditionally — placed before any early returns
   const { run: runCreateChore, isPending: isCreatingChore } = useServerAction(
@@ -146,7 +153,8 @@ export default function ChoresPage() {
 
       play('pop')
       setShowConfetti(true)
-      setTimeout(() => setShowConfetti(false), 2000)
+      if (confettiTimeoutRef.current) clearTimeout(confettiTimeoutRef.current)
+      confettiTimeoutRef.current = setTimeout(() => setShowConfetti(false), 2000)
 
       // Check for level-up
       if (result.kidTotalPoints) {

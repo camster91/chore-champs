@@ -12,7 +12,8 @@ export async function GET() {
     // The related data is not utilized by clients of this endpoint.
     const kids = await prisma.kid.findMany({
       where: { familyId: auth.familyId },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { createdAt: 'asc' },
+      take: 20,
     })
 
     return NextResponse.json(kids)

@@ -14,7 +14,8 @@ export async function getRewards() {
 
   return await prisma.reward.findMany({
     where: { familyId: session.user.familyId },
-    orderBy: { cost: 'asc' }
+    orderBy: { cost: 'asc' },
+    take: 100,
   })
 }
 
