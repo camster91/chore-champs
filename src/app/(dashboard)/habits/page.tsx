@@ -74,6 +74,7 @@ export default function HabitsPage() {
       loadHabits()
     } catch (e) {
       console.error('Failed to log habit:', e)
+      toast({ title: 'Could not log habit', description: 'Please try again.', variant: 'error' })
     }
   }
 
@@ -92,6 +93,7 @@ export default function HabitsPage() {
       loadHabits()
     } catch (e) {
       console.error('Failed to create habit:', e)
+      toast({ title: 'Could not create habit', description: 'Please try again.', variant: 'error' })
     } finally {
       setIsSubmitting(false)
     }

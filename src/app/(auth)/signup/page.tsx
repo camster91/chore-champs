@@ -65,11 +65,7 @@ function SignupForm() {
         return
       }
 
-      if (inviteToken) {
-        router.push(`/invite/${inviteToken}`)
-      } else {
-        router.push('/dashboard')
-      }
+      router.push('/dashboard')
     } catch {
       setError(translate('auth.somethingWentWrong'))
       setStep('info')

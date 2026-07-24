@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Badge, Modal, Input, useServerAction } from '@/components/ui'
+import { Card, CardContent, Button, Badge, Modal, Input, useServerAction, useToast } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
 import { CelebrationModal } from '@/components/CelebrationModal'
@@ -47,6 +47,7 @@ const suggestedChores = [
 export default function ChoresPage() {
   const { currentKid } = useKidStore()
   const { play } = useAudio()
+  const { toast } = useToast()
 
   useEffect(() => {
     initI18n()
@@ -142,15 +143,16 @@ export default function ChoresPage() {
         assignmentId = newAssignment.id
       }
 
-      const result = await completeChore(assignmentId, chore.points, currentKid.id)
+      const result = await completeChore(assignmentId, currentKid.id)
 
       play('pop')
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
 
-      // Check for level-up
-      if (result.kidTotalPoints) {
-        const oldLevel = calculateLevel(result.kidTotalPoints - chore.points)
+      // Check for level-up using server-computed points (not client chore.points)
+      if (result.kidTotalPoints != null && result.gamification) {
+        const pointsJustEarned = result.gamification.pointsEarned
+        const oldLevel = calculateLevel(result.kidTotalPoints - pointsJustEarned)
         const newLevel = calculateLevel(result.kidTotalPoints)
         if (newLevel > oldLevel) {
           setLevelUpLevel(newLevel)
@@ -169,10 +171,15 @@ export default function ChoresPage() {
 
       trackEvent(EVENTS.CHORE_COMPLETED, {
         choreTitle: chore.title,
-        points: chore.points,
+        points: result.gamification?.pointsEarned ?? chore.points,
       })
     } catch (error) {
       console.error('Failed to complete chore:', error)
+      toast({
+        title: 'Could not complete chore',
+        description: 'Please try again.',
+        variant: 'error',
+      })
     }
   }
 

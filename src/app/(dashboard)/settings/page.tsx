@@ -15,7 +15,7 @@ import {
   UserPlus,
   Trash2,
 } from 'lucide-react'
-import { Card, CardContent, Button, Input, Modal, ListItemSkeleton, EmptyState } from '@/components/ui'
+import { Card, CardContent, Button, Input, Modal, ListItemSkeleton, EmptyState, useToast } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { 
   getPendingInvites, 
@@ -36,6 +36,7 @@ interface PendingInvite {
 }
 
 export default function SettingsPage() {
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<'family' | 'notifications' | 'account'>('family')
   const [invites, setInvites] = useState<PendingInvite[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -130,6 +131,7 @@ export default function SettingsPage() {
       setInvites(invites.filter(i => i.id !== inviteId))
     } catch (error) {
       console.error('Failed to cancel invite:', error)
+      toast({ title: 'Could not cancel invite', description: 'Please try again.', variant: 'error' })
     }
   }
 

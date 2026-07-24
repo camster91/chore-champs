@@ -21,7 +21,8 @@ export const createChoreSchema = z.object({
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
   recurring: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']).optional(),
   timeOfDay: z.enum(['MORNING', 'AFTERNOON', 'EVENING', 'ANYTIME']).optional(),
-  assignToKids: z.array(z.string().uuid()).optional(),
+  // Kid IDs are cuid() in this schema, not UUID
+  assignToKids: z.array(z.string().min(1).max(64)).optional(),
 })
 
 export const createRewardSchema = z.object({
@@ -52,6 +53,15 @@ export const createFamilyGoalSchema = z.object({
   reward: z.string().max(500, 'Reward description too long').optional(),
 })
 
+export const createHabitSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
+  description: z.string().max(1000, 'Description too long').optional(),
+  icon: z.string().max(32).optional(),
+  points: z.number().int().min(1, 'Points must be at least 1').max(1000, 'Points too high'),
+})
+
+export const inviteRoleSchema = z.enum(['MEMBER'])
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>
 export type CreateChoreInput = z.infer<typeof createChoreSchema>
@@ -59,3 +69,4 @@ export type CreateRewardInput = z.infer<typeof createRewardSchema>
 export type RedeemRewardInput = z.infer<typeof redeemRewardSchema>
 export type CreateKidInput = z.infer<typeof createKidSchema>
 export type CreateFamilyGoalInput = z.infer<typeof createFamilyGoalSchema>
+export type CreateHabitInput = z.infer<typeof createHabitSchema>

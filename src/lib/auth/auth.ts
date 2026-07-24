@@ -4,6 +4,20 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 import { checkRateLimit } from '@/lib/rate-limiter'
 
+async function resolveFamilyId(parentId: string): Promise<string | undefined> {
+  const family = await prisma.family.findFirst({
+    where: { parentId },
+    select: { id: true },
+  })
+  if (family) return family.id
+
+  const membership = await prisma.familyMember.findFirst({
+    where: { parentId },
+    select: { familyId: true },
+  })
+  return membership?.familyId
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -40,19 +54,7 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // Find the family by ownership OR membership
-        const family = await prisma.family.findFirst({
-          where: { parentId: parent.id }
-        })
-
-        const membership = family
-          ? null
-          : await prisma.familyMember.findFirst({
-              where: { parentId: parent.id },
-              include: { family: true }
-            })
-
-        const familyId = family?.id ?? membership?.familyId
+        const familyId = await resolveFamilyId(parent.id)
 
         return {
           id: parent.id,
@@ -67,8 +69,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.familyId = user.familyId
       }
+
+      // Always re-resolve familyId from DB so invite accept / membership
+      // changes apply without a full re-login (indexed lookups).
+      if (token.id) {
+        token.familyId = await resolveFamilyId(token.id as string)
+      }
+
       return token
     },
     async session({ session, token }) {

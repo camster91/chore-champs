@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import { Users, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react'
 import { Button, Card, CardContent } from '@/components/ui'
@@ -12,6 +13,7 @@ export default function InvitePage() {
   const router = useRouter()
   const token = params.token as string
   const { setKids, setCurrentKid } = useKidStore()
+  const { update: updateSession } = useSession()
   
   const [loading, setLoading] = useState(true)
   const [accepting, setAccepting] = useState(false)
@@ -59,11 +61,14 @@ export default function InvitePage() {
       }
       
       setSuccess(true)
+
+      // Refresh JWT familyId so subsequent server actions see the new family.
+      await updateSession()
       
       // Refresh kids data
       const kidsRes = await fetch('/api/kids')
       const kids = await kidsRes.json()
-      if (kids.length > 0) {
+      if (Array.isArray(kids) && kids.length > 0) {
         setKids(kids)
         setCurrentKid(kids[0])
       }

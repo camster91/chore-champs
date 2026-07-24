@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Trophy, Star, CheckCircle, Clock, Loader2, Sparkles, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Modal, Input, useServerAction } from '@/components/ui'
+import { Card, CardContent, Button, Modal, Input, useServerAction, useToast } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { StreakWidget } from '@/components/StreakWidget'
 import { cn } from '@/lib/utils'
@@ -36,6 +36,7 @@ function isEmojiString(value: string | null | undefined): boolean {
 
 export default function DashboardPage() {
   const { currentKid, setCurrentKid, setKids, kids } = useKidStore()
+  const { toast } = useToast()
   const [chores, setChores] = useState<DashboardChore[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddKidModalOpen, setIsAddKidModalOpen] = useState(false)
@@ -108,13 +109,18 @@ export default function DashboardPage() {
         const newAssignment = await assignChore(chore.choreId, currentKid!.id, new Date())
         assignmentId = newAssignment.id
       }
-      await completeChore(assignmentId, chore.points, currentKid!.id)
+      await completeChore(assignmentId, currentKid!.id)
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
       loadChores()
     } catch (e) {
-      // Surfaced via the global error boundary toast; logged for debugging.
       console.error('Failed to complete chore:', e)
+      // Async failures are NOT caught by ErrorBoundary — toast explicitly.
+      toast({
+        title: 'Could not complete chore',
+        description: 'Please try again.',
+        variant: 'error',
+      })
     }
   }
 

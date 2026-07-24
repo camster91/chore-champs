@@ -64,6 +64,7 @@ export default function RewardsPage() {
       loadRewards()
     } catch (e) {
       console.error('Failed to create reward:', e)
+      toast({ title: 'Could not create reward', description: 'Please try again.', variant: 'error' })
     } finally {
       setIsSubmitting(false)
     }
@@ -76,6 +77,7 @@ export default function RewardsPage() {
       loadRewards()
     } catch (e) {
       console.error('Failed to redeem reward:', e)
+      toast({ title: 'Could not redeem reward', description: 'Please try again.', variant: 'error' })
     }
   }
 

@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { logError } from '@/lib/utils/error'
 
+/**
+ * Intentionally does not reveal whether an email is registered
+ * (account enumeration hardening). Always returns the same shape.
+ * Callers that need existence checks should use authenticated flows.
+ */
 export async function POST(request: Request) {
   const ip = getClientIp(request)
   const { allowed, retryAfter } = await checkRateLimit(ip, 'check-account', 10, 15 * 60 * 1000)
@@ -13,18 +19,21 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { email } = await request.json()
-    
-    const user = await prisma.parent.findUnique({
-      where: { email },
-      select: { id: true }
-    })
+    const body = await request.json().catch(() => ({}))
+    const email =
+      typeof body?.email === 'string' ? body.email.toLowerCase().trim() : ''
 
-    return NextResponse.json({
-      hasAccount: !!user,
-    })
+    // Perform the lookup (and normalize timing) but never disclose the result.
+    if (email) {
+      await prisma.parent.findUnique({
+        where: { email },
+        select: { id: true },
+      })
+    }
+
+    return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Check account error:', error)
-    return NextResponse.json({ error: 'Failed to check account' }, { status: 500 })
+    logError('check-account', error)
+    return NextResponse.json({ ok: true })
   }
 }

@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { logError } from '@/lib/utils/error'
 
 /**
  * Permanently delete the current user's account, family, and all
@@ -55,9 +56,10 @@ export async function deleteAccount(
     revalidatePath('/')
     return { success: true }
   } catch (err) {
+    logError('deleteAccount', err)
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Delete failed',
+      error: 'Delete failed. Please try again.',
     }
   }
 }
