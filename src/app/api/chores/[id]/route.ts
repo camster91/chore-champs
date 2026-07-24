@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, notFound } from '@/lib/auth/helpers'
+import { getAuthenticatedFamily, unauthorized, notFound, badRequest } from '@/lib/auth/helpers'
+import { updateChoreSchema } from '@/lib/validation/schemas'
 
 export async function PATCH(
   request: Request,
@@ -19,17 +20,23 @@ export async function PATCH(
 
     if (!chore) return notFound('Chore not found')
 
-    const allowedFields = ['title', 'description', 'icon', 'difficulty', 'basePoints', 'recurring', 'timeOfDay', 'isActive']
-    const updates: Record<string, unknown> = {}
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field]
-      }
+    const parsed = updateChoreSchema.safeParse(body)
+    if (!parsed.success) {
+      return badRequest(parsed.error.issues.map(i => i.message).join(', '))
     }
 
     const updated = await prisma.chore.update({
       where: { id },
-      data: updates,
+      data: {
+        ...(parsed.data.title !== undefined && { title: parsed.data.title }),
+        ...(parsed.data.description !== undefined && { description: parsed.data.description }),
+        ...(parsed.data.basePoints !== undefined && { basePoints: parsed.data.basePoints }),
+        ...(parsed.data.difficulty !== undefined && { difficulty: parsed.data.difficulty }),
+        ...(parsed.data.recurring !== undefined && { recurring: parsed.data.recurring }),
+        ...(parsed.data.timeOfDay !== undefined && { timeOfDay: parsed.data.timeOfDay }),
+        ...(parsed.data.icon !== undefined && { icon: parsed.data.icon }),
+        ...(parsed.data.isActive !== undefined && { isActive: parsed.data.isActive }),
+      },
     })
 
     return NextResponse.json(updated)

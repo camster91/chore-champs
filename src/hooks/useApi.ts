@@ -14,7 +14,7 @@ export function useFetch<T>(url: string | null): FetchState<T> {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(!!url)
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     if (!url) {
       setData(null)
       setIsLoading(false)
@@ -25,26 +25,38 @@ export function useFetch<T>(url: string | null): FetchState<T> {
     setError(null)
 
     try {
-      const res = await fetch(url)
+      const res = await fetch(url, { signal })
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: 'Request failed' }))
         throw new Error(body.error || `HTTP ${res.status}`)
       }
       const json = await res.json()
-      setData(json)
+      if (!signal?.aborted) {
+        setData(json)
+      }
     } catch (err) {
+      if (signal?.aborted || (err instanceof DOMException && err.name === 'AbortError')) {
+        return
+      }
       setError(err instanceof Error ? err.message : 'Unknown error')
     } finally {
-      setIsLoading(false)
+      if (!signal?.aborted) {
+        setIsLoading(false)
+      }
     }
   }, [url])
 
   useEffect(() => {
-     
-    fetchData()
+    const controller = new AbortController()
+    fetchData(controller.signal)
+    return () => controller.abort()
   }, [fetchData])
 
-  return { data, error, isLoading, mutate: fetchData }
+  const mutate = useCallback(async () => {
+    await fetchData()
+  }, [fetchData])
+
+  return { data, error, isLoading, mutate }
 }
 
 // Generic mutation helper

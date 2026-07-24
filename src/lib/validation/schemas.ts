@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+/** Prisma models use cuid() IDs — not UUID. */
+const idSchema = z.string().min(1).max(64)
+
 export const registerSchema = z.object({
   email: z
     .string()
@@ -21,7 +24,7 @@ export const createChoreSchema = z.object({
   difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
   recurring: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']).optional(),
   timeOfDay: z.enum(['MORNING', 'AFTERNOON', 'EVENING', 'ANYTIME']).optional(),
-  assignToKids: z.array(z.string().uuid()).optional(),
+  assignToKids: z.array(idSchema).optional(),
 })
 
 export const createRewardSchema = z.object({
@@ -33,7 +36,7 @@ export const createRewardSchema = z.object({
 })
 
 export const redeemRewardSchema = z.object({
-  kidId: z.string().uuid('Invalid kid ID'),
+  kidId: idSchema,
 })
 
 export const createKidSchema = z.object({
@@ -52,6 +55,30 @@ export const createFamilyGoalSchema = z.object({
   reward: z.string().max(500, 'Reward description too long').optional(),
 })
 
+export const updateKidSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  age: z.number().min(3).max(18).optional(),
+  avatarId: z.string().min(1).max(500).optional(),
+  themeMode: z.enum(['SOLAR', 'CANDY', 'DEEP_SEA', 'FOREST', 'NEUTRAL']).optional(),
+  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+}).strict()
+
+export const updateChoreSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional().nullable(),
+  basePoints: z.number().min(1).max(1000).optional(),
+  difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).optional(),
+  recurring: z.enum(['NONE', 'DAILY', 'WEEKLY', 'MONTHLY']).optional().nullable(),
+  timeOfDay: z.enum(['MORNING', 'AFTERNOON', 'EVENING', 'ANYTIME']).optional(),
+  icon: z.string().max(50).optional(),
+  isActive: z.boolean().optional(),
+}).strict()
+
+export const inviteEmailSchema = z.object({
+  email: z.string().email('Invalid email address').max(254),
+})
+
 // Type exports
 export type RegisterInput = z.infer<typeof registerSchema>
 export type CreateChoreInput = z.infer<typeof createChoreSchema>
@@ -59,3 +86,5 @@ export type CreateRewardInput = z.infer<typeof createRewardSchema>
 export type RedeemRewardInput = z.infer<typeof redeemRewardSchema>
 export type CreateKidInput = z.infer<typeof createKidSchema>
 export type CreateFamilyGoalInput = z.infer<typeof createFamilyGoalSchema>
+export type UpdateKidInput = z.infer<typeof updateKidSchema>
+export type UpdateChoreInput = z.infer<typeof updateChoreSchema>

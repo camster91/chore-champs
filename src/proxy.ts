@@ -64,9 +64,14 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
 
-        // Public routes
-        const publicPaths = ['/', '/login', '/signup', '/invite/']
-        if (publicPaths.some(p => pathname === p || pathname.startsWith(p))) {
+        // Exact public routes only — never use startsWith('/') (matches everything).
+        const exactPublicPaths = new Set(['/', '/login', '/signup', '/offline'])
+        if (exactPublicPaths.has(pathname)) {
+          return true
+        }
+
+        // Prefix public routes (invite landing + token pages)
+        if (pathname.startsWith('/invite/')) {
           return true
         }
 
@@ -74,7 +79,9 @@ export default withAuth(
         if (
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/register') ||
-          pathname.startsWith('/api/health')
+          pathname.startsWith('/api/health') ||
+          // Public invite lookup (accept still requires session)
+          (pathname.startsWith('/api/invite/') && !pathname.endsWith('/accept'))
         ) {
           return true
         }

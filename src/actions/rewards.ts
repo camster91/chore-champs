@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { createRewardSchema } from '@/lib/validation/schemas'
+import { AppError } from '@/lib/utils/error'
 
 export async function getRewards() {
   const session = await getServerSession(authOptions)
@@ -13,7 +15,8 @@ export async function getRewards() {
 
   return await prisma.reward.findMany({
     where: { familyId: session.user.familyId },
-    orderBy: { cost: 'asc' }
+    orderBy: { cost: 'asc' },
+    take: 200,
   })
 }
 
@@ -26,22 +29,26 @@ export async function createReward(data: {
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    throw new AppError('Unauthorized', 401)
   }
 
-  if (!Number.isInteger(data.cost) || data.cost < 1) {
-    throw new Error('Reward cost must be a positive integer (>= 1)')
-  }
+  const parsed = createRewardSchema.parse({
+    title: data.title,
+    description: data.description,
+    cost: data.cost,
+    icon: data.icon,
+    category: data.category || 'GENERAL',
+  })
 
   const reward = await prisma.reward.create({
     data: {
-      title: data.title,
-      description: data.description,
-      cost: data.cost,
-      icon: data.icon || '🎁',
-      category: data.category,
+      title: parsed.title,
+      description: parsed.description,
+      cost: parsed.cost,
+      icon: parsed.icon || '🎁',
+      category: parsed.category,
       familyId: session.user.familyId,
-    }
+    },
   })
 
   revalidatePath('/rewards')
@@ -51,44 +58,50 @@ export async function createReward(data: {
 export async function redeemReward(rewardId: string, kidId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    throw new AppError('Unauthorized', 401)
   }
 
   const reward = await prisma.reward.findFirst({
-    where: { id: rewardId, familyId: session.user.familyId }
+    where: { id: rewardId, familyId: session.user.familyId },
   })
 
   if (!reward) {
-    throw new Error('Reward not found')
+    throw new AppError('Reward not found', 404)
   }
 
   const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId }
+    where: { id: kidId, familyId: session.user.familyId },
   })
 
   if (!kid) {
-    throw new Error('Kid not found')
+    throw new AppError('Kid not found', 404)
   }
 
-  if (kid.points < reward.cost) {
-    throw new Error('Insufficient points')
-  }
+  // Atomic conditional debit — prevents race overdrafts.
+  const redemption = await prisma.$transaction(async (tx) => {
+    const debit = await tx.kid.updateMany({
+      where: {
+        id: kidId,
+        familyId: session.user.familyId,
+        points: { gte: reward.cost },
+      },
+      data: {
+        points: { decrement: reward.cost },
+      },
+    })
 
-  const [redemption] = await prisma.$transaction([
-    prisma.redemption.create({
+    if (debit.count !== 1) {
+      throw new AppError('Insufficient points', 400)
+    }
+
+    return tx.redemption.create({
       data: {
         rewardId,
         kidId,
-        points: reward.cost
-      }
-    }),
-    prisma.kid.update({
-      where: { id: kidId },
-      data: {
-        points: { decrement: reward.cost }
-      }
+        points: reward.cost,
+      },
     })
-  ])
+  })
 
   revalidatePath('/rewards')
   revalidatePath('/dashboard')
@@ -98,14 +111,14 @@ export async function redeemReward(rewardId: string, kidId: string) {
 export async function deleteReward(rewardId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    throw new AppError('Unauthorized', 401)
   }
 
   const reward = await prisma.reward.findFirst({
-    where: { id: rewardId, familyId: session.user.familyId }
+    where: { id: rewardId, familyId: session.user.familyId },
   })
   if (!reward) {
-    throw new Error('Reward not found')
+    throw new AppError('Reward not found', 404)
   }
 
   await prisma.reward.delete({ where: { id: rewardId } })
