@@ -132,7 +132,7 @@ export function tryOrToast<T>(
   return fn().catch((err) => {
     toast({
       title: errorTitle,
-      description: err instanceof Error ? err.message : String(err),
+      description: getUserFriendlyError(err),
       variant: 'error',
     })
     return undefined

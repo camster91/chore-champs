@@ -33,7 +33,9 @@ model FamilyMember {
   createdAt DateTime @default(now())
   
   @@unique([familyId, parentId])
-  @@index([parentId])
+  // One membership per parent — blocks concurrent invite-accept races
+  // that would otherwise attach a user to multiple families.
+  @@unique([parentId])
 }
 
 model Parent {

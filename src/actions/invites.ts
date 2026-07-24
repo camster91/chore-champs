@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import crypto from 'crypto'
 import { inviteEmailSchema } from '@/lib/validation/schemas'
 import { AppError } from '@/lib/utils/error'
+import { claimFamilyInvite } from '@/lib/invites/claim'
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('base64url')
@@ -57,66 +58,20 @@ export async function createFamilyInvite(email: string) {
 }
 
 export async function acceptInvite(token: string) {
-  const invite = await prisma.familyInvite.findUnique({ where: { token } })
-
-  if (!invite) {
-    throw new AppError('Invalid invitation', 404)
-  }
-
-  if (invite.acceptedAt) {
-    throw new AppError('This invitation has already been used', 400)
-  }
-
-  if (new Date() > invite.expiresAt) {
-    throw new AppError('This invitation has expired', 400)
-  }
-
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     throw new AppError('Please sign in first to accept the invitation', 401)
   }
 
-  const parent = await prisma.parent.findUnique({
-    where: { id: session.user.id },
-    select: { email: true },
-  })
-
-  if (!parent || parent.email.toLowerCase() !== invite.email.toLowerCase()) {
-    throw new AppError('This invitation was sent to a different email address', 403)
+  const result = await claimFamilyInvite(token, session.user.id)
+  if (!result.ok) {
+    throw new AppError(result.error, result.status)
   }
-
-  const existingFamily = await prisma.family.findUnique({
-    where: { parentId: session.user.id },
-  })
-
-  const existingMembership = await prisma.familyMember.findFirst({
-    where: { parentId: session.user.id },
-  })
-
-  if (existingFamily || existingMembership) {
-    throw new AppError(
-      'You already belong to a family. Leave your current family before accepting a new invitation.',
-      400
-    )
-  }
-
-  await prisma.familyMember.create({
-    data: {
-      familyId: invite.familyId,
-      parentId: session.user.id,
-      role: INVITE_ROLE,
-    },
-  })
-
-  await prisma.familyInvite.update({
-    where: { id: invite.id },
-    data: { acceptedAt: new Date() },
-  })
 
   revalidatePath('/settings')
   revalidatePath('/dashboard')
 
-  return { success: true, message: 'Welcome to the family!' }
+  return { success: true, message: result.message }
 }
 
 export async function getPendingInvites() {

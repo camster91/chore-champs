@@ -163,7 +163,8 @@ export default function SettingsPage() {
         setDeleteError(result.error || 'Delete failed')
       }
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Delete failed')
+      console.error('[settings] deleteAccount', err)
+      setDeleteError('Failed to delete account. Please try again.')
     } finally {
       setIsDeleting(false)
     }

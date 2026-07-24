@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { Prisma } from '@prisma/client'
 
 export interface AvatarItemDTO {
   id: string
@@ -58,12 +59,22 @@ export async function unlockAvatarItem(
   }
 
   const item = AVATAR_ITEMS.find(i => i.id === itemId)!
+  const familyId = session.user.familyId
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const kid = await tx.kid.findFirst({
-        where: { id: kidId, familyId: session.user.familyId },
-      })
+      // Row lock prevents concurrent unlocks from both reading the same
+      // owned list and double-charging points for the same item.
+      const locked = await tx.$queryRaw<
+        Array<{ id: string; points: number; avatarId: string }>
+      >(Prisma.sql`
+        SELECT id, points, "avatarId"
+        FROM "Kid"
+        WHERE id = ${kidId} AND "familyId" = ${familyId}
+        FOR UPDATE
+      `)
+
+      const kid = locked[0]
       if (!kid) {
         return { success: false as const, error: 'Kid not found' }
       }
@@ -73,15 +84,23 @@ export async function unlockAvatarItem(
         return { success: false as const, error: 'Already owned' }
       }
 
+      if (kid.points < item.unlockCost) {
+        return {
+          success: false as const,
+          error: `Not enough points. Need ${item.unlockCost}`,
+        }
+      }
+
+      const nextOwned = [...owned, itemId].join(',')
       const debit = await tx.kid.updateMany({
         where: {
           id: kidId,
-          familyId: session.user.familyId,
+          familyId,
           points: { gte: item.unlockCost },
         },
         data: {
           points: { decrement: item.unlockCost },
-          avatarId: [...owned, itemId].join(','),
+          avatarId: nextOwned,
         },
       })
 
