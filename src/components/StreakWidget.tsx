@@ -2,6 +2,7 @@
 
 import { Flame, Trophy } from 'lucide-react'
 import { useMemo } from 'react'
+import { motion } from 'framer-motion'
 import type { Kid } from '@/stores/kid-store'
 
 interface StreakWidgetProps {
@@ -63,14 +64,28 @@ export function StreakWidget({ kid }: StreakWidgetProps) {
       role="status"
       aria-live="polite"
       aria-label={`${kid.name}'s streak is ${kid.currentStreak} days`}
-      className={`flex items-center gap-4 p-4 rounded-xl border bg-gradient-to-br ${containerGradient(status)}`}
+      className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border bg-gradient-to-br ${containerGradient(status)}`}
     >
       <div className="shrink-0">
-        <Flame className={`w-10 h-10 ${flameColor(status)}`} fill="currentColor" />
+        <Flame className={`w-8 h-8 sm:w-10 sm:h-10 ${flameColor(status)}`} fill="currentColor" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-gray-900">{kid.currentStreak}</span>
+          {/*
+           * Animated count: the `key` changes when the streak number changes,
+           * forcing framer-motion to remount the span and replay the
+           * scale-bounce. ~150ms, springs back to 1 — feels like the number
+           * "pops" without being distracting.
+           */}
+          <motion.span
+            key={kid.currentStreak}
+            initial={{ scale: 1.4 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
+            className="text-2xl font-bold text-gray-900 inline-block"
+          >
+            {kid.currentStreak}
+          </motion.span>
           <span className="text-sm text-gray-500">
             {kid.currentStreak === 1 ? 'day' : 'days'}
           </span>
