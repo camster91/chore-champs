@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthenticatedFamily, unauthorized, badRequest, notFound } from '@/lib/auth/helpers'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
 
 /**
  * POST /api/chores/assign
@@ -11,6 +12,9 @@ export async function POST(request: Request) {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
 
+    const blocked = await guardMutatingRequest(request, 'chore-assign', { userId: auth.userId })
+    if (blocked) return blocked
+
     const body = await request.json()
     const { choreId, kidIds, date } = body
 
@@ -19,13 +23,11 @@ export async function POST(request: Request) {
       return badRequest('kidIds must be a non-empty array')
     }
 
-    // Verify chore belongs to family
     const chore = await prisma.chore.findFirst({
       where: { id: choreId, familyId: auth.familyId },
     })
     if (!chore) return notFound('Chore not found')
 
-    // Verify all kids belong to family
     const kids = await prisma.kid.findMany({
       where: { id: { in: kidIds }, familyId: auth.familyId },
     })
@@ -37,7 +39,6 @@ export async function POST(request: Request) {
       ? new Date(`${date}T00:00:00.000Z`)
       : new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z')
 
-    // Avoid duplicates: check existing assignments
     const tomorrow = new Date(dueDate)
     tomorrow.setDate(tomorrow.getDate() + 1)
 

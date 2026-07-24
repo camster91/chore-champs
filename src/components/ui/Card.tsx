@@ -1,10 +1,9 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, HTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
-import { motion, HTMLMotionProps } from 'framer-motion'
 
-export interface CardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'default' | 'elevated' | 'outlined' | 'filled'
   hoverable?: boolean
   clickable?: boolean
@@ -22,21 +21,19 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
     }
 
     return (
-      <motion.div
+      <div
         ref={ref}
         className={cn(
           baseStyles,
           variants[variant],
           hoverable && 'hover:shadow-lg hover:-translate-y-1',
-          clickable && 'cursor-pointer',
+          clickable && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]',
           className
         )}
-        whileHover={clickable ? { scale: 1.02 } : undefined}
-        whileTap={clickable ? { scale: 0.98 } : undefined}
         {...props}
       >
         {children}
-      </motion.div>
+      </div>
     )
   }
 )

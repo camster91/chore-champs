@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth/auth'
 import { revalidatePath } from 'next/cache'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 import { claimFamilyInvite } from '@/lib/invites/claim'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
 
 type Props = {
   params: Promise<{ token: string }>
@@ -11,6 +12,12 @@ type Props = {
 
 export async function POST(request: Request, { params }: Props) {
   try {
+    const blocked = await guardMutatingRequest(request, 'invite-accept', {
+      maxAttempts: 10,
+      windowMs: 15 * 60 * 1000,
+    })
+    if (blocked) return blocked
+
     const ip = getClientIp(request)
     const { allowed, retryAfter } = await checkRateLimit(ip, 'invite-accept', 10, 15 * 60 * 1000)
     if (!allowed) {

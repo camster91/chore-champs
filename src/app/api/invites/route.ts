@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import crypto from 'crypto'
 import { checkRateLimit } from '@/lib/rate-limiter'
 import { inviteEmailSchema } from '@/lib/validation/schemas'
+import { requireFamilyOwner } from '@/lib/auth/helpers'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('base64url')
@@ -12,14 +12,16 @@ function generateToken(): string {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.familyId) {
+    const { auth, error } = await requireFamilyOwner()
+    if (error) {
+      // Members may view empty list rather than 403 for GET UX
+      if (error.status === 401) return NextResponse.json([])
       return NextResponse.json([])
     }
 
     const invites = await prisma.familyInvite.findMany({
       where: {
-        familyId: session.user.familyId,
+        familyId: auth.familyId,
         acceptedAt: null,
         expiresAt: { gt: new Date() },
       },
@@ -36,13 +38,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.familyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { auth, error } = await requireFamilyOwner()
+    if (error) return error
 
-    const userId = session.user.id
-    const { allowed, retryAfter } = await checkRateLimit(userId, 'invite-create', 10, 15 * 60 * 1000)
+    const blocked = await guardMutatingRequest(request, 'invite-create', {
+      userId: auth.userId,
+      maxAttempts: 10,
+      windowMs: 15 * 60 * 1000,
+    })
+    if (blocked) return blocked
+
+    const { allowed, retryAfter } = await checkRateLimit(
+      auth.userId,
+      'invite-create',
+      10,
+      15 * 60 * 1000
+    )
     if (!allowed) {
       return NextResponse.json(
         { error: 'Too many attempts. Try again later.' },
@@ -68,15 +79,14 @@ export async function POST(request: Request) {
     const token = generateToken()
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-    // Role is always MEMBER — clients cannot escalate to OWNER via invite.
     await prisma.familyInvite.create({
       data: {
         email,
-        familyId: session.user.familyId,
+        familyId: auth.familyId,
         role: 'MEMBER',
         token,
         expiresAt,
-        createdById: session.user.id,
+        createdById: auth.userId,
       },
     })
 
@@ -96,10 +106,13 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.familyId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { auth, error } = await requireFamilyOwner()
+    if (error) return error
+
+    const blocked = await guardMutatingRequest(request, 'invite-delete', {
+      userId: auth.userId,
+    })
+    if (blocked) return blocked
 
     const { searchParams } = new URL(request.url)
     const inviteId = searchParams.get('id')
@@ -109,7 +122,7 @@ export async function DELETE(request: Request) {
     }
 
     const invite = await prisma.familyInvite.findFirst({
-      where: { id: inviteId, familyId: session.user.familyId },
+      where: { id: inviteId, familyId: auth.familyId },
     })
 
     if (!invite) {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthenticatedFamily, unauthorized } from '@/lib/auth/helpers'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
 
 /**
  * POST /api/chores/generate-daily
@@ -8,10 +9,13 @@ import { getAuthenticatedFamily, unauthorized } from '@/lib/auth/helpers'
  * Called when the dashboard loads or can be triggered by a cron job.
  * Idempotent — won't create duplicate assignments for today.
  */
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+
+    const blocked = await guardMutatingRequest(request, 'generate-daily', { userId: auth.userId })
+    if (blocked) return blocked
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)

@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 import { Kid } from '@/stores/kid-store'
 import { createKidSchema, updateKidSchema } from '@/lib/validation/schemas'
 import { AppError } from '@/lib/utils/error'
+import { getAuthenticatedFamily } from '@/lib/auth/helpers'
 
 export async function getKids(): Promise<Kid[]> {
   const session = await getServerSession(authOptions)
@@ -107,13 +108,16 @@ export async function updateKid(
 }
 
 export async function deleteKid(kidId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     throw new AppError('Unauthorized', 401)
+  }
+  if (auth.role !== 'OWNER') {
+    throw new AppError('Only the family owner can remove kids', 403)
   }
 
   const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId },
+    where: { id: kidId, familyId: auth.familyId },
   })
   if (!kid) {
     throw new AppError('Kid not found', 404)

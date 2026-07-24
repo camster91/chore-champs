@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
 import { getAuthenticatedFamily, unauthorized, notFound, badRequest } from '@/lib/auth/helpers'
 import { updateChoreSchema } from '@/lib/validation/schemas'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
 
 export async function PATCH(
   request: Request,
@@ -10,6 +11,9 @@ export async function PATCH(
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+
+    const blocked = await guardMutatingRequest(request, 'chore-patch', { userId: auth.userId })
+    if (blocked) return blocked
 
     const { id } = await params
     const body = await request.json()
@@ -47,12 +51,15 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+
+    const blocked = await guardMutatingRequest(request, 'chore-delete', { userId: auth.userId })
+    if (blocked) return blocked
 
     const { id } = await params
 

@@ -1,10 +1,9 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, ButtonHTMLAttributes } from 'react'
 import { cn } from '@/lib/utils'
-import { motion, HTMLMotionProps } from 'framer-motion'
 
-export interface ButtonProps extends Omit<HTMLMotionProps<'button'>, 'ref'> {
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg' | 'xl'
   isLoading?: boolean
@@ -23,12 +22,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       children,
       disabled,
+      type = 'button',
       ...props
     },
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-semibold rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+      'inline-flex items-center justify-center font-semibold rounded-xl transition-transform transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:enabled:scale-[1.02] active:enabled:scale-[0.98]'
 
     const variants = {
       primary:
@@ -51,12 +51,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     }
 
     return (
-      <motion.button
+      <button
         ref={ref}
+        type={type}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
         disabled={disabled || isLoading}
-        whileHover={{ scale: disabled ? 1 : 1.02 }}
-        whileTap={{ scale: disabled ? 1 : 0.98 }}
         {...props}
       >
         {isLoading ? (
@@ -87,7 +86,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             {rightIcon}
           </>
         )}
-      </motion.button>
+      </button>
     )
   }
 )

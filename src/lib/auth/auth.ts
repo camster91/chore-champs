@@ -53,12 +53,18 @@ export const authOptions: NextAuthOptions = {
             })
 
         const familyId = family?.id ?? membership?.familyId
+        const familyRole = family
+          ? ('OWNER' as const)
+          : membership?.role === 'OWNER'
+            ? ('OWNER' as const)
+            : ('MEMBER' as const)
 
         return {
           id: parent.id,
           email: parent.email,
           name: parent.name,
           familyId: familyId,
+          familyRole,
         }
       },
     }),
@@ -68,6 +74,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.familyId = user.familyId
+        token.familyRole = user.familyRole
       }
       return token
     },
@@ -75,6 +82,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.familyId = token.familyId
+        session.user.familyRole = token.familyRole
       }
       return session
     },

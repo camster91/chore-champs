@@ -3,8 +3,19 @@ import prisma from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { registerSchema } from '@/lib/validation/schemas'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
+import { Prisma } from '@prisma/client'
+
+const GENERIC_CREATE_ERROR =
+  'Unable to create account. Try signing in, or use a different email.'
 
 export async function POST(request: NextRequest) {
+  const blocked = await guardMutatingRequest(request, 'register', {
+    maxAttempts: 5,
+    windowMs: 15 * 60 * 1000,
+  })
+  if (blocked) return blocked
+
   const ip = getClientIp(request)
   const { allowed, retryAfter } = await checkRateLimit(ip, 'register', 5, 15 * 60 * 1000)
   if (!allowed) {
@@ -19,57 +30,74 @@ export async function POST(request: NextRequest) {
     const { name, email, password } = body
 
     if (!name || !email || !password) {
-      return NextResponse.json({ error: 'Name, email, and password are required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Name, email, and password are required' },
+        { status: 400 }
+      )
     }
 
-    // Validate with schema
     const parsed = registerSchema.safeParse({ name, email, password })
     if (!parsed.success) {
       const errors = parsed.error.issues.map((e) => e.message).join(', ')
       return NextResponse.json({ error: errors }, { status: 400 })
     }
 
-    // Check if email already exists
     const existingParent = await prisma.parent.findUnique({
-      where: { email }
+      where: { email: parsed.data.email },
+      select: { id: true },
     })
 
+    // Same message whether the email is taken — no account enumeration.
     if (existingParent) {
-      return NextResponse.json({ error: 'An account with this email already exists. Please sign in.' }, { status: 400 })
+      return NextResponse.json({ error: GENERIC_CREATE_ERROR }, { status: 400 })
     }
 
-    // Create parent with hashed password
-    const hashedPassword = await bcrypt.hash(password, 12)
+    const hashedPassword = await bcrypt.hash(parsed.data.password, 12)
     const parent = await prisma.parent.create({
       data: {
-        name,
-        email,
+        name: parsed.data.name,
+        email: parsed.data.email,
         password: hashedPassword,
-      }
+      },
     })
 
-    // Auto-create a family for the new parent
     await prisma.family.create({
       data: {
-        name: `${name}'s Family`,
+        name: `${parsed.data.name}'s Family`,
         parentId: parent.id,
-      }
+      },
     })
 
     return NextResponse.json({
       success: true,
       parentId: parent.id,
-      message: 'Account created! Signing you in...'
+      message: 'Account created! Signing you in...',
     })
   } catch (error) {
-    // Distinguish between connection errors (user-facing) vs internal errors (logged)
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return NextResponse.json({ error: GENERIC_CREATE_ERROR }, { status: 400 })
+    }
+
     const message = error instanceof Error ? error.message : String(error)
-    const isConnectionError = message.includes('connection') || message.includes('timeout') || message.includes('ECONNREFUSED') || message.includes('ENOTFOUND')
+    const isConnectionError =
+      message.includes('connection') ||
+      message.includes('timeout') ||
+      message.includes('ECONNREFUSED') ||
+      message.includes('ENOTFOUND')
 
     if (isConnectionError) {
-      return NextResponse.json({ error: 'Database connection error. Please try again later.' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Database connection error. Please try again later.' },
+        { status: 500 }
+      )
     }
     console.error('Registration error:', error)
-    return NextResponse.json({ error: 'Failed to create account. Please try again.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to create account. Please try again.' },
+      { status: 500 }
+    )
   }
 }

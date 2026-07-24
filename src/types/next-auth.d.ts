@@ -7,6 +7,7 @@ declare module 'next-auth' {
       email: string
       name: string
       familyId?: string
+      familyRole?: 'OWNER' | 'MEMBER'
     } & DefaultSession['user']
   }
 
@@ -15,6 +16,7 @@ declare module 'next-auth' {
     email: string
     name: string
     familyId?: string
+    familyRole?: 'OWNER' | 'MEMBER'
   }
 }
 
@@ -22,5 +24,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     id?: string
     familyId?: string
+    familyRole?: 'OWNER' | 'MEMBER'
   }
 }

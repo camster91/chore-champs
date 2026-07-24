@@ -8,6 +8,7 @@ import crypto from 'crypto'
 import { inviteEmailSchema } from '@/lib/validation/schemas'
 import { AppError } from '@/lib/utils/error'
 import { claimFamilyInvite } from '@/lib/invites/claim'
+import { getAuthenticatedFamily } from '@/lib/auth/helpers'
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('base64url')
@@ -16,12 +17,19 @@ function generateToken(): string {
 /** Invites may only grant MEMBER — never OWNER via client input. */
 const INVITE_ROLE = 'MEMBER'
 
-export async function createFamilyInvite(email: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.id || !session?.user?.familyId) {
+async function requireOwnerFamily() {
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     throw new AppError('Unauthorized', 401)
   }
+  if (auth.role !== 'OWNER') {
+    throw new AppError('Only the family owner can manage invitations', 403)
+  }
+  return auth
+}
 
+export async function createFamilyInvite(email: string) {
+  const auth = await requireOwnerFamily()
   const { email: safeEmail } = inviteEmailSchema.parse({ email })
 
   const existingUser = await prisma.parent.findUnique({ where: { email: safeEmail } })
@@ -38,11 +46,11 @@ export async function createFamilyInvite(email: string) {
   await prisma.familyInvite.create({
     data: {
       email: safeEmail,
-      familyId: session.user.familyId,
+      familyId: auth.familyId,
       role: INVITE_ROLE,
       token,
       expiresAt,
-      createdById: session.user.id,
+      createdById: auth.userId,
     },
   })
 
@@ -100,13 +108,10 @@ export async function getPendingInvites() {
 }
 
 export async function cancelInvite(inviteId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    throw new AppError('Unauthorized', 401)
-  }
+  const auth = await requireOwnerFamily()
 
   const invite = await prisma.familyInvite.findFirst({
-    where: { id: inviteId, familyId: session.user.familyId },
+    where: { id: inviteId, familyId: auth.familyId },
   })
   if (!invite) {
     throw new AppError('Invite not found', 404)

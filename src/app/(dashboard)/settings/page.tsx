@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { 
   Users, 
   Bell, 
@@ -24,7 +23,7 @@ import {
 } from '@/actions/invites'
 import { useAudio } from '@/lib/audio-context'
 import { deleteAccount } from '@/actions/account'
-import { signOut } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 import { AlertTriangle } from 'lucide-react'
 
 interface PendingInvite {
@@ -36,6 +35,8 @@ interface PendingInvite {
 }
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
+  const isOwner = session?.user?.familyRole !== 'MEMBER'
   const [activeTab, setActiveTab] = useState<'family' | 'notifications' | 'account'>('family')
   const [invites, setInvites] = useState<PendingInvite[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -199,10 +200,10 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="animate-fade-in-up">
         <h1 className="text-3xl font-bold">Settings</h1>
         <p className="text-gray-500">Manage your family and preferences</p>
-      </motion.div>
+      </div>
 
       {/* Tab Navigation */}
       <div className="flex gap-2 border-b">
@@ -235,15 +236,23 @@ export default function SettingsPage() {
                     Invite Family Members
                   </h2>
                   <p className="text-gray-500 text-sm mt-1">
-                    Invite your spouse or other family members to join
+                    {isOwner
+                      ? 'Invite your spouse or other family members to join'
+                      : 'Only the family owner can send invitations'}
                   </p>
                 </div>
-                <Button onClick={() => setShowInviteModal(true)} leftIcon={<UserPlus className="w-4 h-4" />}>
-                  Send Invite
-                </Button>
+                {isOwner && (
+                  <Button onClick={() => setShowInviteModal(true)} leftIcon={<UserPlus className="w-4 h-4" />}>
+                    Send Invite
+                  </Button>
+                )}
               </div>
 
-              {isLoading ? (
+              {!isOwner ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                  You are a family member. Ask the family owner to manage invitations.
+                </div>
+              ) : isLoading ? (
                 <div className="space-y-3 py-4">
                   {Array.from({ length: 2 }).map((_, i) => (
                     <ListItemSkeleton key={i} />
@@ -407,7 +416,9 @@ export default function SettingsPage() {
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-red-700 mb-1">Danger Zone</h2>
                   <p className="text-sm text-gray-700 mb-3">
-                    Permanently delete your account, family, and all associated data — kids, chores, habits, rewards, invites. This action cannot be undone.
+                    {isOwner
+                      ? 'Permanently delete your account, family, and all associated data — kids, chores, habits, rewards, invites. This action cannot be undone.'
+                      : 'Permanently delete your account and leave this family. Family data owned by the family owner is kept.'}
                   </p>
                   <Button
                     variant="outline"
@@ -439,7 +450,10 @@ export default function SettingsPage() {
       >
         <div className="space-y-4">
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
-            <strong>This is permanent.</strong> All your family&apos;s data will be erased. There is no undo and no recovery.
+            <strong>This is permanent.</strong>{' '}
+            {isOwner
+              ? "All your family's data will be erased. There is no undo and no recovery."
+              : 'Your account membership will be removed. There is no undo.'}
           </div>
           <p className="text-sm text-gray-700">
             To confirm, type your email address below:

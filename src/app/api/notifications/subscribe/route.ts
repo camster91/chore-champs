@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
+import { guardMutatingRequest } from '@/lib/security/request-guards'
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const blocked = await guardMutatingRequest(request, 'push-subscribe', {
+    userId: session.user.id,
+  })
+  if (blocked) return blocked
 
   try {
     const { endpoint, keys } = await request.json()
@@ -23,18 +29,18 @@ export async function POST(request: Request) {
       where: {
         userId_endpoint: {
           userId: session.user.id,
-          endpoint
-        }
+          endpoint,
+        },
       },
       create: {
         userId: session.user.id,
         endpoint,
-        keys: JSON.stringify(keys)
+        keys: JSON.stringify(keys),
       },
       update: {
         keys: JSON.stringify(keys),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ success: true })
@@ -50,6 +56,11 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const blocked = await guardMutatingRequest(request, 'push-unsubscribe', {
+    userId: session.user.id,
+  })
+  if (blocked) return blocked
+
   try {
     const { endpoint } = await request.json()
 
@@ -60,8 +71,8 @@ export async function DELETE(request: Request) {
     await prisma.pushSubscription.deleteMany({
       where: {
         userId: session.user.id,
-        endpoint
-      }
+        endpoint,
+      },
     })
 
     return NextResponse.json({ success: true })
