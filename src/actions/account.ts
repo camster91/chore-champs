@@ -55,9 +55,10 @@ export async function deleteAccount(
     revalidatePath('/')
     return { success: true }
   } catch (err) {
+    console.error('deleteAccount failed:', err)
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Delete failed',
+      error: 'Failed to delete account. Please try again.',
     }
   }
 }

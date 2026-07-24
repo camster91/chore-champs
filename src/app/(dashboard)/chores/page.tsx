@@ -142,7 +142,7 @@ export default function ChoresPage() {
         assignmentId = newAssignment.id
       }
 
-      const result = await completeChore(assignmentId, chore.points, currentKid.id)
+      const result = await completeChore(assignmentId)
 
       play('pop')
       setShowConfetti(true)

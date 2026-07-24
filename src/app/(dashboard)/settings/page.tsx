@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, Button, Input, Modal, ListItemSkeleton, EmptyState } from '@/components/ui'
 import { cn } from '@/lib/utils'
+import { getUserFriendlyError } from '@/lib/utils/error'
 import { 
   getPendingInvites, 
   cancelInvite, 
@@ -163,7 +164,7 @@ export default function SettingsPage() {
         setDeleteError(result.error || 'Delete failed')
       }
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Delete failed')
+      setDeleteError(getUserFriendlyError(err))
     } finally {
       setIsDeleting(false)
     }

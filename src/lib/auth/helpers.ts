@@ -2,13 +2,28 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from './auth'
 import prisma from '@/lib/db'
 
-export async function getAuthenticatedFamily() {
+export type FamilyRole = 'OWNER' | 'MEMBER'
+
+export type AuthenticatedFamily = {
+  userId: string
+  familyId: string
+  role: FamilyRole
+  family: {
+    id: string
+    name: string
+    parentId: string
+    createdAt: Date
+    updatedAt: Date
+  }
+}
+
+export async function getAuthenticatedFamily(): Promise<AuthenticatedFamily | null> {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return null
   }
 
-  // Check ownership first
+  // Check ownership first (Family.parentId is the canonical owner)
   const family = await prisma.family.findFirst({
     where: { parentId: session.user.id }
   })
@@ -17,6 +32,7 @@ export async function getAuthenticatedFamily() {
     return {
       userId: session.user.id,
       familyId: family.id,
+      role: 'OWNER',
       family,
     }
   }
@@ -28,9 +44,11 @@ export async function getAuthenticatedFamily() {
   })
 
   if (membership) {
+    const role: FamilyRole = membership.role === 'OWNER' ? 'OWNER' : 'MEMBER'
     return {
       userId: session.user.id,
       familyId: membership.familyId,
+      role,
       family: membership.family,
     }
   }
@@ -38,9 +56,23 @@ export async function getAuthenticatedFamily() {
   return null
 }
 
+/** Family owners only — used for destructive / admin mutations. */
+export async function requireFamilyOwner(): Promise<AuthenticatedFamily | null> {
+  const auth = await getAuthenticatedFamily()
+  if (!auth || auth.role !== 'OWNER') return null
+  return auth
+}
+
 export function unauthorized() {
   return new Response(JSON.stringify({ error: 'Unauthorized' }), {
     status: 401,
+    headers: { 'Content-Type': 'application/json' }
+  })
+}
+
+export function forbidden(message = 'Forbidden') {
+  return new Response(JSON.stringify({ error: message }), {
+    status: 403,
     headers: { 'Content-Type': 'application/json' }
   })
 }

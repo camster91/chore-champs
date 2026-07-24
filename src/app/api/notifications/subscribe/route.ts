@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
+import { pushSubscriptionSchema } from '@/lib/validation/schemas'
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions)
@@ -10,31 +11,33 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { endpoint, keys } = await request.json()
+    const body = await request.json()
+    const parsed = pushSubscriptionSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid subscription' },
+        { status: 400 }
+      )
+    }
 
-    if (!endpoint || typeof endpoint !== 'string') {
-      return NextResponse.json({ error: 'endpoint is required' }, { status: 400 })
-    }
-    if (!keys || typeof keys !== 'object') {
-      return NextResponse.json({ error: 'keys is required' }, { status: 400 })
-    }
+    const { endpoint, keys } = parsed.data
 
     await prisma.pushSubscription.upsert({
       where: {
         userId_endpoint: {
           userId: session.user.id,
-          endpoint
-        }
+          endpoint,
+        },
       },
       create: {
         userId: session.user.id,
         endpoint,
-        keys: JSON.stringify(keys)
+        keys: JSON.stringify(keys),
       },
       update: {
         keys: JSON.stringify(keys),
-        updatedAt: new Date()
-      }
+        updatedAt: new Date(),
+      },
     })
 
     return NextResponse.json({ success: true })
@@ -51,17 +54,18 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    const { endpoint } = await request.json()
+    const body = await request.json()
+    const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : null
 
-    if (!endpoint || typeof endpoint !== 'string') {
+    if (!endpoint || !endpoint.startsWith('https://')) {
       return NextResponse.json({ error: 'endpoint is required' }, { status: 400 })
     }
 
     await prisma.pushSubscription.deleteMany({
       where: {
         userId: session.user.id,
-        endpoint
-      }
+        endpoint,
+      },
     })
 
     return NextResponse.json({ success: true })

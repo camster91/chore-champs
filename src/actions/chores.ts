@@ -5,6 +5,24 @@ import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { processGamification } from '@/lib/gamification'
+import { updateChoreSchema } from '@/lib/validation/schemas'
+import { getAuthenticatedFamily } from '@/lib/auth/helpers'
+
+/** Assignments older than this are not loaded into list views. */
+const ASSIGNMENT_LOOKBACK_DAYS = 14
+
+function assignmentWindowWhere() {
+  const since = new Date()
+  since.setDate(since.getDate() - ASSIGNMENT_LOOKBACK_DAYS)
+  since.setHours(0, 0, 0, 0)
+  return {
+    OR: [
+      { status: 'PENDING' },
+      { dueDate: { gte: since } },
+      { completedAt: { gte: since } },
+    ],
+  }
+}
 
 export async function getChores() {
   const session = await getServerSession(authOptions)
@@ -12,17 +30,16 @@ export async function getChores() {
     return []
   }
 
-  // ⚡ Bolt: Performance Optimization
-  // Removed `include: { kid: true }` from assignments as the client only maps the `kidId` to match the current kid
-  // and discards the nested kid relation, avoiding O(N) relational over-fetching on large lists.
   return await prisma.chore.findMany({
     where: { familyId: session.user.familyId },
     include: {
       assignments: {
-        orderBy: { dueDate: 'asc' }
-      }
+        where: assignmentWindowWhere(),
+        orderBy: { dueDate: 'asc' },
+        take: 100,
+      },
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   })
 }
 
@@ -32,11 +49,15 @@ export async function getChoreById(id: string) {
     return null
   }
 
-  // ⚡ Bolt: Performance Optimization
-  // Removed `include: { kid: true }` as the full kid object is silently discarded.
   return await prisma.chore.findFirst({
     where: { id, familyId: session.user.familyId },
-    include: { assignments: true }
+    include: {
+      assignments: {
+        where: assignmentWindowWhere(),
+        orderBy: { dueDate: 'asc' },
+        take: 100,
+      },
+    },
   })
 }
 
@@ -65,29 +86,29 @@ export async function createChore(data: {
       timeOfDay: data.timeOfDay || 'ANYTIME',
       icon: data.icon || '📋',
       familyId: session.user.familyId,
-    }
+    },
   })
 
   if (data.assignToKids && data.assignToKids.length > 0) {
     // Validate all kid IDs belong to this family
     const familyKids = await prisma.kid.findMany({
       where: { familyId: session.user.familyId },
-      select: { id: true }
+      select: { id: true },
     })
-    const familyKidIds = new Set(familyKids.map(k => k.id))
-    const validKidIds = data.assignToKids.filter(kidId => familyKidIds.has(kidId))
+    const familyKidIds = new Set(familyKids.map((k) => k.id))
+    const validKidIds = data.assignToKids.filter((kidId) => familyKidIds.has(kidId))
 
     if (validKidIds.length > 0) {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
-      
+
       await prisma.choreAssignment.createMany({
-        data: validKidIds.map(kidId => ({
+        data: validKidIds.map((kidId) => ({
           choreId: chore.id,
           kidId,
           dueDate: today,
-          status: 'PENDING'
-        }))
+          status: 'PENDING',
+        })),
       })
     }
   }
@@ -96,17 +117,23 @@ export async function createChore(data: {
   return chore
 }
 
-export async function completeChore(assignmentId: string, pointsEarned: number, kidId: string) {
+/**
+ * Complete a chore assignment.
+ *
+ * Security: kidId and points are derived from the assignment + chore on the
+ * server. Client-supplied values are ignored to prevent IDOR / point fraud.
+ * Already-completed assignments cannot be replayed.
+ */
+export async function completeChore(assignmentId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
   }
 
-  // Verify the assignment belongs to a kid in this family
   const existing = await prisma.choreAssignment.findFirst({
     where: {
       id: assignmentId,
-      kid: { familyId: session.user.familyId }
+      kid: { familyId: session.user.familyId },
     },
     include: { chore: true },
   })
@@ -115,35 +142,49 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
     throw new Error('Assignment not found')
   }
 
-  // Fetch the kid before the update so we can compute the streak bonus
-  // (needs the previous totalPoints, currentStreak, longestStreak, lastCompletedAt).
-  const kidBefore = await prisma.kid.findUnique({
-    where: { id: kidId },
-    select: { totalPoints: true, currentStreak: true, longestStreak: true, lastCompletedAt: true },
+  if (existing.status === 'COMPLETED') {
+    throw new Error('Assignment already completed')
+  }
+
+  const kidId = existing.kidId
+  const basePoints = existing.chore.basePoints
+
+  const kidBefore = await prisma.kid.findFirst({
+    where: { id: kidId, familyId: session.user.familyId },
+    select: {
+      totalPoints: true,
+      currentStreak: true,
+      longestStreak: true,
+      lastCompletedAt: true,
+    },
   })
   if (!kidBefore) {
     throw new Error('Kid not found')
   }
 
-  // Compute gamification server-side so the client can't game streaks/points.
   const gamification = processGamification(
-    pointsEarned,
+    basePoints,
     kidBefore.totalPoints,
     kidBefore.currentStreak,
     kidBefore.longestStreak,
     kidBefore.lastCompletedAt,
   )
 
-  // ⚡ Bolt: Performance Optimization
-  // Removed `include: { chore: true }` from update as the full chore object is not utilized downstream.
+  // Atomic: only transition PENDING → COMPLETED to block double-complete races
+  const updated = await prisma.choreAssignment.updateMany({
+    where: { id: assignmentId, status: 'PENDING' },
+    data: {
+      status: 'COMPLETED',
+      completedAt: new Date(),
+    },
+  })
+
+  if (updated.count === 0) {
+    throw new Error('Assignment already completed')
+  }
+
   const [assignment] = await prisma.$transaction([
-    prisma.choreAssignment.update({
-      where: { id: assignmentId },
-      data: {
-        status: 'COMPLETED',
-        completedAt: new Date()
-      }
-    }),
+    prisma.choreAssignment.findUniqueOrThrow({ where: { id: assignmentId } }),
     prisma.kid.update({
       where: { id: kidId },
       data: {
@@ -152,14 +193,13 @@ export async function completeChore(assignmentId: string, pointsEarned: number, 
         currentStreak: gamification.currentStreak,
         longestStreak: Math.max(kidBefore.longestStreak, gamification.currentStreak),
         lastCompletedAt: new Date(),
-      }
-    })
+      },
+    }),
   ])
 
-  // Fetch updated kid to get new totalPoints for level calculation
   const updatedKid = await prisma.kid.findUnique({
     where: { id: kidId },
-    select: { points: true, totalPoints: true }
+    select: { points: true, totalPoints: true },
   })
 
   revalidatePath('/chores')
@@ -180,10 +220,9 @@ export async function assignChore(choreId: string, kidId: string, dueDate: Date)
     throw new Error('Unauthorized')
   }
 
-  // Verify both chore and kid belong to this family
   const [chore, kid] = await Promise.all([
     prisma.chore.findFirst({ where: { id: choreId, familyId: session.user.familyId } }),
-    prisma.kid.findFirst({ where: { id: kidId, familyId: session.user.familyId } })
+    prisma.kid.findFirst({ where: { id: kidId, familyId: session.user.familyId } }),
   ])
 
   if (!chore) {
@@ -198,19 +237,22 @@ export async function assignChore(choreId: string, kidId: string, dueDate: Date)
       choreId,
       kidId,
       dueDate,
-      status: 'PENDING'
-    }
+      status: 'PENDING',
+    },
   })
 }
 
 export async function deleteChore(choreId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     throw new Error('Unauthorized')
+  }
+  if (auth.role !== 'OWNER') {
+    throw new Error('Only the family owner can delete chores')
   }
 
   const chore = await prisma.chore.findFirst({
-    where: { id: choreId, familyId: session.user.familyId }
+    where: { id: choreId, familyId: auth.familyId },
   })
   if (!chore) {
     throw new Error('Chore not found')
@@ -220,23 +262,31 @@ export async function deleteChore(choreId: string) {
   revalidatePath('/chores')
 }
 
-export async function updateChore(choreId: string, data: Partial<{
-  title: string
-  description: string
-  basePoints: number
-  difficulty: string
-  recurring: string
-  timeOfDay: string
-  icon: string
-  isActive: boolean
-}>) {
+export async function updateChore(
+  choreId: string,
+  data: Partial<{
+    title: string
+    description: string
+    basePoints: number
+    difficulty: string
+    recurring: string
+    timeOfDay: string
+    icon: string
+    isActive: boolean
+  }>
+) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
   }
 
+  const parsed = updateChoreSchema.safeParse(data)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || 'Invalid chore data')
+  }
+
   const existing = await prisma.chore.findFirst({
-    where: { id: choreId, familyId: session.user.familyId }
+    where: { id: choreId, familyId: session.user.familyId },
   })
   if (!existing) {
     throw new Error('Chore not found')
@@ -244,7 +294,7 @@ export async function updateChore(choreId: string, data: Partial<{
 
   const chore = await prisma.chore.update({
     where: { id: choreId },
-    data
+    data: parsed.data,
   })
 
   revalidatePath('/chores')

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, notFound } from '@/lib/auth/helpers'
+import { getAuthenticatedFamily, unauthorized, notFound, forbidden } from '@/lib/auth/helpers'
 
 export async function PATCH(
   request: Request,
@@ -46,6 +46,9 @@ export async function DELETE(
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+    if (auth.role !== 'OWNER') {
+      return forbidden('Only the family owner can delete chores')
+    }
 
     const { id } = await params
 

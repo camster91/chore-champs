@@ -108,7 +108,7 @@ export default function DashboardPage() {
         const newAssignment = await assignChore(chore.choreId, currentKid!.id, new Date())
         assignmentId = newAssignment.id
       }
-      await completeChore(assignmentId, chore.points, currentKid!.id)
+      await completeChore(assignmentId)
       setShowConfetti(true)
       setTimeout(() => setShowConfetti(false), 2000)
       loadChores()

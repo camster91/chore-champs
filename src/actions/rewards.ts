@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { getAuthenticatedFamily } from '@/lib/auth/helpers'
 
 export async function getRewards() {
   const session = await getServerSession(authOptions)
@@ -96,13 +97,16 @@ export async function redeemReward(rewardId: string, kidId: string) {
 }
 
 export async function deleteReward(rewardId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     throw new Error('Unauthorized')
+  }
+  if (auth.role !== 'OWNER') {
+    throw new Error('Only the family owner can delete rewards')
   }
 
   const reward = await prisma.reward.findFirst({
-    where: { id: rewardId, familyId: session.user.familyId }
+    where: { id: rewardId, familyId: auth.familyId }
   })
   if (!reward) {
     throw new Error('Reward not found')
