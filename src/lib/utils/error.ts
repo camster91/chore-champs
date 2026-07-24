@@ -11,21 +11,31 @@ export class AppError extends Error {
   }
 }
 
+/** True when a message looks like a Prisma / Node / SQL internal leak. */
+function looksLikeInternalError(message: string): boolean {
+  if (message.length > 200) return true
+  return /prisma|ECONNREFUSED|ENOTFOUND|ECONNRESET|P\d{4}|postgres|DATABASE_URL|connection string|at Object\.|at Module\.|SQL|stack trace|node_modules/i.test(
+    message
+  )
+}
+
 export function getUserFriendlyError(error: unknown): string {
   if (error instanceof AppError) {
     return error.message
   }
-  
+
   if (error instanceof ZodError) {
-    return error.issues.map(e => e.message).join(', ')
+    return error.issues.map((e) => e.message).join(', ')
   }
-  
+
   if (error instanceof Error) {
-    // Don't expose internal error details
+    if (!looksLikeInternalError(error.message)) {
+      return error.message
+    }
     console.error('Internal error:', error)
     return 'Something went wrong. Please try again.'
   }
-  
+
   return 'An unexpected error occurred.'
 }
 

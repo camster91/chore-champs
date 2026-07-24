@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, notFound } from '@/lib/auth/helpers'
+import { getAuthenticatedFamily, unauthorized, notFound, badRequest } from '@/lib/auth/helpers'
+import { updateRewardSchema } from '@/lib/validation/schemas'
 
 export async function PATCH(
   request: Request,
@@ -19,24 +20,19 @@ export async function PATCH(
 
     if (!reward) return notFound('Reward not found')
 
-    const allowedFields = ['title', 'description', 'cost', 'icon', 'category', 'isActive']
-    const updates: Record<string, unknown> = {}
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        if (field === 'cost') {
-          const parsed = parseInt(body[field])
-          if (!Number.isInteger(parsed) || parsed < 1) {
-            return NextResponse.json(
-              { error: 'Reward cost must be a positive integer (>= 1)' },
-              { status: 400 }
-            )
-          }
-          updates[field] = parsed
-        } else {
-          updates[field] = body[field]
-        }
-      }
+    const parsed = updateRewardSchema.safeParse(body)
+    if (!parsed.success) {
+      return badRequest(parsed.error.issues.map((i) => i.message).join(', '))
     }
+
+    const allowed = parsed.data
+    const updates: Record<string, unknown> = {}
+    if (allowed.title !== undefined) updates.title = allowed.title
+    if (allowed.description !== undefined) updates.description = allowed.description
+    if (allowed.cost !== undefined) updates.cost = allowed.cost
+    if (allowed.icon !== undefined) updates.icon = allowed.icon
+    if (allowed.category !== undefined) updates.category = allowed.category
+    if (allowed.isActive !== undefined) updates.isActive = allowed.isActive
 
     const updated = await prisma.reward.update({
       where: { id },
@@ -57,6 +53,12 @@ export async function DELETE(
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+    if (!auth.isOwner) {
+      return new Response(JSON.stringify({ error: 'Only the family owner can delete rewards' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
 
     const { id } = await params
 

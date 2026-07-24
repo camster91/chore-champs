@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { logError } from '@/lib/utils/error'
 
 /**
  * Permanently delete the current user's account, family, and all
@@ -24,7 +25,6 @@ export async function deleteAccount(
     return { success: false, error: 'Not authenticated' }
   }
 
-  // Require the user to type their email as a destructive-action guard.
   if (confirmEmail.trim().toLowerCase() !== session.user.email.toLowerCase()) {
     return { success: false, error: 'Email confirmation does not match' }
   }
@@ -33,19 +33,16 @@ export async function deleteAccount(
   const parentId = session.user.id
 
   try {
-    // Check if user is the family owner
     const family = await prisma.family.findFirst({
-      where: { id: familyId, parentId }
+      where: { id: familyId, parentId },
     })
 
     if (family) {
-      // Owner deleting account — delete the entire family (cascades to all data)
       await prisma.$transaction([
         prisma.family.delete({ where: { id: familyId } }),
         prisma.parent.delete({ where: { id: parentId } }),
       ])
     } else {
-      // Member deleting account — just remove membership and parent
       await prisma.$transaction([
         prisma.familyMember.deleteMany({ where: { parentId } }),
         prisma.parent.delete({ where: { id: parentId } }),
@@ -55,9 +52,10 @@ export async function deleteAccount(
     revalidatePath('/')
     return { success: true }
   } catch (err) {
+    logError('deleteAccount', err)
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Delete failed',
+      error: 'Failed to delete account. Please try again.',
     }
   }
 }

@@ -7,10 +7,35 @@ export async function GET() {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
 
+    const since = new Date()
+    since.setHours(0, 0, 0, 0)
+    since.setDate(since.getDate() - 14)
+
     const chores = await prisma.chore.findMany({
       where: { familyId: auth.familyId },
-      include: { assignments: { include: { kid: true } } },
-      orderBy: { createdAt: 'desc' }
+      include: {
+        assignments: {
+          where: {
+            OR: [
+              { status: 'PENDING' },
+              { dueDate: { gte: since } },
+              { completedAt: { gte: since } },
+            ],
+          },
+          take: 100,
+          // Only return kidId — avoid nesting full kid rows per assignment.
+          select: {
+            id: true,
+            choreId: true,
+            kidId: true,
+            dueDate: true,
+            status: true,
+            completedAt: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
     })
 
     return NextResponse.json(chores)

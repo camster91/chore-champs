@@ -32,15 +32,11 @@ export async function getPurchasedAvatarItems(kidId: string): Promise<string[]> 
 
   const kid = await prisma.kid.findFirst({
     where: { id: kidId, familyId: session.user.familyId },
-    select: { avatarId: true }
+    select: { avatarId: true },
   })
   if (!kid) return []
 
-  // Parse purchased items from avatarId (comma-separated list of item IDs)
-  // The primary avatar is the first item; rest are owned
-  const purchased = kid.avatarId
-    ? kid.avatarId.split(',').filter(Boolean)
-    : []
+  const purchased = kid.avatarId ? kid.avatarId.split(',').filter(Boolean) : []
   return purchased
 }
 
@@ -53,44 +49,58 @@ export async function unlockAvatarItem(
     return { success: false, error: 'Not authenticated' }
   }
 
-  const item = AVATAR_ITEMS.find(i => i.id === itemId)
+  const item = AVATAR_ITEMS.find((i) => i.id === itemId)
   if (!item) {
     return { success: false, error: 'Item not found' }
   }
 
   const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId }
+    where: { id: kidId, familyId: session.user.familyId },
   })
   if (!kid) {
     return { success: false, error: 'Kid not found' }
   }
 
-  // Check if already owned
-  const owned = kid.avatarId ? kid.avatarId.split(',').filter(Boolean) : []
-  if (owned.includes(itemId)) {
-    return { success: false, error: 'Already owned' }
-  }
-
-  // Check points
-  if (kid.points < item.unlockCost) {
-    return { success: false, error: `Not enough points. Need ${item.unlockCost}, have ${kid.points}` }
-  }
-
-  // Deduct points and add item to owned list
-  owned.push(itemId)
-  await prisma.kid.update({
-    where: { id: kidId },
-    data: {
-      points: { decrement: item.unlockCost },
-      avatarId: owned.join(',')
+  // Conditional decrement + re-read inside the transaction closes TOCTOU races.
+  const result = await prisma.$transaction(async (tx) => {
+    const fresh = await tx.kid.findFirst({
+      where: { id: kidId, familyId: session.user.familyId },
+    })
+    if (!fresh) {
+      return { success: false as const, error: 'Kid not found' }
     }
+
+    const owned = fresh.avatarId ? fresh.avatarId.split(',').filter(Boolean) : []
+    if (owned.includes(itemId)) {
+      return { success: false as const, error: 'Already owned' }
+    }
+
+    if (fresh.points < item.unlockCost) {
+      return { success: false as const, error: 'Not enough points' }
+    }
+
+    owned.push(itemId)
+    const updated = await tx.kid.update({
+      where: { id: kidId },
+      data: {
+        points: { decrement: item.unlockCost },
+        avatarId: owned.join(','),
+      },
+      select: { points: true },
+    })
+
+    return { success: true as const, newPoints: updated.points }
   })
+
+  if (!result.success) {
+    return { success: false, error: result.error }
+  }
 
   revalidatePath('/avatar-shop')
   revalidatePath('/dashboard')
   revalidatePath('/profile')
 
-  return { success: true, newPoints: kid.points - item.unlockCost }
+  return { success: true, newPoints: result.newPoints }
 }
 
 export async function equipAvatarItem(
@@ -103,23 +113,21 @@ export async function equipAvatarItem(
   }
 
   const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId }
+    where: { id: kidId, familyId: session.user.familyId },
   })
   if (!kid) {
     return { success: false, error: 'Kid not found' }
   }
 
-  // Move the chosen item to front of the list (primary avatar)
   const owned = kid.avatarId ? kid.avatarId.split(',').filter(Boolean) : []
   if (!owned.includes(itemId)) {
     return { success: false, error: 'Item not owned' }
   }
 
-  // Reorder: put selected item first
-  const reordered = [itemId, ...owned.filter(i => i !== itemId)]
+  const reordered = [itemId, ...owned.filter((i) => i !== itemId)]
   await prisma.kid.update({
     where: { id: kidId },
-    data: { avatarId: reordered.join(',') }
+    data: { avatarId: reordered.join(',') },
   })
 
   revalidatePath('/avatar-shop')

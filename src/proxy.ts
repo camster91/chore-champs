@@ -70,11 +70,15 @@ export default withAuth(
           return true
         }
 
-        // Public API routes
+        // Public API routes. Invite *lookup* is public (token is the capability);
+        // invite *accept* still requires a session (handled in the route).
         if (
           pathname.startsWith('/api/auth') ||
           pathname.startsWith('/api/register') ||
-          pathname.startsWith('/api/health')
+          pathname.startsWith('/api/health') ||
+          (pathname.startsWith('/api/invite/') &&
+            !pathname.endsWith('/accept') &&
+            req.method === 'GET')
         ) {
           return true
         }

@@ -1,40 +1,47 @@
 import { NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import crypto from 'crypto'
 import { checkRateLimit } from '@/lib/rate-limiter'
+import { getAuthenticatedFamily, unauthorized, forbidden, notFound, badRequest } from '@/lib/auth/helpers'
+import { inviteEmailSchema } from '@/lib/validation/schemas'
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('base64url')
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     return NextResponse.json([])
   }
 
   const invites = await prisma.familyInvite.findMany({
     where: {
-      familyId: session.user.familyId,
+      familyId: auth.familyId,
       acceptedAt: null,
-      expiresAt: { gt: new Date() }
+      expiresAt: { gt: new Date() },
     },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    take: 50,
   })
 
   return NextResponse.json(invites)
 }
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthenticatedFamily()
+  if (!auth) return unauthorized()
+
+  if (!auth.isOwner) {
+    return forbidden('Only the family owner can send invites')
   }
 
-  const userId = session.user.id
-  const { allowed, retryAfter } = await checkRateLimit(userId, 'invite-create', 10, 15 * 60 * 1000)
+  const { allowed, retryAfter } = await checkRateLimit(
+    auth.userId,
+    'invite-create',
+    10,
+    15 * 60 * 1000
+  )
   if (!allowed) {
     return NextResponse.json(
       { error: 'Too many attempts. Try again later.' },
@@ -43,44 +50,43 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { email, role = 'MEMBER' } = await request.json()
-
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    const body = await request.json()
+    const parsed = inviteEmailSchema.safeParse(body?.email)
+    if (!parsed.success) {
+      return badRequest(parsed.error.issues[0]?.message || 'Email is required')
     }
+    const email = parsed.data
 
-    // Check if user already exists
+    // Role is never accepted from the client — invites are always MEMBER.
     const existingUser = await prisma.parent.findUnique({ where: { email } })
     if (existingUser) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'This person already has an account. Send them an invite link!',
-        direct: false 
+        direct: false,
       })
     }
 
-    // Create magic link invite
     const token = generateToken()
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
     await prisma.familyInvite.create({
       data: {
         email,
-        familyId: session.user.familyId,
-        role,
+        familyId: auth.familyId,
+        role: 'MEMBER',
         token,
         expiresAt,
-        createdById: session.user.id,
-      }
+        createdById: auth.userId,
+      },
     })
 
-    // Use dynamic URL from env
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
     const inviteUrl = `${baseUrl}/invite/${token}`
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Invitation created!',
       inviteUrl,
-      direct: false 
+      direct: false,
     })
   } catch (error) {
     console.error('Create invite error:', error)
@@ -89,25 +95,25 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthenticatedFamily()
+  if (!auth) return unauthorized()
+
+  if (!auth.isOwner) {
+    return forbidden('Only the family owner can cancel invites')
   }
 
   const { searchParams } = new URL(request.url)
   const inviteId = searchParams.get('id')
 
   if (!inviteId) {
-    return NextResponse.json({ error: 'Invite ID required' }, { status: 400 })
+    return badRequest('Invite ID required')
   }
 
   const invite = await prisma.familyInvite.findFirst({
-    where: { id: inviteId, familyId: session.user.familyId }
+    where: { id: inviteId, familyId: auth.familyId },
   })
 
-  if (!invite) {
-    return NextResponse.json({ error: 'Invite not found' }, { status: 404 })
-  }
+  if (!invite) return notFound('Invite not found')
 
   await prisma.familyInvite.delete({ where: { id: inviteId } })
 

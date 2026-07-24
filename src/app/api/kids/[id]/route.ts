@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, notFound } from '@/lib/auth/helpers'
+import { getAuthenticatedFamily, unauthorized, notFound, forbidden } from '@/lib/auth/helpers'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -33,6 +33,7 @@ export async function DELETE(_request: Request, props: Props) {
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+    if (!auth.isOwner) return forbidden('Only the family owner can delete kids')
 
     const { id } = await props.params
 

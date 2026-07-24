@@ -57,7 +57,7 @@ self.addEventListener('fetch', (event) => {
         if (response.status === 200) {
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone)
-          })
+          }).catch(() => {})
         }
         
         return response

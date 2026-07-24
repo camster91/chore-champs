@@ -64,6 +64,7 @@ export default function RewardsPage() {
       loadRewards()
     } catch (e) {
       console.error('Failed to create reward:', e)
+      toast({ title: 'Could not create reward', description: 'Please try again.', variant: 'error' })
     } finally {
       setIsSubmitting(false)
     }
@@ -74,8 +75,16 @@ export default function RewardsPage() {
     try {
       await redeemReward(reward.id, currentKid.id)
       loadRewards()
+      toast({ title: 'Reward redeemed!', variant: 'success' })
     } catch (e) {
       console.error('Failed to redeem reward:', e)
+      toast({
+        title: 'Could not redeem reward',
+        description: e instanceof Error && e.message === 'Insufficient points'
+          ? 'Not enough points for this reward.'
+          : 'Please try again.',
+        variant: 'error',
+      })
     }
   }
 

@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useKidStore } from '@/stores/kid-store'
-import { Card, CardContent, Button, Badge, Modal, Input, useServerAction } from '@/components/ui'
+import { Card, CardContent, Button, Badge, Modal, Input, useServerAction, useToast } from '@/components/ui'
 import { Confetti } from '@/components/Confetti'
 import { LevelUpModal } from '@/components/LevelUpModal'
 import { CelebrationModal } from '@/components/CelebrationModal'
@@ -21,6 +21,7 @@ import { trackEvent, EVENTS } from '@/lib/telemetry'
 import useSWR, { mutate } from 'swr'
 import Link from 'next/link'
 import { initI18n, t as translate } from '@/lib/i18n'
+import { getUserFriendlyError } from '@/lib/utils/error'
 
 interface UIChore {
   id: string
@@ -47,6 +48,7 @@ const suggestedChores = [
 export default function ChoresPage() {
   const { currentKid } = useKidStore()
   const { play } = useAudio()
+  const { toast } = useToast()
 
   useEffect(() => {
     initI18n()
@@ -142,7 +144,7 @@ export default function ChoresPage() {
         assignmentId = newAssignment.id
       }
 
-      const result = await completeChore(assignmentId, chore.points, currentKid.id)
+      const result = await completeChore(assignmentId)
 
       play('pop')
       setShowConfetti(true)
@@ -150,7 +152,7 @@ export default function ChoresPage() {
 
       // Check for level-up
       if (result.kidTotalPoints) {
-        const oldLevel = calculateLevel(result.kidTotalPoints - chore.points)
+        const oldLevel = calculateLevel(result.kidTotalPoints - (result.gamification?.pointsEarned || chore.points))
         const newLevel = calculateLevel(result.kidTotalPoints)
         if (newLevel > oldLevel) {
           setLevelUpLevel(newLevel)
@@ -169,10 +171,15 @@ export default function ChoresPage() {
 
       trackEvent(EVENTS.CHORE_COMPLETED, {
         choreTitle: chore.title,
-        points: chore.points,
+        points: result.gamification?.pointsEarned ?? chore.points,
       })
     } catch (error) {
       console.error('Failed to complete chore:', error)
+      toast({
+        title: 'Could not complete chore',
+        description: getUserFriendlyError(error),
+        variant: 'error',
+      })
     }
   }
 

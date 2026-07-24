@@ -4,6 +4,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { createHabitSchema } from '@/lib/validation/schemas'
+import { AppError } from '@/lib/utils/error'
 
 export async function getHabits() {
   const session = await getServerSession(authOptions)
@@ -11,11 +13,6 @@ export async function getHabits() {
     return []
   }
 
-  // ⚡ Bolt: Performance Optimization
-  // Replaced unconstrained `logs: true` fetch with a 48-hour rolling window.
-  // The UI only needs to know if a habit was completed today, so fetching full history
-  // resulted in unbounded O(N) memory scaling over time as logs accumulated.
-  // Using a safe 48-hour window on the server avoids timezone regressions for non-UTC clients.
   const twoDaysAgo = new Date()
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
@@ -23,9 +20,11 @@ export async function getHabits() {
     where: { familyId: session.user.familyId },
     include: {
       logs: {
-        where: { loggedAt: { gte: twoDaysAgo } }
-      }
-    }
+        where: { loggedAt: { gte: twoDaysAgo } },
+        take: 100,
+      },
+    },
+    take: 200,
   })
 }
 
@@ -37,17 +36,22 @@ export async function createHabit(data: {
 }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    throw new AppError('Unauthorized', 401)
+  }
+
+  const parsed = createHabitSchema.safeParse(data)
+  if (!parsed.success) {
+    throw new AppError(parsed.error.issues.map((i) => i.message).join(', '), 400)
   }
 
   const habit = await prisma.habit.create({
     data: {
-      title: data.title,
-      description: data.description,
-      icon: data.icon || '✨',
-      points: data.points || 5,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      icon: parsed.data.icon || '✨',
+      points: parsed.data.points || 5,
       familyId: session.user.familyId,
-    }
+    },
   })
 
   revalidatePath('/habits')
@@ -57,32 +61,49 @@ export async function createHabit(data: {
 export async function logHabit(habitId: string, kidId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    throw new AppError('Unauthorized', 401)
   }
 
-  const habit = await prisma.habitLog.create({
+  // Both habit and kid must belong to the caller's family (prevents cross-family IDOR).
+  const [habit, kid] = await Promise.all([
+    prisma.habit.findFirst({
+      where: { id: habitId, familyId: session.user.familyId },
+    }),
+    prisma.kid.findFirst({
+      where: { id: kidId, familyId: session.user.familyId },
+    }),
+  ])
+
+  if (!habit) {
+    throw new AppError('Habit not found', 404)
+  }
+  if (!kid) {
+    throw new AppError('Kid not found', 404)
+  }
+
+  const log = await prisma.habitLog.create({
     data: {
       habitId,
       kidId,
-    }
+    },
   })
 
   revalidatePath('/habits')
   revalidatePath('/dashboard')
-  return habit
+  return log
 }
 
 export async function deleteHabit(habitId: string) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
-    throw new Error('Unauthorized')
+    throw new AppError('Unauthorized', 401)
   }
 
   const habit = await prisma.habit.findFirst({
-    where: { id: habitId, familyId: session.user.familyId }
+    where: { id: habitId, familyId: session.user.familyId },
   })
   if (!habit) {
-    throw new Error('Habit not found')
+    throw new AppError('Habit not found', 404)
   }
 
   await prisma.habit.delete({ where: { id: habitId } })
