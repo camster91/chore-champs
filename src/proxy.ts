@@ -1,8 +1,10 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 
+// Next.js 16 renamed `middleware` → `proxy`. The export name and filename
+// both changed. See https://nextjs.org/docs/messages/middleware-to-proxy.
 export default withAuth(
-  function middleware(req) {
+  function proxy(req) {
     const pathname = req.nextUrl.pathname
     const token = req.nextauth.token
 

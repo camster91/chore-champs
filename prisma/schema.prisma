@@ -51,6 +51,13 @@ model Parent {
   familyMemberships FamilyMember[]
 }
 
+// Note: the original schema had a single `streakDays` field (INTEGER, NOT NULL).
+// Migration 20260722000000_add_gamification_streak_fields split this into
+// `currentStreak` + `longestStreak` (both default 0) + added `lastCompletedAt`
+// (DateTime?). The split was needed because the gamification engine
+// (src/lib/gamification.ts) tracks "longest streak ever" separately from
+// the current count, and `streakDays` couldn't represent that.
+
 model Kid {
   id             String   @id @default(cuid())
   name           String

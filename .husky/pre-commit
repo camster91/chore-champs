@@ -1,0 +1,48 @@
+#!/usr/bin/env sh
+# .husky/pre-commit — runs lint + test before every commit.
+#
+# Wired up by package.json's "prepare" script (or via core.hooksPath below).
+# This script lives in the repo so the team shares the same gate. To install
+# in a fresh clone: `git config core.hooksPath .husky` (one-time, per clone).
+#
+# Behavior:
+#   - Runs `npm run lint` (eslint). Aborts if lint fails.
+#   - Runs `npm test` (node:test via tsx). Aborts if tests fail.
+#   - Skipped with `git commit --no-verify` when you know what you're doing.
+#
+# Why two checks instead of one:
+#   lint catches style + Next.js rule violations (uncalled refs, etc.)
+#   tests catch math + integration regressions that lint can't see.
+# Both must pass. Total runtime ~10-15s on warm cache.
+
+set -e
+
+# Don't run on CI — CI has its own lint+test pipeline.
+if [ -n "$CI" ]; then
+  echo "[husky] CI detected — skipping local hooks"
+  exit 0
+fi
+
+echo ""
+echo "[husky] pre-commit: running lint..."
+
+if ! npm run lint --silent; then
+  echo ""
+  echo "[husky] lint failed — commit aborted."
+  echo "[husky] fix the lint errors above, or use 'git commit --no-verify' to skip."
+  exit 1
+fi
+
+echo ""
+echo "[husky] lint passed. running tests..."
+
+if ! npm test --silent; then
+  echo ""
+  echo "[husky] tests failed — commit aborted."
+  echo "[husky] fix the failing tests, or use 'git commit --no-verify' to skip."
+  exit 1
+fi
+
+echo ""
+echo "[husky] lint + tests passed. committing."
+exit 0

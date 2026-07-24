@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "npx tsx --test src/lib/utils.test.ts src/lib/gamification.test.ts",
     "postinstall": "prisma generate || true",
+    "prepare": "git config core.hooksPath .husky || true",
     "seed": "node prisma/seed.js",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push"
