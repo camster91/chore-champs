@@ -81,6 +81,23 @@ export async function logHabit(habitId: string, kidId: string) {
     throw new AppError('Kid not found', 404)
   }
 
+  // One log per habit/kid/calendar day (prevents unbounded spam writes).
+  const dayStart = new Date()
+  dayStart.setHours(0, 0, 0, 0)
+  const dayEnd = new Date(dayStart)
+  dayEnd.setDate(dayEnd.getDate() + 1)
+
+  const existingLog = await prisma.habitLog.findFirst({
+    where: {
+      habitId,
+      kidId,
+      loggedAt: { gte: dayStart, lt: dayEnd },
+    },
+  })
+  if (existingLog) {
+    return existingLog
+  }
+
   const log = await prisma.habitLog.create({
     data: {
       habitId,
@@ -94,13 +111,17 @@ export async function logHabit(habitId: string, kidId: string) {
 }
 
 export async function deleteHabit(habitId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
+  const { getAuthenticatedFamily } = await import('@/lib/auth/helpers')
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     throw new AppError('Unauthorized', 401)
+  }
+  if (!auth.isOwner) {
+    throw new AppError('Only the family owner can delete habits', 403)
   }
 
   const habit = await prisma.habit.findFirst({
-    where: { id: habitId, familyId: session.user.familyId },
+    where: { id: habitId, familyId: auth.familyId },
   })
   if (!habit) {
     throw new AppError('Habit not found', 404)

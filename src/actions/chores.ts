@@ -223,7 +223,8 @@ export async function completeChore(assignmentId: string) {
   }
 }
 
-export async function assignChore(choreId: string, kidId: string, dueDate: Date) {
+export async function assignChore(choreId: string, kidId: string, dueDate?: Date) {
+  void dueDate // Client-supplied dates are ignored to prevent cross-day point farming.
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new AppError('Unauthorized', 401)
@@ -241,22 +242,27 @@ export async function assignChore(choreId: string, kidId: string, dueDate: Date)
     throw new AppError('Kid not found', 404)
   }
 
-  // Cap farming: reuse an existing PENDING assignment for the same day.
-  const dayStart = new Date(dueDate)
+  // Server-owned calendar day — ignore client dueDate to stop cross-day farming.
+  const dayStart = new Date()
   dayStart.setHours(0, 0, 0, 0)
   const dayEnd = new Date(dayStart)
   dayEnd.setDate(dayEnd.getDate() + 1)
 
-  const existingPending = await prisma.choreAssignment.findFirst({
+  // One completion per chore/kid/day. Reuse PENDING; reject if already COMPLETED.
+  const existingToday = await prisma.choreAssignment.findFirst({
     where: {
       choreId,
       kidId,
-      status: 'PENDING',
       dueDate: { gte: dayStart, lt: dayEnd },
     },
+    orderBy: { createdAt: 'desc' },
   })
-  if (existingPending) {
-    return existingPending
+
+  if (existingToday) {
+    if (existingToday.status === 'PENDING') {
+      return existingToday
+    }
+    throw new AppError('This chore was already completed today', 409)
   }
 
   return await prisma.choreAssignment.create({

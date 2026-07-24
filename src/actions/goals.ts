@@ -56,28 +56,7 @@ export async function createFamilyGoal(data: {
   return goal
 }
 
-/**
- * Increment active family goals for the *authenticated* family only.
- * Client-supplied familyId is ignored — previously this was an unauthenticated
- * cross-tenant write.
- */
-export async function updateFamilyGoalPoints(points: number) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
-    throw new AppError('Unauthorized', 401)
-  }
+// Intentionally no client-callable "updateFamilyGoalPoints" server action.
+// Goal progress must be driven only from trusted server paths (e.g. completeChore)
+// to prevent arbitrary client increments/decrements.
 
-  if (!Number.isFinite(points) || points === 0 || Math.abs(points) > 10000) {
-    throw new AppError('Invalid points value', 400)
-  }
-
-  await prisma.familyGoal.updateMany({
-    where: {
-      familyId: session.user.familyId,
-      isActive: true,
-    },
-    data: {
-      currentPoints: { increment: Math.trunc(points) },
-    },
-  })
-}

@@ -26,6 +26,7 @@ import { useAudio } from '@/lib/audio-context'
 import { deleteAccount } from '@/actions/account'
 import { signOut } from 'next-auth/react'
 import { AlertTriangle } from 'lucide-react'
+import { getUserFriendlyError } from '@/lib/utils/error'
 
 interface PendingInvite {
   id: string
@@ -163,7 +164,7 @@ export default function SettingsPage() {
         setDeleteError(result.error || 'Delete failed')
       }
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Delete failed')
+      setDeleteError(getUserFriendlyError(err))
     } finally {
       setIsDeleting(false)
     }

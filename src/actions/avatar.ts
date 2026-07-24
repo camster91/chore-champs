@@ -61,8 +61,10 @@ export async function unlockAvatarItem(
     return { success: false, error: 'Kid not found' }
   }
 
-  // Conditional decrement + re-read inside the transaction closes TOCTOU races.
+  // Row lock + conditional decrement: closes concurrent double-spend / negative points.
   const result = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Kid" WHERE "id" = ${kidId} FOR UPDATE`
+
     const fresh = await tx.kid.findFirst({
       where: { id: kidId, familyId: session.user.familyId },
     })
@@ -75,17 +77,22 @@ export async function unlockAvatarItem(
       return { success: false as const, error: 'Already owned' }
     }
 
-    if (fresh.points < item.unlockCost) {
+    const deducted = await tx.kid.updateMany({
+      where: {
+        id: kidId,
+        familyId: session.user.familyId,
+        points: { gte: item.unlockCost },
+      },
+      data: { points: { decrement: item.unlockCost } },
+    })
+    if (deducted.count === 0) {
       return { success: false as const, error: 'Not enough points' }
     }
 
     owned.push(itemId)
     const updated = await tx.kid.update({
       where: { id: kidId },
-      data: {
-        points: { decrement: item.unlockCost },
-        avatarId: owned.join(','),
-      },
+      data: { avatarId: owned.join(',') },
       select: { points: true },
     })
 
