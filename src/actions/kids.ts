@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { Kid } from '@/stores/kid-store'
+import { updateKidSchema } from '@/lib/validation/schemas'
+import { getAuthenticatedFamily } from '@/lib/auth/helpers'
 
 export async function getKids(): Promise<Kid[]> {
   const session = await getServerSession(authOptions)
@@ -12,15 +14,13 @@ export async function getKids(): Promise<Kid[]> {
     return []
   }
 
-  // Optimization: Removed include for choreAssignments and habitLogs
-  // since they are entirely discarded in the map function below,
-  // preventing unbounded data fetching as logs grow over time.
   const kids = await prisma.kid.findMany({
     where: { familyId: session.user.familyId },
-    orderBy: { createdAt: 'asc' }
+    orderBy: { createdAt: 'asc' },
+    take: 20,
   })
 
-  return kids.map(k => ({
+  return kids.map((k) => ({
     id: k.id,
     name: k.name,
     age: k.age,
@@ -51,28 +51,40 @@ export async function createKid(data: {
       age: data.age,
       avatarId: data.avatarId || 'default',
       familyId: session.user.familyId,
-    }
+    },
   })
 
   revalidatePath('/dashboard')
   return kid
 }
 
-export async function updateKid(kidId: string, data: Partial<{
-  name: string
-  age: number
-  avatarId: string
-  themeMode: string
-  primaryColor: string
-  secondaryColor: string
-}>) {
+/**
+ * Profile/theme updates only. Points, streaks, and familyId are never
+ * accepted from the client — those mutate via dedicated privileged paths.
+ */
+export async function updateKid(
+  kidId: string,
+  data: Partial<{
+    name: string
+    age: number
+    avatarId: string
+    themeMode: string
+    primaryColor: string
+    secondaryColor: string
+  }>
+) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.familyId) {
     throw new Error('Unauthorized')
   }
 
+  const parsed = updateKidSchema.safeParse(data)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || 'Invalid kid data')
+  }
+
   const existing = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId }
+    where: { id: kidId, familyId: session.user.familyId },
   })
   if (!existing) {
     throw new Error('Kid not found')
@@ -80,7 +92,7 @@ export async function updateKid(kidId: string, data: Partial<{
 
   const kid = await prisma.kid.update({
     where: { id: kidId },
-    data
+    data: parsed.data,
   })
 
   revalidatePath('/dashboard')
@@ -89,13 +101,16 @@ export async function updateKid(kidId: string, data: Partial<{
 }
 
 export async function deleteKid(kidId: string) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user?.familyId) {
+  const auth = await getAuthenticatedFamily()
+  if (!auth) {
     throw new Error('Unauthorized')
+  }
+  if (auth.role !== 'OWNER') {
+    throw new Error('Only the family owner can delete kid profiles')
   }
 
   const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId }
+    where: { id: kidId, familyId: auth.familyId },
   })
   if (!kid) {
     throw new Error('Kid not found')

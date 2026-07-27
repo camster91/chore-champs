@@ -11,11 +11,6 @@ export async function getHabits() {
     return []
   }
 
-  // ⚡ Bolt: Performance Optimization
-  // Replaced unconstrained `logs: true` fetch with a 48-hour rolling window.
-  // The UI only needs to know if a habit was completed today, so fetching full history
-  // resulted in unbounded O(N) memory scaling over time as logs accumulated.
-  // Using a safe 48-hour window on the server avoids timezone regressions for non-UTC clients.
   const twoDaysAgo = new Date()
   twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
@@ -23,9 +18,9 @@ export async function getHabits() {
     where: { familyId: session.user.familyId },
     include: {
       logs: {
-        where: { loggedAt: { gte: twoDaysAgo } }
-      }
-    }
+        where: { loggedAt: { gte: twoDaysAgo } },
+      },
+    },
   })
 }
 
@@ -47,7 +42,7 @@ export async function createHabit(data: {
       icon: data.icon || '✨',
       points: data.points || 5,
       familyId: session.user.familyId,
-    }
+    },
   })
 
   revalidatePath('/habits')
@@ -60,16 +55,46 @@ export async function logHabit(habitId: string, kidId: string) {
     throw new Error('Unauthorized')
   }
 
-  const habit = await prisma.habitLog.create({
+  const [habit, kid] = await Promise.all([
+    prisma.habit.findFirst({
+      where: { id: habitId, familyId: session.user.familyId, isActive: true },
+    }),
+    prisma.kid.findFirst({
+      where: { id: kidId, familyId: session.user.familyId },
+    }),
+  ])
+
+  if (!habit) {
+    throw new Error('Habit not found')
+  }
+  if (!kid) {
+    throw new Error('Kid not found')
+  }
+
+  const startOfDay = new Date()
+  startOfDay.setHours(0, 0, 0, 0)
+
+  const alreadyLogged = await prisma.habitLog.findFirst({
+    where: {
+      habitId,
+      kidId,
+      loggedAt: { gte: startOfDay },
+    },
+  })
+  if (alreadyLogged) {
+    throw new Error('Habit already logged today')
+  }
+
+  const log = await prisma.habitLog.create({
     data: {
       habitId,
       kidId,
-    }
+    },
   })
 
   revalidatePath('/habits')
   revalidatePath('/dashboard')
-  return habit
+  return log
 }
 
 export async function deleteHabit(habitId: string) {
@@ -79,7 +104,7 @@ export async function deleteHabit(habitId: string) {
   }
 
   const habit = await prisma.habit.findFirst({
-    where: { id: habitId, familyId: session.user.familyId }
+    where: { id: habitId, familyId: session.user.familyId },
   })
   if (!habit) {
     throw new Error('Habit not found')

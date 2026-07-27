@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { getUserFriendlyError } from '@/lib/utils/error'
 
 interface FetchState<T> {
   data: T | null
@@ -9,12 +10,19 @@ interface FetchState<T> {
   mutate: () => Promise<void>
 }
 
+function friendlyFetchError(err: unknown): string {
+  if (err instanceof TypeError || (err instanceof Error && /failed to fetch|network/i.test(err.message))) {
+    return 'You appear to be offline. Check your connection and try again.'
+  }
+  return getUserFriendlyError(err)
+}
+
 export function useFetch<T>(url: string | null): FetchState<T> {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(!!url)
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     if (!url) {
       setData(null)
       setIsLoading(false)
@@ -25,55 +33,86 @@ export function useFetch<T>(url: string | null): FetchState<T> {
     setError(null)
 
     try {
-      const res = await fetch(url)
+      const res = await fetch(url, { signal })
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: 'Request failed' }))
-        throw new Error(body.error || `HTTP ${res.status}`)
+        // Prefer server-provided safe messages; never dump stack traces
+        const msg =
+          typeof body.error === 'string' && body.error.length < 200
+            ? body.error
+            : `Request failed (${res.status})`
+        throw new Error(msg)
       }
       const json = await res.json()
-      setData(json)
+      if (!signal?.aborted) {
+        setData(json)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      if (err instanceof DOMException && err.name === 'AbortError') return
+      if (!signal?.aborted) {
+        setError(friendlyFetchError(err))
+      }
     } finally {
-      setIsLoading(false)
+      if (!signal?.aborted) {
+        setIsLoading(false)
+      }
     }
   }, [url])
 
   useEffect(() => {
-     
-    fetchData()
+    const controller = new AbortController()
+    fetchData(controller.signal)
+    return () => controller.abort()
   }, [fetchData])
 
-  return { data, error, isLoading, mutate: fetchData }
+  const mutate = useCallback(async () => {
+    await fetchData()
+  }, [fetchData])
+
+  return { data, error, isLoading, mutate }
 }
 
-// Generic mutation helper
 export async function apiPost<T>(url: string, body?: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Request failed')
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    })
+  } catch (err) {
+    throw new Error(friendlyFetchError(err))
+  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Request failed')
   return data
 }
 
 export async function apiPatch<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Request failed')
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch (err) {
+    throw new Error(friendlyFetchError(err))
+  }
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Request failed')
   return data
 }
 
 export async function apiDelete(url: string): Promise<void> {
-  const res = await fetch(url, { method: 'DELETE' })
+  let res: Response
+  try {
+    res = await fetch(url, { method: 'DELETE' })
+  } catch (err) {
+    throw new Error(friendlyFetchError(err))
+  }
   if (!res.ok) {
     const data = await res.json().catch(() => ({ error: 'Delete failed' }))
-    throw new Error(data.error || 'Delete failed')
+    throw new Error(typeof data.error === 'string' ? data.error : 'Delete failed')
   }
 }

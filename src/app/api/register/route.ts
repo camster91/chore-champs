@@ -35,7 +35,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingParent) {
-      return NextResponse.json({ error: 'An account with this email already exists. Please sign in.' }, { status: 400 })
+      // Generic copy — do not confirm that the email is registered
+      return NextResponse.json(
+        { error: 'Unable to create account. Try signing in or use a different email.' },
+        { status: 400 }
+      )
     }
 
     // Create parent with hashed password

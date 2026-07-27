@@ -65,9 +65,8 @@ The app will be available at: http://localhost:3000
 
 ## Test Credentials
 
-After seeding, you can log in with:
-- **Email**: `parent@example.com`
-- **Password**: `password123`
+After seeding, you can log in with the credentials printed by the seed script
+(local-only demo account — never reuse these outside development).
 
 ## Project Structure
 
@@ -144,11 +143,11 @@ npm run seed
 Create `.env` file (`.env.example` provided):
 
 ```env
-# Database
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kids_chore_app"
+# Database — replace placeholders; never commit real credentials
+DATABASE_URL="postgresql://<db-user>:<db-password>@localhost:5432/kids_chore_app"
 
-# NextAuth
-NEXTAUTH_SECRET="your-secret-key-here"
+# NextAuth — generate with: openssl rand -base64 32
+NEXTAUTH_SECRET="<generate-a-long-random-secret>"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 

@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { Button } from './Button'
 import { Card, CardContent } from './Card'
 import type { LucideIcon } from 'lucide-react'
@@ -30,11 +29,7 @@ export function EmptyState({
   secondaryAction,
 }: EmptyStateProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-    >
+    <div>
       <Card className="mx-auto max-w-md border-dashed">
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
@@ -64,6 +59,6 @@ export function EmptyState({
           </div>
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }

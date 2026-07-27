@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
 import { revalidatePath } from 'next/cache'
+import { createFamilyGoalSchema } from '@/lib/validation/schemas'
 
 export async function getFamilyGoals() {
   const session = await getServerSession(authOptions)
@@ -19,6 +20,7 @@ export async function getFamilyGoals() {
     orderBy: {
       createdAt: 'desc',
     },
+    take: 50,
   })
 }
 
@@ -33,9 +35,14 @@ export async function createFamilyGoal(data: {
     throw new Error('Unauthorized')
   }
 
+  const parsed = createFamilyGoalSchema.safeParse(data)
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message || 'Invalid goal data')
+  }
+
   const goal = await prisma.familyGoal.create({
     data: {
-      ...data,
+      ...parsed.data,
       familyId: session.user.familyId,
     },
   })
@@ -44,15 +51,29 @@ export async function createFamilyGoal(data: {
   return goal
 }
 
+/**
+ * Increment active family goals. Caller must pass their own familyId —
+ * it is verified against the session (ignores cross-family IDs).
+ */
 export async function updateFamilyGoalPoints(familyId: string, points: number) {
-  // This is called internally when points are earned
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.familyId) {
+    throw new Error('Unauthorized')
+  }
+  if (familyId !== session.user.familyId) {
+    throw new Error('Forbidden')
+  }
+  if (!Number.isFinite(points) || points <= 0 || points > 10000) {
+    throw new Error('Invalid points')
+  }
+
   await prisma.familyGoal.updateMany({
     where: {
-      familyId,
+      familyId: session.user.familyId,
       isActive: true,
     },
     data: {
-      currentPoints: { increment: points },
+      currentPoints: { increment: Math.floor(points) },
     },
   })
 }

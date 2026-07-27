@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
+import { getUserFriendlyError } from '@/lib/utils/error'
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info'
 
@@ -131,7 +132,7 @@ export function tryOrToast<T>(
   return fn().catch((err) => {
     toast({
       title: errorTitle,
-      description: err instanceof Error ? err.message : String(err),
+      description: getUserFriendlyError(err),
       variant: 'error',
     })
     return undefined
@@ -180,9 +181,7 @@ export function useServerAction<TArgs extends unknown[], TResult>(
         }
         return result
       } catch (err) {
-        const msg =
-          options.error?.getMessage?.(err) ??
-          (err instanceof Error ? err.message : String(err))
+        const msg = options.error?.getMessage?.(err) ?? getUserFriendlyError(err)
         toast({
           title: options.error?.title ?? 'Something went wrong',
           description: msg,

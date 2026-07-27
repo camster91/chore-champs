@@ -5,8 +5,8 @@
 ChoreChamps is a single Next.js 16 (App Router) app backed by PostgreSQL via Prisma. There is one service to run (the Next.js app) plus a local PostgreSQL database. Standard commands live in `package.json` (`dev`, `build`, `start`, `lint`, `test`, `seed`) and `README.md` / `SETUP_GUIDE.md`.
 
 ### Environment (already provisioned in the snapshot)
-- PostgreSQL 16 is installed locally. DB `chorechamps`, user `postgres`, password `postgres`.
-- `.env` (gitignored) exists at the repo root with `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/chorechamps`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL=http://localhost:3000`. NextAuth refuses to start without `NEXTAUTH_SECRET` and `NEXTAUTH_URL`.
+- PostgreSQL 16 is installed locally. DB name `chorechamps`; credentials come from the local `.env` (never commit real passwords).
+- `.env` (gitignored) at the repo root must define `DATABASE_URL`, `NEXTAUTH_SECRET`, and `NEXTAUTH_URL=http://localhost:3000`. NextAuth refuses to start without `NEXTAUTH_SECRET` and `NEXTAUTH_URL`. See `.env.example` for the expected keys.
 - The update script only runs `npm install` (its `postinstall` runs `prisma generate`). It does not start Postgres or touch the DB.
 
 ### Starting the app (do this each session)

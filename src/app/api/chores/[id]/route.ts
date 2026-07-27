@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, notFound } from '@/lib/auth/helpers'
+import {
+  getAuthenticatedFamily,
+  unauthorized,
+  notFound,
+  forbidden,
+} from '@/lib/auth/helpers'
+import { updateChoreSchema } from '@/lib/validation/schemas'
 
 export async function PATCH(
   request: Request,
@@ -12,6 +18,13 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
+    const parsed = updateChoreSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid chore data' },
+        { status: 400 }
+      )
+    }
 
     const chore = await prisma.chore.findFirst({
       where: { id, familyId: auth.familyId },
@@ -19,17 +32,9 @@ export async function PATCH(
 
     if (!chore) return notFound('Chore not found')
 
-    const allowedFields = ['title', 'description', 'icon', 'difficulty', 'basePoints', 'recurring', 'timeOfDay', 'isActive']
-    const updates: Record<string, unknown> = {}
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates[field] = body[field]
-      }
-    }
-
     const updated = await prisma.chore.update({
       where: { id },
-      data: updates,
+      data: parsed.data,
     })
 
     return NextResponse.json(updated)
@@ -46,6 +51,9 @@ export async function DELETE(
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+    if (auth.role !== 'OWNER') {
+      return forbidden('Only the family owner can delete chores')
+    }
 
     const { id } = await params
 

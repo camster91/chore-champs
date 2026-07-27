@@ -71,10 +71,26 @@ export async function cleanupRateLimits(): Promise<number> {
   return result.count
 }
 
+/**
+ * Resolve client IP behind a trusted reverse proxy (Coolify/Traefik).
+ *
+ * Prefer `x-real-ip` (set by the proxy). For `x-forwarded-for`, use the
+ * *rightmost* address — proxies append the real client, while attackers
+ * can inject leftmost values. Never trust a client-supplied leftmost hop.
+ */
 export function getClientIp(req: Request): string {
+  const realIp = req.headers.get('x-real-ip')?.trim()
+  if (realIp && realIp !== 'unknown') {
+    return realIp
+  }
+
   const forwarded = req.headers.get('x-forwarded-for')
   if (forwarded) {
-    return forwarded.split(',')[0].trim()
+    const parts = forwarded.split(',').map((p) => p.trim()).filter(Boolean)
+    if (parts.length > 0) {
+      return parts[parts.length - 1]
+    }
   }
+
   return 'unknown'
 }

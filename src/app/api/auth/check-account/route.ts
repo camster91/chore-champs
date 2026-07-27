@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/lib/db'
+import { z } from 'zod'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter'
 
+const bodySchema = z.object({
+  email: z.string().email().max(254),
+})
+
+/**
+ * Intentionally does not reveal whether an email is registered
+ * (account enumeration). Always returns the same shape after rate limiting.
+ */
 export async function POST(request: Request) {
   const ip = getClientIp(request)
   const { allowed, retryAfter } = await checkRateLimit(ip, 'check-account', 10, 15 * 60 * 1000)
@@ -13,18 +21,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { email } = await request.json()
-    
-    const user = await prisma.parent.findUnique({
-      where: { email },
-      select: { id: true }
-    })
-
-    return NextResponse.json({
-      hasAccount: !!user,
-    })
+    const body = await request.json().catch(() => ({}))
+    bodySchema.safeParse(body)
+    // Constant response — never return hasAccount / existence hints
+    return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Check account error:', error)
-    return NextResponse.json({ error: 'Failed to check account' }, { status: 500 })
+    return NextResponse.json({ ok: true })
   }
 }

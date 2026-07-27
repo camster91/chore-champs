@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, badRequest, notFound } from '@/lib/auth/helpers'
+import {
+  getAuthenticatedFamily,
+  unauthorized,
+  badRequest,
+  notFound,
+} from '@/lib/auth/helpers'
+import { assignChoreSchema } from '@/lib/validation/schemas'
 
 /**
  * POST /api/chores/assign
@@ -12,20 +18,18 @@ export async function POST(request: Request) {
     if (!auth) return unauthorized()
 
     const body = await request.json()
-    const { choreId, kidIds, date } = body
-
-    if (!choreId) return badRequest('choreId is required')
-    if (!kidIds || !Array.isArray(kidIds) || kidIds.length === 0) {
-      return badRequest('kidIds must be a non-empty array')
+    const parsed = assignChoreSchema.safeParse(body)
+    if (!parsed.success) {
+      return badRequest(parsed.error.issues[0]?.message || 'Invalid assign payload')
     }
 
-    // Verify chore belongs to family
+    const { choreId, kidIds, date } = parsed.data
+
     const chore = await prisma.chore.findFirst({
       where: { id: choreId, familyId: auth.familyId },
     })
     if (!chore) return notFound('Chore not found')
 
-    // Verify all kids belong to family
     const kids = await prisma.kid.findMany({
       where: { id: { in: kidIds }, familyId: auth.familyId },
     })
@@ -37,7 +41,6 @@ export async function POST(request: Request) {
       ? new Date(`${date}T00:00:00.000Z`)
       : new Date(new Date().toISOString().split('T')[0] + 'T00:00:00.000Z')
 
-    // Avoid duplicates: check existing assignments
     const tomorrow = new Date(dueDate)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
@@ -52,8 +55,8 @@ export async function POST(request: Request) {
     const existingKidIds = new Set(existing.map((a) => a.kidId))
 
     const newAssignments = kidIds
-      .filter((kidId: string) => !existingKidIds.has(kidId))
-      .map((kidId: string) => ({
+      .filter((kidId) => !existingKidIds.has(kidId))
+      .map((kidId) => ({
         choreId,
         kidId,
         dueDate,

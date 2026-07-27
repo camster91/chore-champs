@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Users, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react'
@@ -18,6 +18,13 @@ export default function InvitePage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [needsLogin, setNeedsLogin] = useState(false)
+  const redirectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     async function checkInvite() {
@@ -69,7 +76,8 @@ export default function InvitePage() {
       }
       
       // Redirect to dashboard after delay
-      setTimeout(() => {
+      if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current)
+      redirectTimeoutRef.current = setTimeout(() => {
         router.push('/dashboard')
       }, 2000)
       

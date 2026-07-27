@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/db'
-import { getAuthenticatedFamily, unauthorized, notFound } from '@/lib/auth/helpers'
+import {
+  getAuthenticatedFamily,
+  unauthorized,
+  notFound,
+  forbidden,
+} from '@/lib/auth/helpers'
+import { updateRewardSchema } from '@/lib/validation/schemas'
 
 export async function PATCH(
   request: Request,
@@ -12,6 +18,13 @@ export async function PATCH(
 
     const { id } = await params
     const body = await request.json()
+    const parsed = updateRewardSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid reward data' },
+        { status: 400 }
+      )
+    }
 
     const reward = await prisma.reward.findFirst({
       where: { id, familyId: auth.familyId },
@@ -19,28 +32,9 @@ export async function PATCH(
 
     if (!reward) return notFound('Reward not found')
 
-    const allowedFields = ['title', 'description', 'cost', 'icon', 'category', 'isActive']
-    const updates: Record<string, unknown> = {}
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        if (field === 'cost') {
-          const parsed = parseInt(body[field])
-          if (!Number.isInteger(parsed) || parsed < 1) {
-            return NextResponse.json(
-              { error: 'Reward cost must be a positive integer (>= 1)' },
-              { status: 400 }
-            )
-          }
-          updates[field] = parsed
-        } else {
-          updates[field] = body[field]
-        }
-      }
-    }
-
     const updated = await prisma.reward.update({
       where: { id },
-      data: updates,
+      data: parsed.data,
     })
 
     return NextResponse.json(updated)
@@ -57,6 +51,9 @@ export async function DELETE(
   try {
     const auth = await getAuthenticatedFamily()
     if (!auth) return unauthorized()
+    if (auth.role !== 'OWNER') {
+      return forbidden('Only the family owner can delete rewards')
+    }
 
     const { id } = await params
 

@@ -1,7 +1,6 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
 
 export interface ProgressProps {
   value: number
@@ -48,11 +47,12 @@ export function Progress({
           sizes[size]
         )}
       >
-        <motion.div
-          className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]"
-          initial={animated ? { width: 0 } : false}
-          animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+        <div
+          className={cn(
+            'h-full rounded-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]',
+            animated && 'transition-[width] duration-500 ease-out'
+          )}
+          style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
@@ -84,7 +84,6 @@ export function CircularProgress({
   return (
     <div className={cn('relative inline-flex items-center justify-center', className)}>
       <svg width={size} height={size} className="-rotate-90">
-        {/* Background circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -94,8 +93,7 @@ export function CircularProgress({
           strokeWidth={strokeWidth}
           className="text-gray-200"
         />
-        {/* Progress circle */}
-        <motion.circle
+        <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
@@ -103,11 +101,10 @@ export function CircularProgress({
           stroke="url(#progress-gradient)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          className="transition-[stroke-dashoffset] duration-500 ease-out"
           style={{
             strokeDasharray: circumference,
+            strokeDashoffset: offset,
           }}
         />
         <defs>
