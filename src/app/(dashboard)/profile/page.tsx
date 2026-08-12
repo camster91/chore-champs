@@ -33,7 +33,9 @@ export default function ProfilePage() {
       }
       setIsLoading(true)
       try {
-        const chores = await getChores()
+        const chores = await getChores() as Array<{
+          assignments?: Array<{ kidId: string; status: string }>
+        }>
         const completed = chores.filter((chore) =>
           chore.assignments?.some((a) => a.kidId === currentKid.id && a.status === 'COMPLETED')
         ).length

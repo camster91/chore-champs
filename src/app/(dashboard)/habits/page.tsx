@@ -34,7 +34,14 @@ export default function HabitsPage() {
     if (!currentKid) return
     setIsLoading(true)
     try {
-      const dbHabits = await getHabits()
+      const dbHabits = await getHabits() as Array<{
+        id: string
+        title: string
+        description: string | null
+        icon: string | null
+        points: number
+        logs: Array<{ kidId: string; loggedAt: Date | string }>
+      }>
       if (!dbHabits) return
 
       const mapped: UIHabit[] = dbHabits.map(habit => {

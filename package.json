@@ -22,7 +22,7 @@
     "@capacitor/core": "^8.4.2",
     "@capacitor/ios": "^8.4.2",
     "@prisma/adapter-pg": "^7.9.0",
-    "@prisma/client": "^7.9.0",
+    "@prisma/client": "^7.9.1",
     "@types/canvas-confetti": "^1.9.0",
     "@types/web-push": "^3.6.4",
     "bcryptjs": "^3.0.3",
@@ -33,7 +33,7 @@
     "geist": "^1.7.2",
     "i18next": "^26.3.6",
     "lucide-react": "^0.577.0",
-    "next": "16.2.12",
+    "next": "^16.3.0",
     "next-auth": "^4.24.15",
     "pg": "^8.22.0",
     "react": "19.2.8",
@@ -56,16 +56,18 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "playwright": "^1.60.0",
-    "prisma": "^7.9.0",
+    "prisma": "^7.9.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
     "typescript": "^5.9.3"
   },
   "overrides": {
-    "postcss": "^8.5.10",
+    "postcss": "^8.5.26",
+    "nanoid": "^3.3.17",
+    "fast-uri": "^3.1.5",
     "uuid": "^11.1.1",
     "prisma": {
-      "@prisma/dev": "0.24.14"
+      "@prisma/dev": "0.25.1"
     }
   }
 }

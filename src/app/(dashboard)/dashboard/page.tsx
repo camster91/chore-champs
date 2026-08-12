@@ -59,7 +59,14 @@ export default function DashboardPage() {
       return
     }
     try {
-      const dbChores = await getChores()
+      const dbChores = await getChores() as Array<{
+        id: string
+        title: string
+        description: string | null
+        basePoints: number
+        icon: string | null
+        assignments: Array<{ id: string; kidId: string; status: string }>
+      }>
       if (!dbChores) return
       const mapped = dbChores.map((chore) => {
         const assignment = chore.assignments?.find((a) => a.kidId === currentKid?.id)

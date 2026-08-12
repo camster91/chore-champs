@@ -52,11 +52,18 @@ export default function ChoresPage() {
     initI18n()
   }, [])
 
-  const { data: dbChores, isLoading: choresLoading } = useSWR(
+  const { data: rawChores, isLoading: choresLoading } = useSWR(
     currentKid ? `chores-${currentKid.id}` : null,
     getChores,
     { refreshInterval: 30000 }
   )
+  const dbChores = rawChores as Array<{
+    id: string
+    title: string
+    description: string | null
+    basePoints: number
+    assignments: Array<{ id: string; kidId: string; status: string }>
+  }> | undefined
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
