@@ -7,7 +7,7 @@
 ## Pre-Submission Setup
 
 - [ ] **App bundle ready** — bundle ID `com.chorechamps.app`, web directory `out/` built
-- [ ] **Privacy policy URL live** — host privacy-policy.md at a public URL (e.g., chores.ashbi.ca/privacy)
+- [x] **Privacy policy URL live** — https://chores.ashbi.ca/privacy-policy (verified HTTP 200)
 - [ ] **Screenshots prepared** — 6.7" iPhone (393×852) and 6.5" iPhone (428×926) for Apple; 16:9 for Google
 - [ ] **App icon ready** — 1024×1024 PNG for Apple; 512×512 PNG for Google
 - [ ] **Category set** — Lifestyle / Family (both stores)
@@ -43,7 +43,7 @@
   - `chore tracker,kids chore app,chore chart,points for kids,reward system,allowance tracker,family tasks,kids rewards,task manager for kids,chores list,responsibility tracker,kids habit tracker`
 - [ ] **Promotional Text:** (optional — summarize main value prop: "Assign chores, earn points, claim rewards. One $1.99 purchase.")
 - [ ] **What's New:** paste v1.0 "What's New" text from store-listing.md
-- [ ] **Privacy Policy URL:** your hosted privacy-policy.md URL
+- [x] **Privacy Policy URL:** https://chores.ashbi.ca/privacy-policy
 - [ ] **Support URL:** `https://chores.ashbi.ca`
 - [ ] **Marketing URL:** (optional)
 - [ ] **Category:** Primary: Lifestyle, Secondary: (none required)
@@ -132,8 +132,8 @@ Screenshots should show: parent dashboard (chore creation/approval), kid dashboa
 
 ### 7. Privacy Policy
 
-- [ ] Privacy Policy URL field: your hosted privacy-policy.md URL
-- [ ] Confirm you have a live, publicly accessible privacy policy
+- [x] Privacy Policy URL field: https://chores.ashbi.ca/privacy-policy
+- [x] Confirm you have a live, publicly accessible privacy policy
 
 ### 8. Ads Declaration
 
