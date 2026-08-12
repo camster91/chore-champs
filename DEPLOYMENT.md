@@ -65,6 +65,12 @@ with code 6 and prints the manual recovery steps.
 The `:previous` tag is overwritten on every successful deploy — it always
 points to the last-known-good image, not some historical one.
 
+If Docker cannot tag the previous image by digest, the deploy script uses
+`docker commit` on the live container instead of `docker export`/`docker import`.
+This preserves the image command, entrypoint, and working directory required to
+start the rollback. The rollback snapshot was isolated and verified against
+`/api/health` on 2026-08-12 without replacing the live container.
+
 Production health is also checked every 15 minutes by the GitHub Actions
 `Production Health` workflow. It verifies the database-backed health endpoint
 and the public homepage, auth, privacy, robots, and sitemap routes.
