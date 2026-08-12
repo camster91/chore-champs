@@ -227,9 +227,16 @@ if [[ "$ROLLBACK" != "1" ]]; then
     log "previous image SHA: $OLD_SHA"
 
     if [[ "$OLD_SHA" != "none" ]]; then
-      docker tag "$OLD_SHA" "$ROLLBACK_IMAGE" 2>/dev/null \
-        && ok "tagged $OLD_SHA as $ROLLBACK_IMAGE (rollback target)" \
-        || warn "could not tag previous image — rollback may need manual intervention"
+      if docker tag "$OLD_SHA" "$ROLLBACK_IMAGE" 2>/dev/null; then
+        ok "tagged $OLD_SHA as $ROLLBACK_IMAGE (rollback target)"
+      else
+        warn "previous image tag unavailable; exporting the live container as rollback target"
+        if docker export "$CONTAINER_NAME" | docker import - "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
+          ok "exported live container as $ROLLBACK_IMAGE (rollback target)"
+        else
+          warn "could not create rollback image — rollback may need manual intervention"
+        fi
+      fi
     fi
 
     docker rm -f "$CONTAINER_NAME" 2>&1 || warn "no existing container to remove"
