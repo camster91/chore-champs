@@ -65,6 +65,10 @@ with code 6 and prints the manual recovery steps.
 The `:previous` tag is overwritten on every successful deploy — it always
 points to the last-known-good image, not some historical one.
 
+Production health is also checked every 15 minutes by the GitHub Actions
+`Production Health` workflow. It verifies the database-backed health endpoint
+and the public homepage, auth, privacy, robots, and sitemap routes.
+
 ## Idempotency
 
 Safe to re-run. If nothing has changed on origin/master, `git pull` is a no-op,
