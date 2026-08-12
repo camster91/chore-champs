@@ -18,7 +18,8 @@
 - [x] Add analytics (Google Analytics or PostHog)
 
 ## Phase 3: Launch
-- [ ] Prepare app store assets (if mobile) or social media graphics
+- [x] Prepare draft app store screenshots and verify native app icons
 - [ ] Submit to app stores (if applicable)
 - [ ] Write launch post (Product Hunt, Twitter, LinkedIn)
-- [ ] Monitor logs and feedback post-launch
+- [x] Configure scheduled production health monitoring
+- [ ] Monitor logs and feedback post-launch after public launch

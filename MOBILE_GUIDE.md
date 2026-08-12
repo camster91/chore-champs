@@ -13,16 +13,15 @@ I have already initialized Capacitor and added the `android/` and `ios/` native 
 
 ## 3. How to Build & Run
 
-### Step A: Deploy the Web App
-Since this app uses Next.js Server Actions and Prisma, the mobile app must point to a hosted server.
-1. Deploy your repository to [Vercel](https://vercel.com/) or another provider.
-2. Once deployed, open `capacitor.config.ts` and update the `server.url` property:
-   ```ts
-   server: {
-     url: 'https://your-app-name.vercel.app',
-     androidScheme: 'https'
-   }
-   ```
+Since this app uses Next.js Server Actions and Prisma, the native shell points to the deployed server. `capacitor.config.ts` is configured for the current production URL:
+```ts
+server: {
+  url: 'https://chores.ashbi.ca',
+  androidScheme: 'https'
+}
+```
+
+Do not remove the hosted URL or replace it with a static `out/` build: this app is server-rendered and does not support a static export.
 
 ### Step B: Sync to Native Projects
 Every time you change the configuration or web code (if using local bundling), run:
@@ -48,12 +47,7 @@ npx cap open ios
 - Use **Product > Archive** to prepare for the App Store.
 
 ## 4. Customizing App Icons & Splash Screens
-1. Place a 1024x1024 icon as `assets/icon-only.png`.
-2. Place a 2732x2732 splash image as `assets/splash.png`.
-3. Run the generation tool:
-   ```bash
-   npx capacitor-assets generate
-   ```
+The native icon and splash resources are already checked in under `android/` and `ios/`. If they need to be regenerated, install the Capacitor asset generator separately and review its output before committing; it is not part of the production dependency set.
 
 ## 5. Native Features
 You can now use Capacitor plugins to access native hardware (Camera, Notifications, Biometrics, etc.).

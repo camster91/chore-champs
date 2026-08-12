@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'ChoreChamps',
   webDir: 'out',
   server: {
-    // Replace with your production URL once deployed
-    // url: 'https://chore-champs.vercel.app',
-    // cleartext: true, // Set to true if testing with local IP over HTTP
+    // ChoreChamps uses server actions and Prisma, so the native shell loads
+    // the deployed Next.js app instead of attempting a static export.
+    url: 'https://chores.ashbi.ca',
     androidScheme: 'https'
   },
   plugins: {

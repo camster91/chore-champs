@@ -6,10 +6,10 @@
 
 ## Pre-Submission Setup
 
-- [ ] **App bundle ready** — bundle ID `com.chorechamps.app`, web directory `out/` built
+- [x] **Native shell configured** — bundle ID `com.chorechamps.app`, hosted server URL configured in `capacitor.config.ts`
 - [x] **Privacy policy URL live** — https://chores.ashbi.ca/privacy-policy (verified HTTP 200)
-- [ ] **Screenshots prepared** — 6.7" iPhone (393×852) and 6.5" iPhone (428×926) for Apple; 16:9 for Google
-- [ ] **App icon ready** — 1024×1024 PNG for Apple; 512×512 PNG for Google
+- [x] **Screenshots prepared** — draft sets captured under `artifacts/app-store/` at the required Apple and Google dimensions
+- [x] **App icon ready** — 1024×1024 iOS icon and Android launcher resources are checked in
 - [ ] **Category set** — Lifestyle / Family (both stores)
 - [ ] **Price set** — $1.99 USD, one-time purchase, no subscription
 - [ ] **Content rating filled out** — both stores require a content rating questionnaire
@@ -51,8 +51,8 @@
 
 ### 4. Screenshots
 
-- [ ] iPhone 6.7" Display (393×852) — minimum 5 screenshots
-- [ ] iPhone 6.5" Display (428×926) — minimum 5 screenshots
+- [x] iPhone 6.7" Display (393×852) — 5 draft screenshots in `artifacts/app-store/iphone-6.7/`
+- [x] iPhone 6.5" Display (428×926) — 5 draft screenshots in `artifacts/app-store/iphone-6.5/`
 
 Screenshots should show: parent dashboard (chore creation/approval), kid dashboard (chore list, points), rewards store, badge/achievement screen.
 
@@ -108,7 +108,7 @@ Screenshots should show: parent dashboard (chore creation/approval), kid dashboa
 - [ ] **Full Description:** paste from store-listing.md (Google long description)
 - [ ] **Feature Graphic:** 1024×500 PNG
 - [ ] **App Icon:** 512×512 PNG
-- [ ] **Screenshots:** minimum 2 screenshots (phone + tablet)
+- [x] **Screenshots:** draft phone and tablet sets in `artifacts/app-store/`
   - Phone: 16:9 (e.g., 1920×1080)
   - Tablet: 7"–20" (e.g., 2048×1536)
 
