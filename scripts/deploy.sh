@@ -194,12 +194,8 @@ if [[ "$ROLLBACK" != "1" ]]; then
     if docker run --rm \
         --network container:kids-chore-postgres \
         --env-file "$ENV_FILE" \
-        -v "$REPO_DIR":/app -w /app \
-        node:20-alpine sh -c '
-          apk add --no-cache openssl >/dev/null 2>&1
-          npm ci --legacy-peer-deps --silent >/dev/null 2>&1 || npm install --legacy-peer-deps --silent >/dev/null 2>&1
-          npx prisma migrate deploy
-        ' 2>&1 | tail -15; then
+        -v "$REPO_DIR/prisma.config.ts":/app/prisma.config.ts:ro \
+        "$IMAGE_NAME" npx prisma migrate deploy 2>&1 | tail -15; then
       ok "migrations applied"
     else
       fail "prisma migrate deploy failed — DO NOT proceed with container restart, schema and code will be out of sync" 4

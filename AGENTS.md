@@ -18,8 +18,8 @@ ChoreChamps is a single Next.js 16 (App Router) app backed by PostgreSQL via Pri
 - For local dev, sync the schema with `npx prisma db push` against a clean DB. To fully reset: `sudo -u postgres psql -c "DROP DATABASE IF EXISTS chorechamps;" && sudo -u postgres psql -c "CREATE DATABASE chorechamps;" && npx prisma db push`. (Prisma blocks `--force-reset` for AI agents, so drop/recreate via `psql` instead.)
 
 ### Known caveats
-- `npm run seed` (`prisma/seed.js`) is broken under Prisma 7: it uses a bare `new PrismaClient()` without the required `@prisma/adapter-pg` driver adapter and throws `PrismaClientInitializationError`. It only seeds badge/avatar catalog rows and is not needed for the core signup → chores flow. The app itself wires the adapter correctly in `src/lib/db/index.ts`.
-- Login does not persist over plain HTTP in dev. `src/lib/auth/auth.ts` hardcodes `__Secure-`-prefixed NextAuth cookie names while `secure` is only `true` in production, so browsers reject the cookie over `http://localhost` and the session never sticks. Signup/registration and all API/data flows work; only cookie-based login is affected. To exercise the logged-in UI in dev, either serve over HTTPS with `NODE_ENV=production`, or make the cookie names conditional on `NODE_ENV` in `src/lib/auth/auth.ts`.
+- `npm run seed` requires a reachable database and seeds the badge/avatar catalog rows. It uses the Prisma 7 PostgreSQL adapter configured in `prisma/seed.js`.
+- Local development login uses non-secure NextAuth cookie names over HTTP; production uses the `__Secure-`-prefixed names over HTTPS.
 
 ### Lint / test / build
 - Lint: `npm run lint`. Tests: `npm test` (node:test via tsx; unit tests for `src/lib/utils.ts` and `src/lib/gamification.ts`). Build: `npm run build` (runs `prisma generate` then `next build`).

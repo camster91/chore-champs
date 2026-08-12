@@ -4,6 +4,8 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 import { checkRateLimit } from '@/lib/rate-limiter'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -90,7 +92,7 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `__Secure-next-auth.session-token`,
+      name: isProduction ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
@@ -99,7 +101,7 @@ export const authOptions: NextAuthOptions = {
       },
     },
     csrfToken: {
-      name: `__Secure-next-auth.csrf-token`,
+      name: isProduction ? '__Secure-next-auth.csrf-token' : 'next-auth.csrf-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',

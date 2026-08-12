@@ -23,7 +23,7 @@ The seven steps it runs, in order:
 | 1 | Sanity check (root, repo dir, docker, .env) | 1 |
 | 2 | `git pull --ff-only origin master` | 2 |
 | 3 | `docker build -t chore-champs:latest .` | 3 |
-| 4 | `prisma migrate deploy` against running postgres | 4 |
+| 4 | `prisma migrate deploy` from the built image against running postgres | 4 |
 | 5 | Write Traefik labels to `/tmp/chore-traefik.labels` via `printf` | — |
 | 6 | Tag previous image as `chore-champs:previous` (rollback target), then `docker rm -f kids-chore-app && docker run -d` | 5 |
 | 7 | Health-check loop: poll `https://chores.ashbi.ca/api/health` for HTTP 200 | 6 |
@@ -71,9 +71,9 @@ Safe to re-run. If nothing has changed on origin/master, `git pull` is a no-op,
 `docker build` rebuilds an identical image, `prisma migrate deploy` prints
 "No pending migrations to apply.", and the container restart is harmless.
 
-Typical re-run on a no-change deploy: ~30 seconds (most of which is the npm
-install inside the migration step — there's room to optimize this by mounting
-a cached `node_modules` volume).
+Typical re-run on a no-change deploy is fast because migrations use the Prisma
+CLI already present in the built image; no dependency installation is required
+on the production host.
 
 ## What this script does NOT do
 
