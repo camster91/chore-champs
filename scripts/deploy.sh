@@ -230,9 +230,9 @@ if [[ "$ROLLBACK" != "1" ]]; then
       if docker tag "$OLD_SHA" "$ROLLBACK_IMAGE" 2>/dev/null; then
         ok "tagged $OLD_SHA as $ROLLBACK_IMAGE (rollback target)"
       else
-        warn "previous image tag unavailable; exporting the live container as rollback target"
-        if docker export "$CONTAINER_NAME" | docker import - "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
-          ok "exported live container as $ROLLBACK_IMAGE (rollback target)"
+        warn "previous image tag unavailable; snapshotting the live container as rollback target"
+        if docker commit "$CONTAINER_NAME" "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
+          ok "snapshotted live container as $ROLLBACK_IMAGE (rollback target)"
         else
           warn "could not create rollback image — rollback may need manual intervention"
         fi
