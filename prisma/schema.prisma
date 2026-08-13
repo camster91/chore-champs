@@ -172,14 +172,16 @@ model Habit {
 }
 
 model HabitLog {
-  id        String   @id @default(cuid())
-  habitId   String
-  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
-  kidId     String
-  kid       Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
-  loggedAt  DateTime @default(now())
-  
+  id         String   @id @default(cuid())
+  habitId    String
+  habit      Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  kidId      String
+  kid        Kid      @relation(fields: [kidId], references: [id], onDelete: Cascade)
+  loggedDate DateTime @db.Date
+  loggedAt   DateTime @default(now())
+
   @@index([kidId, loggedAt])
+  @@unique([habitId, kidId, loggedDate])
 }
 
 model FamilyGoal {

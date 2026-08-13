@@ -26,7 +26,7 @@ This will:
 
 #### 1. Clone and install dependencies
 ```bash
-# Already in the kids-chore-app directory
+# Already in the chore-champs directory
 npm install
 ```
 
@@ -49,7 +49,7 @@ docker-compose up -d
 # Generate Prisma Client
 npx prisma generate
 
-# Create database schema
+# Sync the clean local database to the current Prisma schema
 npx prisma db push
 
 # Seed with sample data
@@ -62,6 +62,13 @@ npm run dev
 ```
 
 The app will be available at: http://localhost:3000
+
+### Migration rule
+
+Local development uses `npx prisma db push` against a clean database because the
+historical migration chain has drifted from the current Prisma 7 schema. Production
+must use the committed migrations through `bash scripts/deploy.sh`, which runs
+`npx prisma migrate deploy` before restarting the application container.
 
 ## Test Credentials
 

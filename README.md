@@ -125,8 +125,8 @@ cd chore-champs
 npm install
 
 # Environment
-cp .env.example .env.local
-# Fill in DATABASE_URL and NEXTAUTH_SECRET
+cp .env.example .env
+# Fill in DATABASE_URL, NEXTAUTH_SECRET, and NEXTAUTH_URL=http://localhost:3000
 
 # Database
 npx prisma generate
@@ -134,7 +134,9 @@ npx prisma db push
 npm run seed   # creates sample parent account, 2 children, chores, rewards
 ```
 
-> **Note for existing deployments:** After pulling schema changes (e.g., the `FamilyMember` multi-parent support), run `npx prisma migrate dev` to apply new migrations instead of `db push`.
+> **Local development:** Use a clean local PostgreSQL database with `npx prisma db push`. The historical migration chain has drifted from the current Prisma 7 schema, so `migrate dev` is not the local setup path.
+>
+> **Production:** Apply committed migrations with `npx prisma migrate deploy` through `scripts/deploy.sh`. Do not use `db push` against production.
 
 ## Develop
 npm run dev
@@ -174,7 +176,7 @@ docker run -p 3000:3000 --env-file .env.production chorechamps
 
 ## Database Schema
 
-Key entities: `Family` (parent accounts), `Child` (profiles), `Chore` (tasks), `ChoreAssignment` (links), `ChoreCompletion` (records), `Reward`, `Redemption`, `Badge`, `BadgeEarned`.
+Key entities: `Family` (parent accounts), `Kid` (child profiles), `Chore` (tasks), `ChoreAssignment` (links and completion state), `Reward`, `Redemption`, `BadgeDefinition`, `EarnedBadge`, `Habit`, and `HabitLog`.
 
 Full schema: `prisma/schema.prisma`
 
@@ -189,8 +191,8 @@ Full schema: `prisma/schema.prisma`
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
 | `npm run seed` | Seed database with sample data |
-| `npx prisma db push` | Push schema changes |
-| `npx prisma db migrate` | Run migrations |
+| `npx prisma db push` | Sync a clean local development database |
+| `npx prisma migrate deploy` | Apply committed migrations in production |
 | `npx cap sync ios` | Sync web build to iOS |
 | `npx cap sync android` | Sync web build to Android |
 

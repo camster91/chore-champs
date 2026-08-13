@@ -1,5 +1,6 @@
 'use server'
 
+import { Prisma } from '@prisma/client'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth/auth'
 import prisma from '@/lib/db'
@@ -85,12 +86,21 @@ export async function logHabit(habitId: string, kidId: string) {
     throw new Error('Habit already logged today')
   }
 
-  const log = await prisma.habitLog.create({
-    data: {
-      habitId,
-      kidId,
-    },
-  })
+  let log
+  try {
+    log = await prisma.habitLog.create({
+      data: {
+        habitId,
+        kidId,
+        loggedDate: startOfDay,
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new Error('Habit already logged today')
+    }
+    throw error
+  }
 
   revalidatePath('/habits')
   revalidatePath('/dashboard')
