@@ -2,6 +2,7 @@
 set -euo pipefail
 
 BASE_URL="${CHORE_CHAMPS_BASE_URL:-https://chores.ashbi.ca}"
+BACKUP_DIR="${CHORE_CHAMPS_BACKUP_DIR:-/var/backups/chore-champs}"
 TMP_MANIFEST=$(mktemp)
 trap 'rm -f "$TMP_MANIFEST"' EXIT
 
@@ -40,5 +41,14 @@ for icon in icons:
     with urlopen(f'{base_url}{path}', timeout=20) as response:
         assert response.status == 200, (path, response.status)
 PY
+
+latest_backup=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name 'chore-champs-*.dump' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+[[ -n "$latest_backup" ]] || { echo "no Chore Champs database backup found" >&2; exit 1; }
+backup_age=$(( $(date +%s) - $(stat -c '%Y' "$latest_backup") ))
+(( backup_age <= 26 * 60 * 60 )) || {
+  echo "latest Chore Champs database backup is stale (${backup_age}s)" >&2
+  exit 1
+}
+sha256sum -c "$latest_backup.sha256" >/dev/null
 
 echo "Chore Champs production health OK"

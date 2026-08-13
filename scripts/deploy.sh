@@ -133,6 +133,8 @@ install_health_monitor() {
   systemctl daemon-reload
   systemctl enable --now chore-champs-backup.timer >/dev/null
   ok "enabled chore-champs-backup.timer"
+  systemctl start --wait chore-champs-backup.service
+  ok "created verified database backup"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
