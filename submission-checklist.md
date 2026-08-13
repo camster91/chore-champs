@@ -2,6 +2,8 @@
 ## Apple App Store + Google Play Store
 ### For Cam — step by step, tick each box
 
+Run `npm run store:validate` before uploading the checked-in store assets.
+
 ---
 
 ## Pre-Submission Setup

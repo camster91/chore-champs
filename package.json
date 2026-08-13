@@ -12,6 +12,7 @@
     "prepare": "git config core.hooksPath .husky || true",
     "seed": "node prisma/seed.js",
     "smoke:production": "node scripts/production-smoke.cjs",
+    "store:validate": "node scripts/validate-store-assets.cjs",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push"
   },
