@@ -232,7 +232,8 @@ if [[ "$ROLLBACK" != "1" ]]; then
       else
         warn "previous image tag unavailable; snapshotting the live container as rollback target"
         docker image rm -f "$ROLLBACK_IMAGE" >/dev/null 2>&1 || true
-        if docker commit "$CONTAINER_NAME" "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
+        if docker commit --no-pause "$CONTAINER_NAME" "$ROLLBACK_IMAGE" >/dev/null 2>&1 \
+          && docker image inspect "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
           ok "snapshotted live container as $ROLLBACK_IMAGE (rollback target)"
         else
           warn "could not create rollback image — rollback may need manual intervention"
