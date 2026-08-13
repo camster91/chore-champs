@@ -131,76 +131,72 @@ export async function completeChore(assignmentId: string) {
     throw new Error('Unauthorized')
   }
 
-  const existing = await prisma.choreAssignment.findFirst({
-    where: {
-      id: assignmentId,
-      kid: { familyId: session.user.familyId },
-    },
-    include: { chore: true },
-  })
-
-  if (!existing) {
-    throw new Error('Assignment not found')
-  }
-
-  if (existing.status === 'COMPLETED') {
-    throw new Error('Assignment already completed')
-  }
-
-  const kidId = existing.kidId
-  const basePoints = existing.chore.basePoints
-
-  const kidBefore = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId },
-    select: {
-      totalPoints: true,
-      currentStreak: true,
-      longestStreak: true,
-      lastCompletedAt: true,
-    },
-  })
-  if (!kidBefore) {
-    throw new Error('Kid not found')
-  }
-
-  const gamification = processGamification(
-    basePoints,
-    kidBefore.totalPoints,
-    kidBefore.currentStreak,
-    kidBefore.longestStreak,
-    kidBefore.lastCompletedAt,
-  )
-
-  // Atomic: only transition PENDING → COMPLETED to block double-complete races
-  const updated = await prisma.choreAssignment.updateMany({
-    where: { id: assignmentId, status: 'PENDING' },
-    data: {
-      status: 'COMPLETED',
-      completedAt: new Date(),
-    },
-  })
-
-  if (updated.count === 0) {
-    throw new Error('Assignment already completed')
-  }
-
-  const [assignment] = await prisma.$transaction([
-    prisma.choreAssignment.findUniqueOrThrow({ where: { id: assignmentId } }),
-    prisma.kid.update({
-      where: { id: kidId },
-      data: {
-        points: { increment: gamification.pointsEarned },
-        totalPoints: { increment: gamification.pointsEarned },
-        currentStreak: gamification.currentStreak,
-        longestStreak: Math.max(kidBefore.longestStreak, gamification.currentStreak),
-        lastCompletedAt: new Date(),
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.choreAssignment.findFirst({
+      where: {
+        id: assignmentId,
+        kid: { familyId: session.user.familyId },
       },
-    }),
-  ])
+      include: { chore: true },
+    })
 
-  const updatedKid = await prisma.kid.findUnique({
-    where: { id: kidId },
-    select: { points: true, totalPoints: true },
+    if (!existing) {
+      throw new Error('Assignment not found')
+    }
+
+    if (existing.status === 'COMPLETED') {
+      throw new Error('Assignment already completed')
+    }
+
+    const kidBefore = await tx.kid.findFirst({
+      where: { id: existing.kidId, familyId: session.user.familyId },
+      select: {
+        totalPoints: true,
+        currentStreak: true,
+        longestStreak: true,
+        lastCompletedAt: true,
+      },
+    })
+    if (!kidBefore) {
+      throw new Error('Kid not found')
+    }
+
+    const gamification = processGamification(
+      existing.chore.basePoints,
+      kidBefore.totalPoints,
+      kidBefore.currentStreak,
+      kidBefore.longestStreak,
+      kidBefore.lastCompletedAt,
+    )
+    const completedAt = new Date()
+
+    // Keep the status transition and point award in one transaction so a
+    // failed award cannot leave the assignment permanently completed.
+    const updated = await tx.choreAssignment.updateMany({
+      where: { id: assignmentId, status: 'PENDING' },
+      data: { status: 'COMPLETED', completedAt },
+    })
+
+    if (updated.count === 0) {
+      throw new Error('Assignment already completed')
+    }
+
+    const [assignment, updatedKid] = await Promise.all([
+      tx.choreAssignment.findUniqueOrThrow({ where: { id: assignmentId } }),
+      tx.kid.update({
+        where: { id: existing.kidId },
+        data: {
+          points: { increment: gamification.pointsEarned },
+          totalPoints: { increment: gamification.pointsEarned },
+          currentStreak: gamification.currentStreak,
+          longestStreak: Math.max(kidBefore.longestStreak, gamification.currentStreak),
+          lastCompletedAt: completedAt,
+        },
+        select: { points: true, totalPoints: true },
+      }),
+    ])
+
+    return { assignment, updatedKid, gamification }
   })
 
   revalidatePath('/chores')
@@ -208,10 +204,10 @@ export async function completeChore(assignmentId: string) {
   revalidatePath('/profile')
 
   return {
-    assignment,
-    kidPoints: updatedKid?.points || 0,
-    kidTotalPoints: updatedKid?.totalPoints || 0,
-    gamification,
+    assignment: result.assignment,
+    kidPoints: result.updatedKid.points,
+    kidTotalPoints: result.updatedKid.totalPoints,
+    gamification: result.gamification,
   }
 }
 
