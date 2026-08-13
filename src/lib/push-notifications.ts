@@ -116,7 +116,7 @@ export async function sendTestNotification(): Promise<void> {
 
   new Notification('ChoreChamps', {
     body: 'Test notification! 🎉',
-    icon: '/icons/icon-192.png',
+    icon: '/icons/icon-192x192.png',
     badge: '/icons/badge-72.png'
   })
 }

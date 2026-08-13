@@ -4,7 +4,7 @@ const CACHE_NAME = 'chorechamps-v2'
 const OFFLINE_URL = '/offline'
 
 // Only public shell assets — never authenticated app routes
-const urlsToCache = ['/offline', '/manifest.webmanifest', '/icons/icon-192.png']
+const urlsToCache = ['/offline', '/manifest.json', '/icons/icon-192x192.png']
 
 function isCacheableRequest(request, url) {
   if (request.method !== 'GET') return false
@@ -124,7 +124,7 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/icons/icon-192.png',
+    icon: data.icon || '/icons/icon-192x192.png',
     badge: data.badge || '/icons/badge-72.png',
     vibrate: [100, 50, 100],
     data: data.data || {},

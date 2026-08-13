@@ -48,7 +48,7 @@ export async function sendPushNotification(userId: string, notification: Notific
       const payload = JSON.stringify({
         title: notification.title,
         body: notification.body,
-        icon: notification.icon || '/icons/icon-192.png',
+        icon: notification.icon || '/icons/icon-192x192.png',
         badge: notification.badge || '/icons/badge-72.png',
         data: notification.data,
       })
@@ -94,7 +94,7 @@ export async function createNotification(
 
   await sendPushNotification(userId, {
     ...notification,
-    icon: notification.icon || '/icons/icon-192.png',
+        icon: notification.icon || '/icons/icon-192x192.png',
   })
 
   return dbNotification
