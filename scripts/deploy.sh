@@ -107,9 +107,12 @@ write_labels_file() {
 }
 
 install_health_monitor() {
-  install -m 0755 "$REPO_DIR/scripts/production-healthcheck.sh" "$HEALTHCHECK_SCRIPT"
-  install -m 0644 "$REPO_DIR/ops/chore-champs-health.service" "$HEALTH_SERVICE"
-  install -m 0644 "$REPO_DIR/ops/chore-champs-health.timer" "$HEALTH_TIMER"
+  cp -f "$REPO_DIR/scripts/production-healthcheck.sh" "$HEALTHCHECK_SCRIPT"
+  chmod 0755 "$HEALTHCHECK_SCRIPT"
+  cp -f "$REPO_DIR/ops/chore-champs-health.service" "$HEALTH_SERVICE"
+  chmod 0644 "$HEALTH_SERVICE"
+  cp -f "$REPO_DIR/ops/chore-champs-health.timer" "$HEALTH_TIMER"
+  chmod 0644 "$HEALTH_TIMER"
   systemctl daemon-reload
   systemctl enable --now chore-champs-health.timer >/dev/null
   ok "enabled chore-champs-health.timer"
