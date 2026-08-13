@@ -106,8 +106,8 @@ Screenshots should show: parent dashboard (chore creation/approval), kid dashboa
 
 - [ ] **Short Description:** `Gamified chore tracker for kids. Assign tasks, earn points, claim rewards — no subscriptions.`
 - [ ] **Full Description:** paste from store-listing.md (Google long description)
-- [ ] **Feature Graphic:** 1024×500 PNG
-- [ ] **App Icon:** 512×512 PNG
+- [x] **Feature Graphic:** 1024×500 PNG — draft at `artifacts/app-store/google-feature-graphic.png`
+- [x] **App Icon:** 512×512 PNG — draft at `artifacts/app-store/google-play-icon-512.png`
 - [x] **Screenshots:** draft phone and tablet sets in `artifacts/app-store/`
   - Phone: 16:9 (e.g., 1920×1080)
   - Tablet: 7"–20" (e.g., 2048×1536)
