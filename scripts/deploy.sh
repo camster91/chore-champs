@@ -172,6 +172,21 @@ fi
 if [[ "$ROLLBACK" != "1" ]]; then
   step "3/7  docker build"
 
+  if [[ "$DRY_RUN" != "1" ]]; then
+    CURRENT_SHA=$(docker inspect "$CONTAINER_NAME" --format '{{.Image}}' 2>/dev/null || echo "none")
+    if [[ "$CURRENT_SHA" != "none" ]]; then
+      docker image rm -f "$ROLLBACK_IMAGE" >/dev/null 2>&1 || true
+      if docker tag "$CURRENT_SHA" "$ROLLBACK_IMAGE" 2>/dev/null; then
+        ok "protected $CURRENT_SHA as $ROLLBACK_IMAGE before build"
+      elif docker commit --no-pause "$CONTAINER_NAME" "$ROLLBACK_IMAGE" >/dev/null 2>&1 \
+        && docker image inspect "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
+        ok "snapshotted live container as $ROLLBACK_IMAGE before build"
+      else
+        warn "could not protect a rollback image before build"
+      fi
+    fi
+  fi
+
   if [[ "$SKIP_BUILD" == "1" ]]; then
     log "skipping build (--skip-build)"
   elif [[ "$DRY_RUN" != "1" ]]; then
@@ -229,6 +244,8 @@ if [[ "$ROLLBACK" != "1" ]]; then
     if [[ "$OLD_SHA" != "none" ]]; then
       if docker tag "$OLD_SHA" "$ROLLBACK_IMAGE" 2>/dev/null; then
         ok "tagged $OLD_SHA as $ROLLBACK_IMAGE (rollback target)"
+      elif docker image inspect "$ROLLBACK_IMAGE" >/dev/null 2>&1; then
+        ok "retained protected $ROLLBACK_IMAGE (rollback target)"
       else
         warn "previous image tag unavailable; snapshotting the live container as rollback target"
         docker image rm -f "$ROLLBACK_IMAGE" >/dev/null 2>&1 || true
