@@ -109,8 +109,8 @@ write_labels_file() {
 install_health_monitor() {
   if [[ "$REPO_DIR/scripts/production-healthcheck.sh" != "$HEALTHCHECK_SCRIPT" ]]; then
     cp -f "$REPO_DIR/scripts/production-healthcheck.sh" "$HEALTHCHECK_SCRIPT"
+    chmod 0755 "$HEALTHCHECK_SCRIPT"
   fi
-  chmod 0755 "$HEALTHCHECK_SCRIPT"
   cp -f "$REPO_DIR/ops/chore-champs-health.service" "$HEALTH_SERVICE"
   chmod 0644 "$HEALTH_SERVICE"
   cp -f "$REPO_DIR/ops/chore-champs-health.timer" "$HEALTH_TIMER"
