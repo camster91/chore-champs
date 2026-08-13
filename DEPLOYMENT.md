@@ -87,6 +87,18 @@ systemctl status chore-champs-health.timer
 journalctl -u chore-champs-health.service --since today
 ```
 
+For a repeatable authenticated browser smoke test, run from a trusted machine:
+
+```bash
+npm run smoke:production
+CHORE_CHAMPS_SCREENSHOT_DIR=artifacts/qa-live npm run smoke:production
+```
+
+The script creates a synthetic `example.invalid` account when no QA email is
+provided, verifies the unauthenticated redirect, exercises every protected
+route, checks mobile overflow and browser console errors, and can save a
+dashboard screenshot. Never pass a real user's credentials to this script.
+
 The host also runs `chore-champs-backup.timer` four times daily. Each run writes
 a mode-700 PostgreSQL custom-format dump to `/var/backups/chore-champs`, verifies
 the archive catalog with `pg_restore`, writes a SHA-256 sidecar, and removes
