@@ -77,6 +77,16 @@ Production health is also checked every 15 minutes by the GitHub Actions
 `Production Health` workflow. It verifies the database-backed health endpoint
 and the public homepage, auth, privacy, robots, and sitemap routes.
 
+The production host independently runs `chore-champs-health.timer` every 15
+minutes. Its `chore-champs-health.service` checks the same public surfaces plus
+the manifest and every declared icon, with retry handling for transient proxy
+responses. Results are retained in the system journal:
+
+```bash
+systemctl status chore-champs-health.timer
+journalctl -u chore-champs-health.service --since today
+```
+
 ## Idempotency
 
 Safe to re-run. If nothing has changed on origin/master, `git pull` is a no-op,
