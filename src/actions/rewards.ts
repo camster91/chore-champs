@@ -56,41 +56,43 @@ export async function redeemReward(rewardId: string, kidId: string) {
     throw new Error('Unauthorized')
   }
 
-  const reward = await prisma.reward.findFirst({
-    where: { id: rewardId, familyId: session.user.familyId }
-  })
-
-  if (!reward) {
-    throw new Error('Reward not found')
-  }
-
-  const kid = await prisma.kid.findFirst({
-    where: { id: kidId, familyId: session.user.familyId }
-  })
-
-  if (!kid) {
-    throw new Error('Kid not found')
-  }
-
-  if (kid.points < reward.cost) {
-    throw new Error('Insufficient points')
-  }
-
-  const [redemption] = await prisma.$transaction([
-    prisma.redemption.create({
-      data: {
-        rewardId,
-        kidId,
-        points: reward.cost
-      }
-    }),
-    prisma.kid.update({
-      where: { id: kidId },
-      data: {
-        points: { decrement: reward.cost }
-      }
+  const redemption = await prisma.$transaction(async (tx) => {
+    const reward = await tx.reward.findFirst({
+      where: { id: rewardId, familyId: session.user.familyId },
     })
-  ])
+
+    if (!reward) {
+      throw new Error('Reward not found')
+    }
+
+    const kid = await tx.kid.findFirst({
+      where: { id: kidId, familyId: session.user.familyId },
+      select: { id: true },
+    })
+
+    if (!kid) {
+      throw new Error('Kid not found')
+    }
+
+    // The conditional update makes concurrent redemption retries atomic: only
+    // one transaction can decrement a balance that still covers the cost.
+    const charged = await tx.kid.updateMany({
+      where: {
+        id: kid.id,
+        familyId: session.user.familyId,
+        points: { gte: reward.cost },
+      },
+      data: { points: { decrement: reward.cost } },
+    })
+
+    if (charged.count !== 1) {
+      throw new Error('Insufficient points')
+    }
+
+    return tx.redemption.create({
+      data: { rewardId, kidId, points: reward.cost },
+    })
+  })
 
   revalidatePath('/rewards')
   revalidatePath('/dashboard')

@@ -123,6 +123,7 @@ model ChoreAssignment {
   
   @@index([kidId, dueDate])
   @@index([status])
+  @@unique([choreId, kidId, dueDate])
 }
 
 model Reward {

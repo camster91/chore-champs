@@ -109,6 +109,7 @@ export async function createChore(data: {
           dueDate: today,
           status: 'PENDING',
         })),
+        skipDuplicates: true,
       })
     }
   }

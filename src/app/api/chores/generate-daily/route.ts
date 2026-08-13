@@ -86,7 +86,10 @@ export async function POST() {
     )
 
     if (newAssignments.length > 0) {
-      await prisma.choreAssignment.createMany({ data: newAssignments })
+      await prisma.choreAssignment.createMany({
+        data: newAssignments,
+        skipDuplicates: true,
+      })
     }
 
     return NextResponse.json({

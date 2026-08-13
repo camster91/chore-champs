@@ -65,7 +65,8 @@ export async function addSampleData(locale: string = 'en') {
         kidId: kid.id,
         dueDate: today,
         status: 'PENDING'
-      }))
+      })),
+      skipDuplicates: true,
     })
   }
 
