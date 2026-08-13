@@ -58,12 +58,12 @@ Screenshots should show: parent dashboard (chore creation/approval), kid dashboa
 
 ### 5. App Icon
 
-- [ ] 1024×1024 App Store icon (ChoreChamps shield/trophy)
+- [x] 1024×1024 App Store icon (ChoreChamps shield/trophy) — `ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png`
 
 ### 6. Build Upload
 
-- [ ] Build web app: `npm run build`
-- [ ] Sync to iOS: `npx cap sync ios`
+- [x] Build web app: `npm run build` — local production build verified
+- [x] Sync to iOS: `npx cap sync ios` — native shell sync verified
 - [ ] Open `ios/` folder in Xcode
 - [ ] Archive build with correct bundle ID and version
 - [ ] Upload to App Store Connect — should appear under the app's "Builds" section
@@ -149,7 +149,7 @@ Screenshots should show: parent dashboard (chore creation/approval), kid dashboa
 
 ### 10. Upload APK / AAB
 
-- [ ] Build release APK or AAB: `npm run build && npx cap sync android`
+- [x] Build web app and sync Android shell: `npm run build && npx cap sync android` — local preflight verified
 - [ ] Open Android studio, build release APK/AAB
 - [ ] Upload to Play Console under "Production" → "Create Release"
 - [ ] Add the new build, review release notes, save
