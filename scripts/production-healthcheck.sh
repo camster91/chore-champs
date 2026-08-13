@@ -8,19 +8,19 @@ trap 'rm -f "$TMP_MANIFEST"' EXIT
 check_url() {
   local path="$1"
   local code
-  code=$(curl --fail --silent --show-error --location --max-time 20 \
+  code=$(curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --max-time 20 \
     --output /dev/null --write-out '%{http_code}' "$BASE_URL$path")
   [[ "$code" == "200" ]] || { echo "$path returned HTTP $code" >&2; exit 1; }
 }
 
-curl --fail --silent --show-error --location --max-time 20 \
+curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --max-time 20 \
   "$BASE_URL/api/health" | grep -q '"db":"connected"'
 
 for path in / /login /signup /privacy-policy /robots.txt /sitemap.xml; do
   check_url "$path"
 done
 
-curl --fail --silent --show-error --location --max-time 20 \
+curl --fail --silent --show-error --location --retry 3 --retry-delay 2 --max-time 20 \
   --output "$TMP_MANIFEST" "$BASE_URL/manifest.json"
 
 python3 - "$TMP_MANIFEST" "$BASE_URL" <<'PY'
