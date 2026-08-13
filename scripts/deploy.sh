@@ -44,6 +44,9 @@ CONTAINER_NAME="kids-chore-app"
 HEALTH_URL="https://chores.ashbi.ca/api/health"
 LABELS_FILE="/tmp/chore-traefik.labels"
 ENV_FILE="/root/chore-champs/.env.production"
+HEALTHCHECK_SCRIPT="/root/chore-champs/scripts/production-healthcheck.sh"
+HEALTH_SERVICE="/etc/systemd/system/chore-champs-health.service"
+HEALTH_TIMER="/etc/systemd/system/chore-champs-health.timer"
 
 # Traefik labels — written via printf to avoid shell backtick interpretation.
 # DO NOT inline these as `docker run --label 'Host(\`foo\`)'` — the backticks
@@ -101,6 +104,15 @@ write_labels_file() {
     printf '%s\n' "$label" >> "$LABELS_FILE"
   done
   ok "wrote $LABELS_FILE ($(wc -l < "$LABELS_FILE") lines)"
+}
+
+install_health_monitor() {
+  install -m 0755 "$REPO_DIR/scripts/production-healthcheck.sh" "$HEALTHCHECK_SCRIPT"
+  install -m 0644 "$REPO_DIR/ops/chore-champs-health.service" "$HEALTH_SERVICE"
+  install -m 0644 "$REPO_DIR/ops/chore-champs-health.timer" "$HEALTH_TIMER"
+  systemctl daemon-reload
+  systemctl enable --now chore-champs-health.timer >/dev/null
+  ok "enabled chore-champs-health.timer"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -227,6 +239,7 @@ if [[ "$ROLLBACK" != "1" ]]; then
 
   if [[ "$DRY_RUN" != "1" ]]; then
     write_labels_file
+    install_health_monitor
   fi
 fi
 

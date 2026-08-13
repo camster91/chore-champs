@@ -1,0 +1,8 @@
+[Unit]
+Description=Chore Champs production health check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/chore-champs/scripts/production-healthcheck.sh
