@@ -50,8 +50,10 @@ file first.
 
 ## Rollback
 
-Each successful deploy automatically tags the previous image as
-`chore-champs:previous`. To roll back:
+Before the Docker build, each deploy protects the currently running image as
+`chore-champs:previous`. This avoids losing the rollback target when a build
+replaces an untagged image. Each successful deploy then retains that protected
+last-known-good image. To roll back:
 
 ```bash
 ssh hostinger

@@ -26,3 +26,21 @@ jobs:
             test "$code" = 200
             echo "$path HTTP $code"
           done
+          curl --fail --silent --show-error --location --max-time 20 \
+            --output /tmp/chorechamps-manifest.json \
+            https://chores.ashbi.ca/manifest.json
+          python3 - <<'PY'
+          import json
+          from urllib.request import urlopen
+
+          with open('/tmp/chorechamps-manifest.json', encoding='utf-8') as handle:
+              manifest = json.load(handle)
+          assert manifest.get('name') == 'ChoreChamps'
+          assert manifest.get('icons'), 'manifest has no icons'
+          for icon in manifest['icons']:
+              path = icon['src']
+              assert path.startswith('/icons/'), path
+              with urlopen(f'https://chores.ashbi.ca{path}', timeout=20) as response:
+                  assert response.status == 200, (path, response.status)
+              print(f'{path} HTTP 200')
+          PY
