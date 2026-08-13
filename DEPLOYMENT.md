@@ -87,6 +87,21 @@ systemctl status chore-champs-health.timer
 journalctl -u chore-champs-health.service --since today
 ```
 
+The host also runs `chore-champs-backup.timer` four times daily. Each run writes
+a mode-700 PostgreSQL custom-format dump to `/var/backups/chore-champs`, verifies
+the archive catalog with `pg_restore`, writes a SHA-256 sidecar, and removes
+archives older than 14 days:
+
+```bash
+systemctl status chore-champs-backup.timer
+journalctl -u chore-champs-backup.service --since today
+ls -l /var/backups/chore-champs
+```
+
+The backup is an on-host recovery point; it is not an off-host disaster-recovery
+copy. Copy a verified dump to separately managed storage before treating it as
+protection against VPS loss.
+
 ## Idempotency
 
 Safe to re-run. If nothing has changed on origin/master, `git pull` is a no-op,
@@ -105,17 +120,15 @@ on the production host.
 - **Open or close GitHub issues.** The kanban
   (`~/.hermes/kanban/boards/chore-champs/`) tracks what to ship; this script
   only ships code that already landed on master.
-- **Backup the database.** The `kids-chore-postgres` container has a
-  `postgres_data` volume but no off-host backup. If you want point-in-time
-  recovery, add a `pg_dump` step before step 4 (or set up WAL archiving).
-  **Not in scope today.**
+- **Off-host disaster recovery.** The host timer creates verified local dumps,
+  but this script does not transfer them to separately managed storage.
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | "git pull failed (local master diverged)" | Local `/root/chore-champs` has unpushed commits | `git log --oneline` to find them, push or reset before redeploying |
-| "prisma migrate deploy failed" | Schema drift between repo and prod | Run `npx prisma migrate dev` locally, push the new migration, retry |
+| "prisma migrate deploy failed" | Schema drift between repo and prod | Fix and test a committed migration against a clean local database, push it, then retry |
 | "health check failed after 40s" | App didn't bind to port 3000, or Traefik didn't pick up the new container | `docker logs kids-chore-app --tail 50` to see app errors; check `/tmp/chore-traefik.labels` content if 502 |
 | Container starts but Traefik returns 404 | Labels got mangled (backtick issue) | Run `bash scripts/deploy.sh --dry-run` then inspect the file the script would write |
 | `chore-champs:previous` missing | First-ever deploy, or previous deploy failed before tagging | There's nothing to roll back to — fix forward instead |

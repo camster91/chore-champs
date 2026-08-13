@@ -1,0 +1,9 @@
+[Unit]
+Description=Chore Champs PostgreSQL backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/chore-champs/scripts/backup-database.sh
+User=root

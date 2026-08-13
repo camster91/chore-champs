@@ -47,6 +47,9 @@ ENV_FILE="/root/chore-champs/.env.production"
 HEALTHCHECK_SCRIPT="/root/chore-champs/scripts/production-healthcheck.sh"
 HEALTH_SERVICE="/etc/systemd/system/chore-champs-health.service"
 HEALTH_TIMER="/etc/systemd/system/chore-champs-health.timer"
+BACKUP_SCRIPT="/root/chore-champs/scripts/backup-database.sh"
+BACKUP_SERVICE="/etc/systemd/system/chore-champs-backup.service"
+BACKUP_TIMER="/etc/systemd/system/chore-champs-backup.timer"
 
 # Traefik labels — written via printf to avoid shell backtick interpretation.
 # DO NOT inline these as `docker run --label 'Host(\`foo\`)'` — the backticks
@@ -118,6 +121,18 @@ install_health_monitor() {
   systemctl daemon-reload
   systemctl enable --now chore-champs-health.timer >/dev/null
   ok "enabled chore-champs-health.timer"
+
+  if [[ "$REPO_DIR/scripts/backup-database.sh" != "$BACKUP_SCRIPT" ]]; then
+    cp -f "$REPO_DIR/scripts/backup-database.sh" "$BACKUP_SCRIPT"
+    chmod 0755 "$BACKUP_SCRIPT"
+  fi
+  cp -f "$REPO_DIR/ops/chore-champs-backup.service" "$BACKUP_SERVICE"
+  chmod 0644 "$BACKUP_SERVICE"
+  cp -f "$REPO_DIR/ops/chore-champs-backup.timer" "$BACKUP_TIMER"
+  chmod 0644 "$BACKUP_TIMER"
+  systemctl daemon-reload
+  systemctl enable --now chore-champs-backup.timer >/dev/null
+  ok "enabled chore-champs-backup.timer"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
