@@ -63,7 +63,7 @@ chore tracker, kids chore app, chore chart, points for kids, reward system, allo
 
 ### Marketing Assets
 
-- Screenshots: 6.7" iPhone (393×852) and 6.5" iPhone (428×926) — show parent dashboard, kid view, rewards screen, badge achievements
+- Screenshots: 6.7" iPhone (430×932) and 6.5" iPhone (428×926) — show parent dashboard, kid view, rewards screen, badge achievements
 - App Icon: ChoreChamps shield/trophy icon (indigo/violet palette)
 - Privacy Policy URL: https://chores.ashbi.ca/privacy-policy
 

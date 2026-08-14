@@ -1,6 +1,6 @@
 # ChoreChamps — Privacy Policy
 
-**Effective Date:** June 2026  
+**Effective Date:** August 14, 2026
 **App Version:** 1.0  
 **Contact:** chores.ashbi.ca
 
@@ -39,13 +39,11 @@ Parents add child profiles to their family account. The data collected for each 
 
 ### Usage Data
 
-ChoreChamps may collect limited usage information to understand app performance:
+The current deployment does not send analytics events to a third-party provider
+and does not use behavioral advertising. The hosting service may produce
+operational logs needed to keep the service secure and available.
 
-- Device type and operating system (for bug fixes and compatibility)
-- App crash reports (handled via PostHog — no personal identifiers attached)
-- Aggregate feature usage (which screens are visited — used to prioritize improvements)
-
-We do not collect precise location data. We do not collect device identifiers for advertising purposes.
+We do not collect precise location data or device identifiers for advertising.
 
 ### No Biometric or Sensitive Data
 
@@ -58,8 +56,7 @@ ChoreChamps does not collect biometric data, health information, precise geoloca
 ### What We Use Parent Data For
 
 - **Authentication** — verifying you own your account when you log in
-- **Account recovery** — helping you regain access if you forget your password
-- **Communication** — sending transactional emails (e.g., reset password) — we do not send marketing emails
+- **Account access** — maintaining your authenticated session and family access
 
 ### What We Use Child Profile Data For
 
@@ -88,9 +85,7 @@ ChoreChamps does not share your family data with any third party. No data broker
 
 We use a small number of trusted service providers to run the app:
 
-- **PostHog** — product analytics (open-source, self-hosted by us where possible). PostHog receives anonymized event data only — no personal identifiers.
 - **Vercel / Coolify** — hosting and server infrastructure. Servers store your app data (database) as part of running the service.
-- **Email service** — if transactional emails are sent (e.g., password reset), the email provider receives only the email address needed to deliver the message.
 
 These subprocessors are contractually bound to use your data only to provide the service we pay them for.
 
@@ -160,23 +155,9 @@ To exercise any rights or ask questions: **chores.ashbi.ca** (or the app's built
 
 ---
 
-## Data collected by Third-Party Services
-
-ChoreChamps uses PostHog for product analytics. PostHog may collect:
-
-- Pages visited and actions taken within the app
-- Device type and browser version
-- Anonymous session duration
-
-PostHog data is **not** linked to individual user accounts or child profiles. It is used in aggregate to understand which features are used and where bugs occur.
-
-We do not use PostHog to track children under 13 differently from adult users.
-
----
-
 ## Changes to This Policy
 
-If this policy changes, the updated version will be posted at the same location with a new effective date. Significant changes (e.g., adding a new data collection practice) will be communicated via the app and via email to affected account holders 30 days before taking effect.
+If this policy changes, the updated version will be posted at the same location with a new effective date.
 
 ---
 
@@ -198,4 +179,4 @@ For privacy questions, data deletion requests, or concerns:
 
 ---
 
-*Last updated: June 2026*
+*Last updated: August 14, 2026*

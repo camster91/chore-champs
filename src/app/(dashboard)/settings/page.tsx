@@ -399,13 +399,14 @@ export default function SettingsPage() {
             <CardContent className="p-6">
               <h2 className="text-xl font-bold mb-4">Account Security</h2>
               <p className="text-gray-600 mb-4">
-                No password required! We use magic links to sign in securely.
-                Your spouse can invite you and you&apos;ll get an email to join instantly.
+                Sign in securely with your email address and password. Family
+                invitations use secure links that you can open to join the family.
               </p>
               <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
                 <p className="text-purple-800 text-sm">
-                  <strong>How it works:</strong> When someone invites you, you&apos;ll receive an email with a magic link.
-                  Click it to create your account and join the family automatically.
+                  <strong>How it works:</strong> A family owner creates an invite
+                  for a specific email address. Open the invite link, then create
+                  your account or sign in to join the family.
                 </p>
               </div>
             </CardContent>
