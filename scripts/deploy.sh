@@ -143,8 +143,10 @@ install_health_monitor() {
   systemctl start --wait chore-champs-backup.service
   ok "created verified database backup"
 
-  cp -f "$REPO_DIR/scripts/vps-ci.sh" "$CI_SCRIPT"
-  chmod 0755 "$CI_SCRIPT"
+  if [[ "$REPO_DIR/scripts/vps-ci.sh" != "$CI_SCRIPT" ]]; then
+    cp -f "$REPO_DIR/scripts/vps-ci.sh" "$CI_SCRIPT"
+    chmod 0755 "$CI_SCRIPT"
+  fi
   cp -f "$REPO_DIR/ops/chore-champs-ci.service" "$CI_SERVICE"
   chmod 0644 "$CI_SERVICE"
   systemctl daemon-reload
