@@ -196,6 +196,7 @@ Full schema: `prisma/schema.prisma`
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
 | `npm run seed` | Seed database with sample data |
+| `npm run test:e2e` | Run Playwright browser smoke tests (set `E2E_AUTH=1` for the authenticated flow) |
 | `npx prisma db push` | Sync a clean local development database |
 | `npm run db:migrate` | Safe local alias for `npm run db:push` (historical migrations are not used locally) |
 | `npx prisma migrate deploy` | Apply committed migrations in production |

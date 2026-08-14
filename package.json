@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "npx tsx --test src/lib/utils.test.ts src/lib/gamification.test.ts src/lib/manifest.test.ts",
+    "test:e2e": "playwright test",
     "postinstall": "prisma generate || true",
     "prepare": "git config core.hooksPath .husky || true",
     "seed": "node prisma/seed.js",

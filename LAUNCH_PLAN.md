@@ -15,11 +15,11 @@
 - [x] Set up hosting (Vercel/Netlify for frontend, Render/Railway for backend) - *Transitioned to self-hosted Coolify*
 - [x] Configure custom domain (if applicable)
 - [x] Setup CI/CD pipeline via GitHub Actions
-- [x] Add analytics (Google Analytics or PostHog)
+- [ ] Add third-party analytics (optional; current telemetry is a development-only logging stub)
 
 ## Phase 3: Launch
 - [x] Prepare draft app store screenshots and verify native app icons
 - [ ] Submit to app stores (if applicable)
-- [ ] Write launch post (Product Hunt, Twitter, LinkedIn)
+- [x] Draft launch post (`launch-announcement.md`); publication remains pending store approval
 - [x] Configure scheduled production health monitoring
 - [ ] Monitor logs and feedback post-launch after public launch
