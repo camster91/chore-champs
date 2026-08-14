@@ -31,13 +31,27 @@ async function run() {
     const suffix = Date.now()
     const email = process.env.CHORE_CHAMPS_QA_EMAIL || `qa-${suffix}@example.invalid`
     const password = required(process.env.CHORE_CHAMPS_QA_PASSWORD || 'ChoreQA!2026x', 'CHORE_CHAMPS_QA_PASSWORD')
+    const useExistingAccount = process.env.CHORE_CHAMPS_QA_EXISTING === '1'
 
-    await assertStatus(page, '/signup')
-    await page.getByLabel('Name').fill('QA Family')
-    await page.getByLabel('Email').fill(email)
-    await page.getByLabel('Password').fill(password)
-    await page.getByRole('button', { name: /create account/i }).click()
-    await page.waitForURL(/\/dashboard(?:\/|$)/, { timeout: 30_000 })
+    if (useExistingAccount) {
+      await assertStatus(page, '/login')
+      await page.getByLabel('Email').fill(email)
+      await page.getByLabel('Password').fill(password)
+      await page.getByRole('button', { name: /sign in/i }).click()
+    } else {
+      await assertStatus(page, '/signup')
+      await page.getByLabel('Name').fill('QA Family')
+      await page.getByLabel('Email').fill(email)
+      await page.getByLabel('Password').fill(password)
+      await page.getByRole('button', { name: /create account/i }).click()
+    }
+
+    try {
+      await page.waitForURL(/\/dashboard(?:\/|$)/, { timeout: 30_000 })
+    } catch {
+      const alert = await page.locator('[role="alert"]').first().textContent().catch(() => null)
+      throw new Error(`${useExistingAccount ? 'login' : 'signup'} did not complete${alert ? `: ${alert.trim()}` : ''}`)
+    }
 
     const protectedRoutes = ['/dashboard', '/chores', '/habits', '/rewards', '/avatar-shop', '/profile', '/settings']
     for (const path of protectedRoutes) {
