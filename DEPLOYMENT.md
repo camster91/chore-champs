@@ -64,8 +64,9 @@ This restarts the container with the `:previous` image, then runs the same
 health-check loop. If health check fails after rollback, the script exits
 with code 6 and prints the manual recovery steps.
 
-The `:previous` tag is overwritten on every successful deploy — it always
-points to the last-known-good image, not some historical one.
+Build deploys update the `:previous` tag to the image that was running before
+the new build. A `--skip-build` deploy preserves the existing rollback target
+instead of replacing it with the image currently running.
 
 If Docker cannot tag the previous image by digest, the deploy script uses
 `docker commit` on the live container instead of `docker export`/`docker import`.
