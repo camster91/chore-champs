@@ -71,8 +71,9 @@ instead of replacing it with the image currently running.
 If Docker cannot tag the previous image by digest, the deploy script uses
 `docker commit` on the live container instead of `docker export`/`docker import`.
 This preserves the image command, entrypoint, and working directory required to
-start the rollback. The rollback snapshot was isolated and verified against
-`/api/health` on 2026-08-12 without replacing the live container.
+start the rollback. The rollback snapshot was verified against `/api/health`
+on 2026-08-14, then the current release was restored and authenticated smoke
+QA passed. No-build synchronization preserved the protected rollback target.
 
 Production health is also checked every 15 minutes by the GitHub Actions
 `Production Health` workflow. It verifies the database-backed health endpoint
