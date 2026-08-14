@@ -9,6 +9,7 @@ Run `npm run store:validate` before uploading the checked-in store assets.
 ## Pre-Submission Setup
 
 - [x] **Native shell configured** — bundle ID `com.chorechamps.app`, hosted server URL configured in `capacitor.config.ts`
+- [x] **Release identity aligned** — web package `1.0.0`, iOS marketing version `1.0`/build `1`, Android version name `1.0`/code `1`
 - [x] **Privacy policy URL live** — https://chores.ashbi.ca/privacy-policy (verified HTTP 200)
 - [x] **Screenshots prepared** — draft sets captured under `artifacts/app-store/` at the required Apple and Google dimensions
 - [x] **App icon ready** — 1024×1024 iOS icon and Android launcher resources are checked in
