@@ -7,6 +7,21 @@ async function run() {
     ['artifacts/app-store/google-play-icon-512.png', [512, 512]],
     ['ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png', [1024, 1024]],
   ])
+  const screenshotSets = [
+    ['artifacts/app-store/iphone-6.7', [430, 932]],
+    ['artifacts/app-store/iphone-6.5', [428, 926]],
+    ['artifacts/app-store/google-phone', [1920, 1080]],
+    ['artifacts/app-store/google-tablet', [2048, 1536]],
+  ]
+  for (const [relativeDir, dimensions] of screenshotSets) {
+    const directory = path.join(root, relativeDir)
+    if (!fs.existsSync(directory)) throw new Error(`missing screenshot directory: ${relativeDir}`)
+    const files = fs.readdirSync(directory)
+      .filter((file) => file.endsWith('.png'))
+      .sort()
+    if (files.length !== 5) throw new Error(`${relativeDir} contains ${files.length} PNGs; expected 5`)
+    for (const file of files) expected.set(path.join(relativeDir, file), dimensions)
+  }
 
   function pngDimensions(filePath) {
     const buffer = fs.readFileSync(filePath)

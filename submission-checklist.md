@@ -53,7 +53,7 @@ Run `npm run store:validate` before uploading the checked-in store assets.
 
 ### 4. Screenshots
 
-- [x] iPhone 6.7" Display (393×852) — 5 draft screenshots in `artifacts/app-store/iphone-6.7/`
+- [x] iPhone 6.7" Display (430×932) — 5 draft screenshots in `artifacts/app-store/iphone-6.7/`
 - [x] iPhone 6.5" Display (428×926) — 5 draft screenshots in `artifacts/app-store/iphone-6.5/`
 
 Screenshots should show: parent dashboard (chore creation/approval), kid dashboard (chore list, points), rewards store, badge/achievement screen.

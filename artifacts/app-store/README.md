@@ -6,7 +6,7 @@ The Google Play draft feature graphic is `google-feature-graphic.png` (1024×500
 and the draft Play icon is `google-play-icon-512.png` (512×512). Both are local
 pre-submission assets and still require store-console review before upload.
 
-- `iphone-6.7/` - five screenshots at 393x852
+- `iphone-6.7/` - five screenshots at 430x932
 - `iphone-6.5/` - five screenshots at 428x926
 - `google-phone/` - five screenshots at 1920x1080
 - `google-tablet/` - five screenshots at 2048x1536
