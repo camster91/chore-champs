@@ -12,6 +12,7 @@ Run `npm run store:validate` before uploading the checked-in store assets.
 - [x] **Privacy policy URL live** — https://chores.ashbi.ca/privacy-policy (verified HTTP 200)
 - [x] **Screenshots prepared** — draft sets captured under `artifacts/app-store/` at the required Apple and Google dimensions
 - [x] **App icon ready** — 1024×1024 iOS icon and Android launcher resources are checked in
+- [x] **Launch announcement drafted** — `launch-announcement.md` (publish after store approval)
 - [ ] **Category set** — Lifestyle / Family (both stores)
 - [ ] **Price set** — $1.99 USD, one-time purchase, no subscription
 - [ ] **Content rating filled out** — both stores require a content rating questionnaire
