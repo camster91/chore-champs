@@ -80,7 +80,7 @@ function SignupForm() {
 
   if (step === 'creating') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <main className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
           <motion.div
             initial={{ scale: 0 }}
@@ -95,12 +95,12 @@ function SignupForm() {
           </p>
           <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
         </div>
-      </div>
+      </main>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 py-12">
+    <main className="min-h-screen flex items-center justify-center p-4 py-12">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <Link href="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-8">
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@ function SignupForm() {
               <Input id="email" label={translate('auth.email')} type="email" autoComplete="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder={translate('auth.emailPlaceholder')} />
               <Input id="password" label={translate('auth.password')} type="password" autoComplete="new-password" required minLength={8} value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder={translate('common.passwordMin')} />
 
-              {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+              {error && <div role="alert" aria-live="assertive" className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
 
               <button type="submit" disabled={isLoading} className="w-full py-3 px-6 bg-[var(--color-primary)] text-white rounded-xl font-semibold hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2">
                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle className="w-5 h-5" /> {inviteToken ? translate('auth.joinFamily') : translate('auth.createAccount')}</>}
@@ -146,7 +146,7 @@ function SignupForm() {
           </div>
         </div>
       </motion.div>
-    </div>
+    </main>
   )
 }
 

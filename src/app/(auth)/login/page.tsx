@@ -66,7 +66,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <main className="min-h-screen flex items-center justify-center p-4">
       <motion.div
         className="w-full max-w-md relative"
         initial={{ opacity: 0, y: 20 }}
@@ -124,6 +124,8 @@ function LoginForm() {
 
               {error && (
                 <motion.div
+                  role="alert"
+                  aria-live="assertive"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
@@ -165,7 +167,7 @@ function LoginForm() {
           🌟
         </motion.div>
       </motion.div>
-    </div>
+    </main>
   )
 }
 
