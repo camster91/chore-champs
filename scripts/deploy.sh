@@ -7,18 +7,20 @@
 # What it does (in order):
 #   1. Sanity check (root + /root/chore-champs + docker reachable + .env exists)
 #   2. git pull --ff-only origin master
-#   3. docker build -t chore-champs:latest . (skipped with --skip-build)
-#   4. prisma migrate deploy (against the running postgres)
-#   5. Write Traefik labels to /tmp/chore-traefik.labels via printf
+#   3. VPS CI gate (skipped with --skip-ci)
+#   4. docker build -t chore-champs:latest . (skipped with --skip-build)
+#   5. prisma migrate deploy (against the running postgres)
+#   6. Write Traefik labels to /tmp/chore-traefik.labels via printf
 #      (DO NOT inline backticks — they get shell-eaten. See
 #      ~/.hermes/skills/devops/traefik-label-deploy-via-ssh/SKILL.md)
-#   6. Tag previous image as chore-champs:previous (rollback target)
+#   7. Tag previous image as chore-champs:previous (rollback target)
 #      docker rm -f kids-chore-app && docker run -d with --label-file
-#   7. Health-check loop: poll https://chores.ashbi.ca/api/health for HTTP 200
+#   8. Health-check loop: poll https://chores.ashbi.ca/api/health for HTTP 200
 #
 # Usage:
 #   bash scripts/deploy.sh                 # full deploy
 #   bash scripts/deploy.sh --skip-build    # only restart container
+#   bash scripts/deploy.sh --skip-ci      # explicitly bypass VPS CI
 #   bash scripts/deploy.sh --dry-run       # print what would happen, do nothing
 #   bash scripts/deploy.sh --rollback      # restart with chore-champs:previous
 #
@@ -26,10 +28,11 @@
 #   0   success
 #   1   sanity check failed
 #   2   git pull failed
-#   3   docker build failed
-#   4   prisma migrate deploy failed
-#   5   container start failed
-#   6   health check failed (rollback hint printed)
+#   3   VPS CI failed
+#   4   docker build failed
+#   5   prisma migrate deploy failed
+#   6   container start failed
+#   7   health check failed (rollback hint printed)
 
 set -euo pipefail
 
@@ -47,6 +50,8 @@ ENV_FILE="/root/chore-champs/.env.production"
 HEALTHCHECK_SCRIPT="/root/chore-champs/scripts/production-healthcheck.sh"
 HEALTH_SERVICE="/etc/systemd/system/chore-champs-health.service"
 HEALTH_TIMER="/etc/systemd/system/chore-champs-health.timer"
+CI_SCRIPT="/root/chore-champs/scripts/vps-ci.sh"
+CI_SERVICE="/etc/systemd/system/chore-champs-ci.service"
 BACKUP_SCRIPT="/root/chore-champs/scripts/backup-database.sh"
 BACKUP_SERVICE="/etc/systemd/system/chore-champs-backup.service"
 BACKUP_TIMER="/etc/systemd/system/chore-champs-backup.timer"
@@ -67,12 +72,14 @@ TRAEFIK_LABELS=(
 # ─────────────────────────────────────────────────────────────────────────────
 
 SKIP_BUILD=0
+SKIP_CI=0
 DRY_RUN=0
 ROLLBACK=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-build) SKIP_BUILD=1; shift ;;
+    --skip-ci)    SKIP_CI=1; shift ;;
     --dry-run)    DRY_RUN=1; shift ;;
     --rollback)   ROLLBACK=1; shift ;;
     -h|--help)
@@ -81,7 +88,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     *)
       echo "Unknown flag: $1" >&2
-      echo "Try --skip-build | --dry-run | --rollback | --help" >&2
+      echo "Try --skip-build | --skip-ci | --dry-run | --rollback | --help" >&2
       exit 1
       ;;
   esac
@@ -135,6 +142,13 @@ install_health_monitor() {
   ok "enabled chore-champs-backup.timer"
   systemctl start --wait chore-champs-backup.service
   ok "created verified database backup"
+
+  cp -f "$REPO_DIR/scripts/vps-ci.sh" "$CI_SCRIPT"
+  chmod 0755 "$CI_SCRIPT"
+  cp -f "$REPO_DIR/ops/chore-champs-ci.service" "$CI_SERVICE"
+  chmod 0644 "$CI_SERVICE"
+  systemctl daemon-reload
+  ok "installed chore-champs-ci.service"
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -200,11 +214,26 @@ if [[ "$ROLLBACK" != "1" ]]; then
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 3: docker build (unless --skip-build)
+# Step 3: VPS CI gate
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [[ "$ROLLBACK" != "1" ]]; then
-  step "3/7  docker build"
+  step "3/8  VPS CI gate"
+
+  if [[ "$SKIP_CI" == "1" ]]; then
+    warn "skipping VPS CI gate (--skip-ci)"
+  elif [[ "$DRY_RUN" != "1" ]]; then
+    bash "$REPO_DIR/scripts/vps-ci.sh" || fail "VPS CI failed" 3
+    ok "VPS CI passed"
+  fi
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 4: docker build (unless --skip-build)
+# ─────────────────────────────────────────────────────────────────────────────
+
+if [[ "$ROLLBACK" != "1" ]]; then
+  step "4/8  docker build"
 
   if [[ "$DRY_RUN" != "1" ]]; then
     CURRENT_SHA=$(docker inspect "$CONTAINER_NAME" --format '{{.Image}}' 2>/dev/null || echo "none")
@@ -227,7 +256,7 @@ if [[ "$ROLLBACK" != "1" ]]; then
     if docker build -t "$IMAGE_NAME" . 2>&1 | tail -5; then
       ok "built $IMAGE_NAME"
     else
-      fail "docker build failed" 3
+      fail "docker build failed" 4
     fi
   fi
 fi
@@ -237,7 +266,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [[ "$ROLLBACK" != "1" ]]; then
-  step "4/7  prisma migrate deploy"
+  step "5/8  prisma migrate deploy"
 
   if [[ "$DRY_RUN" != "1" ]]; then
     if docker run --rm \
@@ -247,7 +276,7 @@ if [[ "$ROLLBACK" != "1" ]]; then
         "$IMAGE_NAME" npx prisma migrate deploy 2>&1 | tail -15; then
       ok "migrations applied"
     else
-      fail "prisma migrate deploy failed — DO NOT proceed with container restart, schema and code will be out of sync" 4
+      fail "prisma migrate deploy failed — DO NOT proceed with container restart, schema and code will be out of sync" 5
     fi
   fi
 fi
@@ -257,7 +286,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [[ "$ROLLBACK" != "1" ]]; then
-  step "5/7  write Traefik labels"
+  step "6/8  write Traefik labels"
 
   if [[ "$DRY_RUN" != "1" ]]; then
     write_labels_file
@@ -270,7 +299,7 @@ fi
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [[ "$ROLLBACK" != "1" ]]; then
-  step "6/7  restart container"
+  step "7/8  restart container"
 
   if [[ "$DRY_RUN" != "1" ]]; then
     OLD_SHA=$(docker inspect "$CONTAINER_NAME" --format '{{.Image}}' 2>/dev/null || echo "none")
@@ -313,7 +342,7 @@ fi
 # Step 7: health check
 # ─────────────────────────────────────────────────────────────────────────────
 
-step "7/7  health check"
+step "8/8  health check"
 
 if [[ "$DRY_RUN" != "1" ]]; then
   MAX_ATTEMPTS=20

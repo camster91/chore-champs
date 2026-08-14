@@ -14,7 +14,7 @@
 ## Phase 2: Deployment [DONE]
 - [x] Set up hosting (Vercel/Netlify for frontend, Render/Railway for backend) - *Transitioned to self-hosted Coolify*
 - [x] Configure custom domain (if applicable)
-- [x] Setup CI/CD pipeline via GitHub Actions
+- [x] Set up VPS CI and deployment gate
 - [ ] Add third-party analytics (optional; current telemetry is a development-only logging stub)
 
 ## Phase 3: Launch

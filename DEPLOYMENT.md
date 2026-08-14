@@ -75,9 +75,11 @@ start the rollback. The rollback snapshot was verified against `/api/health`
 on 2026-08-14, then the current release was restored and authenticated smoke
 QA passed. No-build synchronization preserved the protected rollback target.
 
-Production health is also checked every 15 minutes by the GitHub Actions
-`Production Health` workflow. It verifies the database-backed health endpoint
-and the public homepage, auth, privacy, robots, and sitemap routes.
+CI and production operations run on the VPS; GitHub Actions is not part of the
+release path. `chore-champs-ci.service` runs the build gate before a deploy,
+and `chore-champs-health.timer` checks the live application every 15 minutes.
+The health check verifies the database-backed health endpoint and the public
+homepage, auth, privacy, robots, sitemap, manifest, and icon routes.
 
 The production host independently runs `chore-champs-health.timer` every 15
 minutes. Its `chore-champs-health.service` checks the same public surfaces plus

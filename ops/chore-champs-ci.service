@@ -1,0 +1,9 @@
+[Unit]
+Description=Chore Champs VPS CI gate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/chore-champs
+ExecStart=/root/chore-champs/scripts/vps-ci.sh
