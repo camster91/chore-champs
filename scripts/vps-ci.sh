@@ -7,7 +7,6 @@ REPO_DIR="${CHORE_CHAMPS_CI_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pw
 cd "$REPO_DIR"
 
 export CI="${CI:-true}"
-export NODE_ENV="${NODE_ENV:-production}"
 export DATABASE_URL="${DATABASE_URL:-postgresql://ci:ci@127.0.0.1:5432/chorechamps_ci}"
 export NEXTAUTH_SECRET="${NEXTAUTH_SECRET:-chore-champs-vps-ci-placeholder}"
 export NEXTAUTH_URL="${NEXTAUTH_URL:-http://127.0.0.1:3000}"
