@@ -13,7 +13,7 @@
     "seed": "node prisma/seed.js",
     "smoke:production": "node scripts/production-smoke.cjs",
     "store:validate": "node scripts/validate-store-assets.cjs",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "npm run db:push",
     "db:push": "prisma db push"
   },
   "prisma": {

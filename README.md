@@ -134,6 +134,11 @@ npx prisma db push
 npm run seed   # creates sample parent account, 2 children, chores, rewards
 ```
 
+For a Docker-backed local database, `start-dev.bat` or `docker-compose up -d postgres`
+uses the safe development defaults from `.env.example`. The full compose app uses
+the internal `postgres` hostname automatically; the host-run Next.js app uses
+`localhost`.
+
 > **Local development:** Use a clean local PostgreSQL database with `npx prisma db push`. The historical migration chain has drifted from the current Prisma 7 schema, so `migrate dev` is not the local setup path.
 >
 > **Production:** Apply committed migrations with `npx prisma migrate deploy` through `scripts/deploy.sh`. Do not use `db push` against production.
@@ -192,6 +197,7 @@ Full schema: `prisma/schema.prisma`
 | `npm run lint` | Run ESLint |
 | `npm run seed` | Seed database with sample data |
 | `npx prisma db push` | Sync a clean local development database |
+| `npm run db:migrate` | Safe local alias for `npm run db:push` (historical migrations are not used locally) |
 | `npx prisma migrate deploy` | Apply committed migrations in production |
 | `npx cap sync ios` | Sync web build to iOS |
 | `npx cap sync android` | Sync web build to Android |
