@@ -154,7 +154,9 @@ Screenshots should show: parent dashboard (chore creation/approval), kid dashboa
 ### 10. Upload APK / AAB
 
 - [x] Build web app and sync Android shell: `npm run build && npx cap sync android` — local preflight verified
-- [ ] Open Android studio, build release APK/AAB
+- [x] Android release build compiles — unsigned artifacts generated at `android/app/build/outputs/apk/release/app-release-unsigned.apk` and `android/app/build/outputs/bundle/release/app-release.aab`
+- [ ] Configure the production signing key / Play App Signing
+- [ ] Open Android Studio, sign the release APK/AAB, and verify the certificate
 - [ ] Upload to Play Console under "Production" → "Create Release"
 - [ ] Add the new build, review release notes, save
 - [ ] If using a signing key, confirm key config
