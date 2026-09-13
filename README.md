@@ -1,5 +1,7 @@
 # ChoreChamps — Kids Chore & Habit Tracker
 
+> **ChoreChamps 2.0 is now planned as a native SwiftUI iPhone/iPad + Apple Watch companion to Family Planner.** The approved product/UX/architecture plan is in [`docs/CHORECHAMPS_2_NATIVE_APP_PLAN.md`](docs/CHORECHAMPS_2_NATIVE_APP_PLAN.md), with the implementation epic tracked in GitHub issue #231. The Next.js/Capacitor application documented below is the legacy v1 implementation and should be preserved as migration/reference material until the native product is proven.
+
 **A gamified chore tracking application designed to help kids build responsibility through positive reinforcement.**
 
 **Live:** chores.ashbi.ca  
@@ -195,7 +197,7 @@ Full schema: `prisma/schema.prisma`
 | `npm run build` | Build for production |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
-| `npm run seed` | Seed database with sample data |
+| `npm run seed` | Seed database with sample parent account, 2 children, chores, rewards |
 | `npm run test:e2e` | Run Playwright browser smoke tests (set `E2E_AUTH=1` for the authenticated flow) |
 | `CHORE_CHAMPS_QA_EXISTING=1 CHORE_CHAMPS_QA_EMAIL=... CHORE_CHAMPS_QA_PASSWORD=... npm run smoke:production` | Repeat production QA with an existing account when signup rate limits are reached |
 | `npx prisma db push` | Sync a clean local development database |
