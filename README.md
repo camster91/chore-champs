@@ -1,220 +1,85 @@
-# ChoreChamps — Kids Chore & Habit Tracker
+# ChoreChamps
 
-> **ChoreChamps 2.0 is now planned as a native SwiftUI iPhone/iPad + Apple Watch companion to Family Planner.** The approved product/UX/architecture plan is in [`docs/CHORECHAMPS_2_NATIVE_APP_PLAN.md`](docs/CHORECHAMPS_2_NATIVE_APP_PLAN.md), with the implementation epic tracked in GitHub issue #231. The Next.js/Capacitor application documented below is the legacy v1 implementation and should be preserved as migration/reference material until the native product is proven.
+A gamified chore and habit tracker for kids: parents assign chores and rewards, kids earn points, streaks and badges.
 
-**A gamified chore tracking application designed to help kids build responsibility through positive reinforcement.**
+<img src="artifacts/app-store/01-dashboard.png" alt="ChoreChamps kid dashboard with today's chores, points and streak" width="320">
 
-**Live:** chores.ashbi.ca  
-**Price:** $1.99 USD (one-time purchase, no subscription)  
-**Repo:** github.com/camster91/chore-champs
+## What it does
 
----
+ChoreChamps turns household jobs into small, visible wins. Parents set up chores with point values, approve completions, and stock a rewards store. Kids see today's chores, tick them off, build streaks and spend their points on rewards the family agreed on. There are no ads and no third-party behavioural tracking.
 
-## Overview
+This repository holds the v1 web app (Next.js, installable as a PWA and wrapped with Capacitor). A future native Apple client that works with [Family Planner](https://github.com/camster91/family-planner) is planned in [docs/CHORECHAMPS_2_NATIVE_APP_PLAN.md](docs/CHORECHAMPS_2_NATIVE_APP_PLAN.md).
 
-ChoreChamps transforms household tasks into exciting quests for children. Parents can assign chores, set point values, and track progress, while kids earn points, unlock badges, and claim rewards in a fun, interactive environment.
+## Features
 
-- **For parents:** Create and assign chores, set point values, approve completions, and manage a rewards store.
-- **For kids:** See assigned chores, earn points, unlock badges for streaks, and redeem points for rewards.
-- **No subscriptions. No ads. One $1.99 purchase.**
+**Parents**
+- Create, assign and schedule chores for multiple children with custom point values
+- Review and approve completions before points are awarded
+- Define rewards with point costs and track redemptions
+- Invite another parent to the family by link
+- See completion history per child
 
----
+**Kids**
+- A colourful daily dashboard with today's chores, points and streak
+- Badges for streaks and consistency, with celebration animations
+- Habits alongside chores
+- Spend points in the rewards store and an avatar shop
 
-## Tech Stack
+**Platform**
+- Responsive layout for phone, tablet and desktop, installable PWA with an offline page
+- Web push reminders
+- Credentials sign-in with hashed passwords and rate limiting
+- Capacitor projects for iOS and Android
 
-### Frontend
-- **Next.js 16** (React 19) — App Router
-- **Tailwind CSS 4** — styling
-- **Framer Motion** — gamified animations
-- **Geist** — typography
-- **Lucide React** — icons
-- **Zustand** — client state
+## Tech stack
 
-### Backend & Database
-- **Prisma** — type-safe ORM
-- **PostgreSQL** — database (self-hosted, Coolify)
-- **NextAuth.js** — authentication (credentials, JWT sessions)
+- Next.js 16 (App Router), React 19, TypeScript
+- Tailwind CSS 4, Framer Motion, Lucide icons, Geist type
+- Zustand and SWR for client state and data fetching, Zod for validation
+- Prisma 7 with PostgreSQL
+- NextAuth.js (credentials, JWT sessions), bcryptjs
+- web-push, i18next
+- Capacitor 8
+- Node's test runner via tsx, Playwright for browser tests
 
-### Mobile
-- **Capacitor** — wraps the PWA for iOS and Android
-- **Capacitor Config:** `com.chorechamps.app`
+## Getting started
 
----
-
-## Key Features
-
-### Parents
-- Dashboard to create, assign, and manage chores for multiple children
-- Set custom point values per chore
-- Review and approve completed chores before points are awarded
-- Define rewards with point costs
-- Monitor child engagement and completion history
-
-### Kids
-- Colorful, gamified chore dashboard
-- Earn points for approved chore completions
-- Unlock badges for streaks and consistency
-- Redeem points for parent-defined rewards
-- See progress, totals, and upcoming goals
-
-### Technical
-- Responsive — works on phone, tablet, and desktop
-- Real-time sync across family devices
-- PWA — install on mobile devices
-- Family-based auth with parent-controlled child profiles
-
----
-
-## Privacy & Compliance
-
-- **No ads, no third-party behavioral advertising**
-- **No data sold or shared with any third party**
-- **Parent accounts control all child data — full access and deletion rights**
-- **COPPA-compliant** for children under 13 in the United States
-- Privacy policy: `privacy-policy.md` (must be hosted at a public URL before App Store submission)
-
----
-
-## App Store Listing
-
-Full App Store and Google Play Store metadata is in `store-listing.md`, including:
-- iOS subtitle, description, keywords, and what's new
-- Google Play short and full descriptions
-- Screenshot requirements and asset guidelines
-
----
-
-## Submission Checklist
-
-Before submitting to the Apple App Store or Google Play Store, complete every step in `submission-checklist.md`. Key items:
-
-**Apple App Store:**
-- Bundle ID: `com.chorechamps.app`
-- Set "Made for Kids" to YES
-- Host privacy policy at a public URL
-- Build: `npm run build && npx cap sync ios` → Xcode archive → App Store Connect
-
-**Google Play Store:**
-- Package: `com.chorechamps.app`
-- Complete Data Safety form (includes children's data section)
-- Host privacy policy at a public URL
-- Build: `npm run build && npx cap sync android` → Android Studio APK/AAB → Play Console
-
----
-
-## Repository
-
-```
-github.com/camster91/chore-champs
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL database
-
-### Setup
+Requires Node.js 20+ and PostgreSQL (or Docker).
 
 ```bash
-# Clone
 git clone https://github.com/camster91/chore-champs.git
 cd chore-champs
-
-# Install
 npm install
-
-# Environment
-cp .env.example .env
-# Fill in DATABASE_URL, NEXTAUTH_SECRET, and NEXTAUTH_URL=http://localhost:3000
-
-# Database
-npx prisma generate
-npx prisma db push
-npm run seed   # creates sample parent account, 2 children, chores, rewards
+cp .env.example .env          # set DATABASE_URL, NEXTAUTH_SECRET and NEXTAUTH_URL=http://localhost:3000
+docker-compose up -d postgres # optional: local Postgres with the defaults from .env.example
+npm run db:push               # sync the schema to a clean local database
+npm run seed                  # sample parent account, two children, chores and rewards
+npm run dev                   # http://localhost:3000
 ```
 
-For a Docker-backed local database, `start-dev.bat` or `docker-compose up -d postgres`
-uses the safe development defaults from `.env.example`. The full compose app uses
-the internal `postgres` hostname automatically; the host-run Next.js app uses
-`localhost`.
+Use a clean local database with `db:push` for development; committed migrations are for production deploys only.
 
-> **Local development:** Use a clean local PostgreSQL database with `npx prisma db push`. The historical migration chain has drifted from the current Prisma 7 schema, so `migrate dev` is not the local setup path.
->
-> **Production:** Apply committed migrations with `npx prisma migrate deploy` through `scripts/deploy.sh`. Do not use `db push` against production.
-
-## Develop
-npm run dev
-# → http://localhost:3000
-```
-
-### Build for Production
+## Testing
 
 ```bash
-npm run build
+npm test           # unit tests for utilities, gamification rules and the PWA manifest
+npm run test:e2e   # Playwright smoke tests (set E2E_AUTH=1 for the signed-in flow)
+npm run lint
 ```
 
-### Mobile (Capacitor)
+## Project structure
 
-```bash
-# iOS
-npx cap sync ios
-# Open ios/ folder in Xcode, archive, and upload to App Store Connect
-
-# Android
-npx cap sync android
-# Open android/ folder in Android Studio, build APK, and upload to Play Console
+```
+src/app/(auth)/        Sign-up and login
+src/app/(dashboard)/   Dashboard, chores, habits, rewards, avatar shop, profile, settings
+src/app/api/           API routes
+src/actions/           Server actions (habits, avatar items and more)
+src/lib/               Gamification rules, auth helpers, push notifications, i18n
+prisma/                Schema and seed script
+e2e/                   Playwright specs
+android/, ios/         Capacitor projects
 ```
 
-### Docker (self-hosted)
+## License
 
-```bash
-# Local dev with Postgres
-docker-compose up
-
-# Production
-docker build -t chorechamps .
-docker run -p 3000:3000 --env-file .env.production chorechamps
-```
-
----
-
-## Database Schema
-
-Key entities: `Family` (parent accounts), `Kid` (child profiles), `Chore` (tasks), `ChoreAssignment` (links and completion state), `Reward`, `Redemption`, `BadgeDefinition`, `EarnedBadge`, `Habit`, and `HabitLog`.
-
-Full schema: `prisma/schema.prisma`
-
----
-
-## Commands
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run seed` | Seed database with sample parent account, 2 children, chores, rewards |
-| `npm run test:e2e` | Run Playwright browser smoke tests (set `E2E_AUTH=1` for the authenticated flow) |
-| `CHORE_CHAMPS_QA_EXISTING=1 CHORE_CHAMPS_QA_EMAIL=... CHORE_CHAMPS_QA_PASSWORD=... npm run smoke:production` | Repeat production QA with an existing account when signup rate limits are reached |
-| `npx prisma db push` | Sync a clean local development database |
-| `npm run db:migrate` | Safe local alias for `npm run db:push` (historical migrations are not used locally) |
-| `npx prisma migrate deploy` | Apply committed migrations in production |
-| `npx cap sync ios` | Sync web build to iOS |
-| `npx cap sync android` | Sync web build to Android |
-
----
-
-## Roadmap
-
-- [ ] Push notifications for daily reminders
-- [ ] Weekly consistency tracking
-- [ ] AI-suggested age-appropriate chores
-- [ ] Subscription tiers for premium content (optional)
-
----
-
-*Built by Cameron Ashley — ChoreChamps v1.0 — chores.ashbi.ca*
+[MIT](LICENSE)
