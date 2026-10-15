@@ -1,3 +1,5 @@
+This repo is archived and no longer maintained.
+
 # ChoreChamps
 
 A gamified chore and habit tracker for kids: parents assign chores and rewards, kids earn points, streaks and badges.
